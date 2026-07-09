@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Re.cyber — Slow Fashion Brechó | Moda do RJ para o Brasil</title>
+<meta name="description" content="Brechó on-line Re.cyber. Moda underground consciente do Rio de Janeiro para o Brasil. Roupas, acessórios e calçados seminovos desde 2021.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner container">
+    <a href="#top" class="logo">Re<span class="dot">.</span>cyber</a>
+    <nav class="main-nav" id="main-nav">
+      <a href="#top">Home</a>
+      <a href="#catalogo">Coleções</a>
+      <a href="#sobre">Slow Fashion</a>
+      <a href="#contato">Contato</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" id="search-toggle" aria-label="Buscar">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.5" y2="16.5" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+      <button class="icon-btn" id="cart-toggle" aria-label="Carrinho">
+        <svg viewBox="0 0 24 24"><path d="M3 4h2l2 12h11l2-8H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="9" cy="20" r="1.5" fill="currentColor"/><circle cx="17" cy="20" r="1.5" fill="currentColor"/></svg>
+        <span class="cart-count" id="cart-count">0</span>
+      </button>
+      <button class="icon-btn menu-toggle" id="menu-toggle" aria-label="Menu">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2"/><line x1="3" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="search-bar" id="search-bar">
+    <div class="container search-bar-inner">
+      <input type="text" id="search-input" placeholder="Buscar peça, categoria, tamanho...">
+      <button id="search-close" aria-label="Fechar">&times;</button>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="hero-top container">
+    <div class="hero-since">
+      <span class="since-text">SINCE</span>
+      <span class="year-text">2021</span>
+    </div>
+    <div class="hero-tagline">
+      <span class="tag-main">Slow Fashion</span>
+      <span class="tag-sub">Moda do RJ para o Brasil</span>
+    </div>
+  </div>
+
+  <div class="hero-rule"></div>
+
+  <div class="hero-globe-wrap">
+    <div class="globe-box">
+      <svg class="globe-svg" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g id="circuit-ring"></g>
+        <!-- Globe sphere -->
+        <circle cx="300" cy="300" r="215" fill="#c8c8c4"/>
+        <!-- North America -->
+        <path d="
+          M 223,138 C 213,124 207,112 210,112
+          C 235,96 268,88 300,96
+          C 332,103 365,122 388,143
+          C 375,156 356,167 345,160
+          C 342,172 337,192 334,206
+          C 327,218 314,226 300,226
+          C 282,226 258,220 232,216
+          C 216,208 206,192 215,180
+          C 218,162 222,148 223,138 Z
+        " fill="#161616"/>
+        <!-- Isthmus -->
+        <path d="M 300,226 C 316,240 328,253 341,266 C 329,255 317,242 300,233 Z" fill="#161616"/>
+        <!-- South America -->
+        <path d="
+          M 341,266 C 360,254 384,258 398,273
+          C 430,298 470,328 474,358
+          C 470,388 452,414 430,430
+          C 408,446 382,450 360,436
+          C 342,422 328,404 318,380
+          C 310,350 320,310 345,300
+          C 346,290 346,278 341,266 Z
+        " fill="#161616"/>
+        <!-- Latitude lines -->
+        <ellipse cx="300" cy="300" rx="215" ry="58" fill="none" stroke="#161616" stroke-width="0.7" opacity="0.18"/>
+        <ellipse cx="300" cy="300" rx="215" ry="115" fill="none" stroke="#161616" stroke-width="0.5" opacity="0.12"/>
+        <!-- Globe outline -->
+        <circle cx="300" cy="300" r="215" fill="none" stroke="#161616" stroke-width="2.5"/>
+      </svg>
+      <span class="globe-name">Re<span class="globe-dot">.</span>cyber</span>
+    </div>
+  </div>
+
+  <div class="hero-rule"></div>
+</section>
+
+<!-- RECYCLE STRIP -->
+<section class="recycle-strip">
+  <div class="container recycle-inner">
+    <div class="recycle-text">
+      <h3 class="recycle-heading">Recycle cyber:</h3>
+      <p>Comprometidos em alinhar moda underground com consumo consciente.</p>
+    </div>
+    <svg class="barcode-svg" viewBox="0 0 220 72" aria-hidden="true">
+      <g id="barcode-bars"></g>
+    </svg>
+    <div class="recycle-emblem">
+      <svg viewBox="0 0 80 80" width="64" height="64" aria-hidden="true">
+        <defs>
+          <marker id="rah" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#2f8f4e"/>
+          </marker>
+        </defs>
+        <line x1="40" y1="12" x2="59" y2="42" stroke="#2f8f4e" stroke-width="6" stroke-linecap="round" marker-end="url(#rah)"/>
+        <line x1="63" y1="53" x2="30" y2="53" stroke="#2f8f4e" stroke-width="6" stroke-linecap="round" marker-end="url(#rah)"/>
+        <line x1="17" y1="53" x2="33" y2="22" stroke="#2f8f4e" stroke-width="6" stroke-linecap="round" marker-end="url(#rah)"/>
+      </svg>
+      <span>Recycle</span>
+    </div>
+  </div>
+</section>
+
+<!-- CATALOG -->
+<section class="catalog" id="catalogo">
+  <div class="container">
+    <div class="catalog-head">
+      <h2 class="section-title">Peças disponíveis</h2>
+      <select id="sort-select" class="sort-select">
+        <option value="novidades">Novidades</option>
+        <option value="menor-preco">Menor preço</option>
+        <option value="maior-preco">Maior preço</option>
+      </select>
+    </div>
+    <div class="filter-chips" id="filter-chips">
+      <button class="chip active" data-filter="todos">Todos</button>
+      <button class="chip" data-filter="roupas">Roupas</button>
+      <button class="chip" data-filter="acessorios">Acessórios</button>
+      <button class="chip" data-filter="calcados">Calçados</button>
+    </div>
+    <div class="product-grid" id="product-grid"></div>
+    <p class="empty-state" id="empty-state" hidden>Nenhuma peça encontrada. Tente outro filtro ou busca.</p>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about" id="sobre">
+  <div class="container about-inner">
+    <div class="about-text">
+      <h2 class="section-title">Slow Fashion</h2>
+      <p>Cada peça do Re.cyber já teve uma história — e ganha outra com você. Desde 2021, resgatamos roupas, acessórios e calçados do Rio de Janeiro para o Brasil inteiro.</p>
+      <div class="about-tags">
+        <span>Receba</span>
+        <span>Reuse</span>
+        <span>Repense</span>
+      </div>
+      <div class="steps">
+        <div class="step"><span class="step-num">01</span><p>Escolha suas peças e adicione ao carrinho</p></div>
+        <div class="step"><span class="step-num">02</span><p>Finalize pelo WhatsApp e combine o pagamento</p></div>
+        <div class="step"><span class="step-num">03</span><p>Receba sua peça e dê um novo ciclo a ela</p></div>
+      </div>
+    </div>
+    <div class="about-visual">
+      <div class="about-icon-card">
+        <svg viewBox="0 0 24 24"><path d="M3 8l9-5 9 5-9 5-9-5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 8v9l9 5 9-5V8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="12" y1="13" x2="12" y2="22" stroke="currentColor" stroke-width="1.6"/></svg>
+        <span>Receba</span>
+      </div>
+      <div class="about-icon-card">
+        <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0113.9-5.4M20 12a8 8 0 01-13.9 5.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M17 4v4h-4M7 20v-4h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Reuse</span>
+      </div>
+      <div class="about-icon-card">
+        <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 00-3 11.2V16h6v-1.8A6 6 0 0012 3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="9" y1="19" x2="15" y2="19" stroke="currentColor" stroke-width="1.6"/><line x1="10" y1="22" x2="14" y2="22" stroke="currentColor" stroke-width="1.6"/></svg>
+        <span>Repense</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="site-footer" id="contato">
+  <div class="container footer-inner">
+    <div class="footer-col">
+      <span class="logo-text small">Re<span class="dot">.</span>cyber</span>
+      <p>Slow Fashion — Moda do RJ para o Brasil.<br>Since 2021.</p>
+    </div>
+    <div class="footer-col">
+      <h3>Contato</h3>
+      <ul>
+        <li><a href="#" id="footer-whatsapp">WhatsApp</a></li>
+        <li><a href="#" id="footer-instagram">Instagram</a></li>
+        <li>Rio de Janeiro, RJ</li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h3>Coleções</h3>
+      <ul>
+        <li><a href="#catalogo" data-filter="roupas">Roupas</a></li>
+        <li><a href="#catalogo" data-filter="acessorios">Acessórios</a></li>
+        <li><a href="#catalogo" data-filter="calcados">Calçados</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <p>&copy; <span id="year"></span> Re.cyber. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+<!-- STICKY BOTTOM BAR (desktop) -->
+<div class="sticky-bar" id="sticky-bar">
+  <div class="container sticky-inner">
+    <button class="sticky-item" id="sticky-reuse">
+      <svg class="sticky-icon" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0113.9-5.4M20 12a8 8 0 01-13.9 5.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17 4v4h-4M7 20v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>REUSE</span>
+    </button>
+    <button class="sticky-item" id="sticky-recycle">
+      <svg class="sticky-icon" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0113.9-5.4M20 12a8 8 0 01-13.9 5.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M17 4v4h-4M7 20v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>RECYCLE</span>
+    </button>
+    <button class="sticky-item" id="sticky-repair">
+      <svg class="sticky-icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>REPAIR</span>
+    </button>
+    <div class="sticky-spacer"></div>
+    <button class="sticky-item sticky-cta" id="sticky-receba">
+      Receba
+      <svg width="13" height="13" viewBox="0 0 20 20"><path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+  <a href="#catalogo" class="mob-nav-btn" aria-label="Coleções">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+  </a>
+  <a href="#top" class="mob-nav-btn" aria-label="Início">
+    <svg viewBox="0 0 24 24"><path d="M3 12L12 3l9 9M5 10v9h14v-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+  <button class="mob-nav-btn mob-cart" id="mob-cart-btn" aria-label="Carrinho">
+    <svg viewBox="0 0 24 24"><path d="M3 4h2l2 12h11l2-8H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="9" cy="20" r="1.5" fill="currentColor"/><circle cx="17" cy="20" r="1.5" fill="currentColor"/></svg>
+    <span class="mob-cart-badge" id="mob-cart-count">0</span>
+  </button>
+  <button class="mob-nav-btn" id="mob-menu-btn" aria-label="Menu">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg>
+  </button>
+</nav>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay"></div>
+
+<!-- CART DRAWER -->
+<aside class="cart-drawer" id="cart-drawer" aria-label="Carrinho">
+  <div class="cart-header">
+    <h2>Seu carrinho</h2>
+    <button id="cart-close" aria-label="Fechar">&times;</button>
+  </div>
+  <div class="cart-items" id="cart-items"></div>
+  <p class="cart-empty" id="cart-empty">Seu carrinho está vazio.</p>
+  <div class="cart-footer">
+    <div class="cart-subtotal">
+      <span>Subtotal</span>
+      <span id="cart-subtotal">R$ 0,00</span>
+    </div>
+    <button class="btn btn-primary btn-block" id="checkout-btn">Finalizar no WhatsApp</button>
+  </div>
+</aside>
+
+<!-- QUICK VIEW MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="product-modal" id="product-modal" role="dialog" aria-modal="true"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="js/products.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
