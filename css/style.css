@@ -366,6 +366,7 @@ ul{list-style:none;}
   border:none;background:none;color:var(--ink);
   border-right:1px solid var(--grey-light);
   cursor:pointer;height:100%;white-space:nowrap;
+  text-decoration:none;
   transition:background .15s,color .15s;
 }
 .sticky-item:hover{background:var(--ink);color:var(--paper);}
