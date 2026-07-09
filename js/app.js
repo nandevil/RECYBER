@@ -113,13 +113,14 @@ function money(v) {
 /* =====================================================
    RENDER — GRID DE PRODUTOS
 ===================================================== */
+function isProductView() {
+  return state.filter !== "todos" || !!state.search.trim();
+}
+
 function getFilteredProducts() {
+  if (!isProductView()) return [];
+
   const q = state.search.trim().toLowerCase();
-
-  // Sem categoria escolhida (Todos) e sem busca: não lista os espaços,
-  // evita despejar as 256 peças na página de uma vez.
-  if (state.filter === "todos" && !q) return [];
-
   let list = PRODUCTS.filter(p => {
     const matchesFilter = state.filter === "todos" || p.category === state.filter;
     const matchesSearch =
@@ -137,17 +138,27 @@ function getFilteredProducts() {
   return list;
 }
 
+/* Alterna entre a tela de categorias e a tela de produtos filtrados. */
+function updateCatalogView() {
+  const showProducts = isProductView();
+  document.getElementById("category-cards").hidden = showProducts;
+  document.getElementById("product-grid").hidden = !showProducts;
+  document.getElementById("sort-select").hidden = !showProducts;
+  document.getElementById("back-to-categories").hidden = !showProducts;
+  document.getElementById("catalog-title").textContent = !showProducts
+    ? "Categorias"
+    : state.filter === "todos" ? "Resultados da busca" : labelCategory(state.filter);
+}
+
 function renderGrid() {
   const grid = document.getElementById("product-grid");
   const emptyState = document.getElementById("empty-state");
   const list = getFilteredProducts();
-  const noCategoryChosen = state.filter === "todos" && !state.search.trim();
+  const showProducts = isProductView();
 
   grid.innerHTML = "";
-  emptyState.hidden = list.length !== 0;
-  emptyState.textContent = noCategoryChosen
-    ? "Escolha uma categoria acima para ver as peças disponíveis."
-    : "Nenhuma peça encontrada. Tente outro filtro ou busca.";
+  emptyState.hidden = !showProducts || list.length !== 0;
+  emptyState.textContent = "Nenhuma peça encontrada. Tente outro filtro ou busca.";
 
   list.forEach((p, idx) => {
     const isEmpty = !!p.empty;
@@ -217,12 +228,30 @@ function renderCategoryCards() {
 }
 
 /* =====================================================
+   ROTEAMENTO POR HASH (#catalogo | #categoria-<id>)
+===================================================== */
+function filterToHash(filter) {
+  return filter === "todos" ? "#catalogo" : `#categoria-${filter}`;
+}
+
+function hashToFilter() {
+  const m = window.location.hash.match(/^#categoria-(.+)$/);
+  if (m && CATEGORIES.some(c => c.id === m[1])) return m[1];
+  return "todos";
+}
+
+/* =====================================================
    FILTROS / BUSCA / ORDENAÇÃO
 ===================================================== */
-function setFilter(filter) {
+function setFilter(filter, opts = {}) {
   state.filter = filter;
   document.querySelectorAll("[data-filter]").forEach(c => c.classList.toggle("active", c.dataset.filter === filter));
   renderGrid();
+  updateCatalogView();
+  if (!opts.skipHash) {
+    const hash = filterToHash(filter);
+    if (window.location.hash !== hash) history.pushState(null, "", hash);
+  }
 }
 
 document.getElementById("category-cards").addEventListener("click", e => {
@@ -232,9 +261,16 @@ document.getElementById("category-cards").addEventListener("click", e => {
 document.querySelectorAll("[data-filter]").forEach(el => {
   el.addEventListener("click", e => {
     const f = el.dataset.filter;
-    if (f) setFilter(f);
+    if (!f) return;
+    if (el.tagName === "A") e.preventDefault();
+    setFilter(f);
+    document.getElementById("catalogo").scrollIntoView({ behavior: "smooth" });
   });
 });
+document.getElementById("back-to-categories").addEventListener("click", () => setFilter("todos"));
+
+window.addEventListener("popstate", () => setFilter(hashToFilter(), { skipHash: true }));
+window.addEventListener("hashchange", () => setFilter(hashToFilter(), { skipHash: true }));
 
 document.getElementById("sort-select").addEventListener("change", e => {
   state.sort = e.target.value;
@@ -245,6 +281,7 @@ const searchInput = document.getElementById("search-input");
 searchInput.addEventListener("input", e => {
   state.search = e.target.value;
   renderGrid();
+  updateCatalogView();
 });
 
 document.getElementById("search-toggle").addEventListener("click", () => {
@@ -494,6 +531,8 @@ function showToast(text) {
 document.getElementById("year").textContent = new Date().getFullYear();
 buildCircuitRing();
 buildBarcode();
+state.filter = hashToFilter();
 renderCategoryCards();
 renderGrid();
+updateCatalogView();
 updateCartUI();
