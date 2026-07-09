@@ -62,38 +62,15 @@
     <div class="globe-box">
       <svg class="globe-svg" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <g id="circuit-ring"></g>
-        <!-- Globe sphere -->
-        <circle cx="300" cy="300" r="215" fill="#c8c8c4"/>
-        <!-- North America -->
-        <path d="
-          M 223,138 C 213,124 207,112 210,112
-          C 235,96 268,88 300,96
-          C 332,103 365,122 388,143
-          C 375,156 356,167 345,160
-          C 342,172 337,192 334,206
-          C 327,218 314,226 300,226
-          C 282,226 258,220 232,216
-          C 216,208 206,192 215,180
-          C 218,162 222,148 223,138 Z
-        " fill="#161616"/>
-        <!-- Isthmus -->
-        <path d="M 300,226 C 316,240 328,253 341,266 C 329,255 317,242 300,233 Z" fill="#161616"/>
-        <!-- South America -->
-        <path d="
-          M 341,266 C 360,254 384,258 398,273
-          C 430,298 470,328 474,358
-          C 470,388 452,414 430,430
-          C 408,446 382,450 360,436
-          C 342,422 328,404 318,380
-          C 310,350 320,310 345,300
-          C 346,290 346,278 341,266 Z
-        " fill="#161616"/>
-        <!-- Latitude lines -->
-        <ellipse cx="300" cy="300" rx="215" ry="58" fill="none" stroke="#161616" stroke-width="0.7" opacity="0.18"/>
-        <ellipse cx="300" cy="300" rx="215" ry="115" fill="none" stroke="#161616" stroke-width="0.5" opacity="0.12"/>
-        <!-- Globe outline -->
-        <circle cx="300" cy="300" r="215" fill="none" stroke="#161616" stroke-width="2.5"/>
       </svg>
+      <!--
+        IMAGEM DO HERO — troque livremente.
+        Basta substituir o arquivo em img/hero-photo.jpg (ou mudar o src abaixo).
+        A imagem é recortada em círculo automaticamente pelo CSS (.globe-photo).
+      -->
+      <div class="globe-photo">
+        <img src="img/hero-photo.jpg" alt="Re.cyber" onerror="this.parentElement.classList.add('globe-photo--empty')">
+      </div>
       <span class="globe-name">Re<span class="globe-dot">.</span>cyber</span>
     </div>
   </div>

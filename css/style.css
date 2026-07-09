@@ -177,7 +177,32 @@ ul{list-style:none;}
   width:100%;max-width:720px;
   display:flex;align-items:center;justify-content:center;
 }
-.globe-svg{width:100%;height:auto;}
+.globe-svg{width:100%;height:auto;position:absolute;left:0;top:0;pointer-events:none;}
+.globe-photo{
+  position:relative;
+  width:71.6%;aspect-ratio:1/1;
+  border-radius:50%;
+  overflow:hidden;
+  border:2.5px solid var(--ink);
+  background:#c8c8c4;
+  z-index:1;
+}
+.globe-photo img{
+  width:100%;height:100%;
+  object-fit:cover;object-position:center;
+  display:block;
+}
+.globe-photo--empty img{visibility:hidden;}
+.globe-photo--empty::after{
+  content:"ADICIONE SUA IMAGEM\A img/hero-photo.jpg";
+  white-space:pre;
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;
+  font-family:var(--font-mono);
+  font-size:.75rem;letter-spacing:1px;
+  color:var(--ink);opacity:.5;
+}
 .globe-name{
   position:absolute;
   left:50%;top:50%;
