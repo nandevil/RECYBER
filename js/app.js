@@ -114,9 +114,14 @@ function money(v) {
    RENDER — GRID DE PRODUTOS
 ===================================================== */
 function getFilteredProducts() {
+  const q = state.search.trim().toLowerCase();
+
+  // Sem categoria escolhida (Todos) e sem busca: não lista os espaços,
+  // evita despejar as 256 peças na página de uma vez.
+  if (state.filter === "todos" && !q) return [];
+
   let list = PRODUCTS.filter(p => {
     const matchesFilter = state.filter === "todos" || p.category === state.filter;
-    const q = state.search.trim().toLowerCase();
     const matchesSearch =
       !q ||
       p.name.toLowerCase().includes(q) ||
@@ -136,9 +141,13 @@ function renderGrid() {
   const grid = document.getElementById("product-grid");
   const emptyState = document.getElementById("empty-state");
   const list = getFilteredProducts();
+  const noCategoryChosen = state.filter === "todos" && !state.search.trim();
 
   grid.innerHTML = "";
   emptyState.hidden = list.length !== 0;
+  emptyState.textContent = noCategoryChosen
+    ? "Escolha uma categoria acima para ver as peças disponíveis."
+    : "Nenhuma peça encontrada. Tente outro filtro ou busca.";
 
   list.forEach((p, idx) => {
     const isEmpty = !!p.empty;
