@@ -213,16 +213,26 @@ ul{list-style:none;}
   border:2px solid var(--ink);background:var(--paper-alt);
   padding:8px 12px;border-radius:var(--radius);font-size:.78rem;
 }
-.filter-chips{
-  display:flex;gap:8px;flex-wrap:wrap;margin:20px 0 32px;
+.category-cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+  gap:12px;margin:20px 0 36px;
 }
-.chip{
+.cat-card{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
   border:1.5px solid var(--ink);background:transparent;
-  padding:7px 16px;border-radius:20px;
-  font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;
+  border-radius:var(--radius);padding:16px 10px;
   transition:background .15s,color .15s;
 }
-.chip.active,.chip:hover{background:var(--ink);color:var(--paper);}
+.cat-card-icon{width:26px;height:26px;}
+.cat-card-label{
+  font-family:var(--font-pixel);font-size:.62rem;
+  text-align:center;line-height:1.4;
+  text-transform:uppercase;letter-spacing:.3px;
+}
+.cat-card-count{font-size:.68rem;color:var(--grey);}
+.cat-card.active,.cat-card:hover{background:var(--ink);color:var(--paper);}
+.cat-card.active .cat-card-count,.cat-card:hover .cat-card-count{color:var(--paper);opacity:.7;}
 
 /* ---- PRODUCT GRID ---- */
 .product-grid{
@@ -253,6 +263,21 @@ ul{list-style:none;}
 }
 .product-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .3s;}
 .product-card:hover .product-thumb img{transform:scale(1.04);}
+.product-card--empty{opacity:.75;}
+.product-thumb--empty{
+  display:flex;align-items:center;justify-content:center;
+  background:var(--paper);
+  border:2px dashed var(--grey-light);
+}
+.thumb-empty-label{
+  font-family:var(--font-mono);font-size:.68rem;
+  letter-spacing:.5px;text-align:center;line-height:1.5;
+  color:var(--grey);
+}
+.add-btn:disabled{
+  background:transparent;color:var(--grey-light);
+  border-color:var(--grey-light);cursor:not-allowed;
+}
 .product-badge{
   position:absolute;top:10px;left:10px;
   background:var(--ink);color:var(--paper);
@@ -443,6 +468,19 @@ ul{list-style:none;}
 }
 .modal-image{overflow:hidden;aspect-ratio:1/1;border-right:2px solid var(--ink);border-radius:10px 0 0 10px;}
 .modal-image img{width:100%;height:100%;object-fit:cover;}
+.modal-image--empty{
+  display:flex;align-items:center;justify-content:center;
+  background:var(--paper-alt);
+}
+.modal-image--empty span{
+  font-family:var(--font-mono);font-size:.8rem;
+  letter-spacing:.5px;text-align:center;line-height:1.6;
+  color:var(--grey);
+}
+.modal-desc code{
+  background:var(--paper-alt);border:1px solid var(--grey-light);
+  border-radius:4px;padding:1px 5px;font-size:.85em;
+}
 .modal-body{padding:28px;display:flex;flex-direction:column;gap:12px;position:relative;}
 .modal-close{
   position:absolute;top:12px;right:14px;

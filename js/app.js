@@ -10,20 +10,31 @@ const CONFIG = {
 /* =====================================================
    PLACEHOLDER DE IMAGEM (SVG inline, sem dependência externa)
 ===================================================== */
+const HANGER_PATH = "M8 4l4-2 4 2 3 3-3 2v11H5V9L2 7l3-3z";
 const CATEGORY_ICON_PATHS = {
-  roupas: "M8 4l4-2 4 2 3 3-3 2v11H5V9L2 7l3-3z",
-  acessorios: "M12 3l3 3-3 3-3-3 3-3zM5 12a7 7 0 1014 0 7 7 0 00-14 0z",
-  calcados: "M4 15c0-2 1-3 3-4l6-3 2 2 5 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-1z"
+  camisas: HANGER_PATH,
+  blusas: HANGER_PATH,
+  saias: "M7 3h10l2 17H5L7 3zM9 3v5a3 3 0 006 0V3",
+  shorts: "M4 4h16l-1 7-2 9h-4l-1-8-1 8H7L5 11 4 4z",
+  calcas: "M6 3h12l1 18h-5l-1-11-1 11H7L6 3z",
+  "casacos-sobreposicoes": HANGER_PATH,
+  bolsas: "M6 8h12l1 13H5L6 8zM9 8a3 3 0 016 0",
+  sapatos: "M4 15c0-2 1-3 3-4l6-3 2 2 5 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-1z"
 };
 const CATEGORY_BG = {
-  roupas: "#dcdcd8",
-  acessorios: "#d3d9d2",
-  calcados: "#dcd6d9"
+  camisas: "#dcdcd8",
+  blusas: "#d9dbd6",
+  saias: "#dbd6da",
+  shorts: "#d8dcd9",
+  calcas: "#d6d9dc",
+  "casacos-sobreposicoes": "#dad7d3",
+  bolsas: "#d3d9d2",
+  sapatos: "#dcd6d9"
 };
 
 function placeholderImage(category, seed) {
   const bg = CATEGORY_BG[category] || "#d9d9d6";
-  const path = CATEGORY_ICON_PATHS[category] || CATEGORY_ICON_PATHS.roupas;
+  const path = CATEGORY_ICON_PATHS[category] || HANGER_PATH;
   const shift = (seed % 5) * 6;
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
@@ -130,21 +141,24 @@ function renderGrid() {
   emptyState.hidden = list.length !== 0;
 
   list.forEach((p, idx) => {
-    const img = p.image || placeholderImage(p.category, idx);
+    const isEmpty = !!p.empty;
+    const img = p.image || (isEmpty ? "" : placeholderImage(p.category, idx));
     const card = document.createElement("div");
-    card.className = "product-card";
+    card.className = "product-card" + (isEmpty ? " product-card--empty" : "");
     card.innerHTML = `
-      <div class="product-thumb" data-id="${p.id}">
+      <div class="product-thumb${isEmpty ? " product-thumb--empty" : ""}" data-id="${p.id}">
         ${p.tag ? `<span class="product-badge">${p.tag === "novo" ? "Novo" : "Promo"}</span>` : ""}
-        <img src="${img}" alt="${p.name}" loading="lazy">
+        ${isEmpty
+          ? `<span class="thumb-empty-label">ADICIONE<br>FOTO</span>`
+          : `<img src="${img}" alt="${p.name}" loading="lazy">`}
       </div>
       <div class="product-info">
         <span class="product-cat">${labelCategory(p.category)}</span>
-        <p class="product-name" data-id="${p.id}">${p.name}</p>
-        <span class="product-meta">Tam. ${p.size} · ${p.condition}</span>
+        <p class="product-name" data-id="${p.id}">${isEmpty ? `Espaço ${String(p.slot).padStart(2, "0")}` : p.name}</p>
+        <span class="product-meta">${isEmpty ? "Adicione tamanho e descrição" : `Tam. ${p.size} · ${p.condition}`}</span>
         <div class="product-price-row">
-          <span class="product-price">${money(p.price)}</span>
-          <button class="add-btn" data-id="${p.id}" aria-label="Adicionar ao carrinho">+</button>
+          <span class="product-price">${isEmpty ? "—" : money(p.price)}</span>
+          <button class="add-btn" data-id="${p.id}" aria-label="Adicionar ao carrinho" ${isEmpty ? "disabled" : ""}>+</button>
         </div>
       </div>
     `;
@@ -154,7 +168,7 @@ function renderGrid() {
   grid.querySelectorAll(".product-thumb, .product-name").forEach(el => {
     el.addEventListener("click", () => openModal(el.dataset.id));
   });
-  grid.querySelectorAll(".add-btn").forEach(el => {
+  grid.querySelectorAll(".add-btn:not(:disabled)").forEach(el => {
     el.addEventListener("click", () => {
       addToCart(el.dataset.id, 1);
       showToast("Adicionado ao carrinho");
@@ -163,7 +177,30 @@ function renderGrid() {
 }
 
 function labelCategory(cat) {
-  return { roupas: "Roupas", acessorios: "Acessórios", calcados: "Calçados" }[cat] || cat;
+  const found = CATEGORIES.find(c => c.id === cat);
+  return found ? found.label : cat;
+}
+
+/* =====================================================
+   CARDS DE CATEGORIA
+===================================================== */
+function renderCategoryCards() {
+  const wrap = document.getElementById("category-cards");
+  if (!wrap) return;
+  const cards = [{ id: "todos", label: "Todos" }, ...CATEGORIES].map(cat => {
+    const count = cat.id === "todos"
+      ? PRODUCTS.length
+      : PRODUCTS.filter(p => p.category === cat.id).length;
+    const iconPath = CATEGORY_ICON_PATHS[cat.id] || HANGER_PATH;
+    return `
+      <button class="cat-card${cat.id === state.filter ? " active" : ""}" data-filter="${cat.id}">
+        <svg class="cat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="${iconPath}"/></svg>
+        <span class="cat-card-label">${cat.label}</span>
+        <span class="cat-card-count">${count} peças</span>
+      </button>
+    `;
+  }).join("");
+  wrap.innerHTML = cards;
 }
 
 /* =====================================================
@@ -171,10 +208,14 @@ function labelCategory(cat) {
 ===================================================== */
 function setFilter(filter) {
   state.filter = filter;
-  document.querySelectorAll(".chip").forEach(c => c.classList.toggle("active", c.dataset.filter === filter));
+  document.querySelectorAll("[data-filter]").forEach(c => c.classList.toggle("active", c.dataset.filter === filter));
   renderGrid();
 }
 
+document.getElementById("category-cards").addEventListener("click", e => {
+  const el = e.target.closest("[data-filter]");
+  if (el) setFilter(el.dataset.filter);
+});
 document.querySelectorAll("[data-filter]").forEach(el => {
   el.addEventListener("click", e => {
     const f = el.dataset.filter;
@@ -363,9 +404,25 @@ document.getElementById("footer-instagram").addEventListener("click", e => {
 function openModal(id) {
   const p = PRODUCTS.find(pr => pr.id === id);
   if (!p) return;
+  const modal = document.getElementById("product-modal");
+
+  if (p.empty) {
+    modal.innerHTML = `
+      <div class="modal-image modal-image--empty"><span>ADICIONE<br>FOTO</span></div>
+      <div class="modal-body">
+        <button class="modal-close" aria-label="Fechar">&times;</button>
+        <span class="modal-cat">${labelCategory(p.category)}</span>
+        <h3 class="modal-name">Espaço ${String(p.slot).padStart(2, "0")}</h3>
+        <p class="modal-desc">Este espaço ainda não tem peça cadastrada. Edite <code>js/products.js</code> (id <code>${p.id}</code>) para adicionar foto, tamanho, preço e descrição.</p>
+      </div>
+    `;
+    modal.querySelector(".modal-close").addEventListener("click", closeModal);
+    document.getElementById("modal-overlay").classList.add("open");
+    return;
+  }
+
   const idx = PRODUCTS.indexOf(p);
   const img = p.image || placeholderImage(p.category, idx);
-  const modal = document.getElementById("product-modal");
   modal.innerHTML = `
     <div class="modal-image"><img src="${img}" alt="${p.name}"></div>
     <div class="modal-body">
@@ -424,5 +481,6 @@ function showToast(text) {
 document.getElementById("year").textContent = new Date().getFullYear();
 buildCircuitRing();
 buildBarcode();
+renderCategoryCards();
 renderGrid();
 updateCartUI();
