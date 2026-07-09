@@ -421,7 +421,7 @@ ul{list-style:none;}
   text-decoration:none;
   transition:background .15s,color .15s;
 }
-.sticky-item:hover{background:var(--ink);color:var(--paper);}
+.sticky-item:hover,.sticky-item.active{background:var(--ink);color:var(--paper);}
 .sticky-icon{width:16px;height:16px;flex-shrink:0;}
 .sticky-spacer{flex:1;}
 .sticky-cta{
