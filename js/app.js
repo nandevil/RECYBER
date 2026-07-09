@@ -194,9 +194,13 @@ function renderCategoryCards() {
     const iconPath = CATEGORY_ICON_PATHS[cat.id] || HANGER_PATH;
     return `
       <button class="cat-card${cat.id === state.filter ? " active" : ""}" data-filter="${cat.id}">
-        <svg class="cat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="${iconPath}"/></svg>
-        <span class="cat-card-label">${cat.label}</span>
-        <span class="cat-card-count">${count} peças</span>
+        <span class="cat-card-thumb">
+          <svg class="cat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="${iconPath}"/></svg>
+        </span>
+        <span class="cat-card-info">
+          <span class="cat-card-label">${cat.label}</span>
+          <span class="cat-card-count">${count} peças</span>
+        </span>
       </button>
     `;
   }).join("");

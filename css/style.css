@@ -215,24 +215,42 @@ ul{list-style:none;}
 }
 .category-cards{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
-  gap:12px;margin:20px 0 36px;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:20px;margin:20px 0 36px;
 }
 .cat-card{
-  display:flex;flex-direction:column;align-items:center;gap:6px;
-  border:1.5px solid var(--ink);background:transparent;
-  border-radius:var(--radius);padding:16px 10px;
-  transition:background .15s,color .15s;
+  display:flex;flex-direction:column;text-align:left;
+  background:var(--paper-alt);
+  border:1.5px solid var(--grey-light);
+  border-radius:12px;overflow:hidden;
+  box-shadow:0 2px 8px rgba(22,22,22,.07);
+  transition:box-shadow .2s,transform .2s,border-color .15s;
 }
-.cat-card-icon{width:26px;height:26px;}
+.cat-card:hover{
+  box-shadow:0 10px 28px rgba(22,22,22,.14);
+  transform:translateY(-4px);
+}
+.cat-card-thumb{
+  aspect-ratio:4/3;width:100%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--paper);
+  border-bottom:1.5px solid var(--grey-light);
+  transition:background .15s;
+}
+.cat-card-icon{width:34px;height:34px;color:var(--ink);transition:color .15s;}
+.cat-card-info{
+  padding:14px 16px 16px;
+  display:flex;flex-direction:column;gap:4px;
+}
 .cat-card-label{
-  font-family:var(--font-pixel);font-size:.62rem;
-  text-align:center;line-height:1.4;
-  text-transform:uppercase;letter-spacing:.3px;
+  font-family:var(--font-pixel);font-size:.72rem;
+  line-height:1.5;text-transform:uppercase;letter-spacing:.3px;
 }
-.cat-card-count{font-size:.68rem;color:var(--grey);}
-.cat-card.active,.cat-card:hover{background:var(--ink);color:var(--paper);}
-.cat-card.active .cat-card-count,.cat-card:hover .cat-card-count{color:var(--paper);opacity:.7;}
+.cat-card-count{font-size:.7rem;color:var(--grey);}
+.cat-card.active{border-color:var(--ink);}
+.cat-card.active .cat-card-thumb{background:var(--ink);}
+.cat-card.active .cat-card-icon{color:var(--paper);}
+.cat-card.active .cat-card-label{color:var(--accent);}
 
 /* ---- PRODUCT GRID ---- */
 .product-grid{
