@@ -253,6 +253,8 @@ function updateCartUI() {
   document.getElementById("cart-count").textContent = n;
   const mobBadge = document.getElementById("mob-cart-count");
   if (mobBadge) mobBadge.textContent = n;
+  const stickyBadge = document.getElementById("sticky-cart-count");
+  if (stickyBadge) stickyBadge.textContent = n;
   const itemsEl = document.getElementById("cart-items");
   const emptyEl = document.getElementById("cart-empty");
   itemsEl.innerHTML = "";
@@ -339,13 +341,8 @@ document.getElementById("checkout-btn").addEventListener("click", () => {
   window.open(whatsappLink(buildWhatsappMessage(state.cart)), "_blank");
 });
 
-const stickyReceba = document.getElementById("sticky-receba");
-if (stickyReceba) {
-  stickyReceba.addEventListener("click", () => {
-    const msg = encodeURIComponent(`Olá! Vim do site ${CONFIG.storeName} e quero saber mais sobre as peças disponíveis.`);
-    window.open(`https://wa.me/${CONFIG.whatsappNumber}?text=${msg}`, "_blank");
-  });
-}
+const stickyCart = document.getElementById("sticky-cart");
+if (stickyCart) stickyCart.addEventListener("click", openCart);
 const mobCartBtn = document.getElementById("mob-cart-btn");
 if (mobCartBtn) mobCartBtn.addEventListener("click", openCart);
 const mobMenuBtn = document.getElementById("mob-menu-btn");
