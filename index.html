@@ -168,10 +168,10 @@
       <svg class="sticky-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/></svg>
       <span>Disponíveis</span>
     </a>
-    <a class="sticky-item" href="#catalogo">
-      <svg class="sticky-icon" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4" y1="18" x2="20" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/></svg>
-      <span>Categorias</span>
-    </a>
+    <button class="sticky-item" id="sticky-info">
+      <svg class="sticky-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12" y1="11" x2="12" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1.2" fill="currentColor"/></svg>
+      <span>Informações</span>
+    </button>
     <div class="sticky-spacer"></div>
     <button class="sticky-item sticky-cta" id="sticky-cart">
       <svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 4h2l2 12h11l2-8H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="9" cy="20" r="1.5" fill="currentColor"/><circle cx="17" cy="20" r="1.5" fill="currentColor"/></svg>
@@ -221,6 +221,67 @@
 <!-- QUICK VIEW MODAL -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="product-modal" id="product-modal" role="dialog" aria-modal="true"></div>
+</div>
+
+<!-- INFORMAÇÕES -->
+<div class="modal-overlay" id="info-overlay">
+  <div class="info-modal" id="info-modal" role="dialog" aria-modal="true" aria-label="Informações">
+    <button class="modal-close" id="info-close" aria-label="Fechar">&times;</button>
+    <h2 class="info-title">Informações</h2>
+
+    <div class="info-pills" id="info-pills">
+      <button class="pill" data-info="envios">Envios</button>
+      <button class="pill" data-info="pagamentos">Pagamentos</button>
+      <button class="pill" data-info="devolucao">Devolução</button>
+      <button class="pill" data-info="redes">Redes Sociais</button>
+      <a class="pill" id="info-contato-link" href="#" target="_blank" rel="noopener">Contato</a>
+    </div>
+
+    <!--
+      ENVIOS — troque livremente.
+      Substitua o arquivo em img/info-envios.jpg e o texto abaixo.
+    -->
+    <div class="info-card" id="info-card-envios" hidden>
+      <div class="info-card-photo">
+        <img src="img/info-envios.jpg" alt="Envios" onerror="this.parentElement.classList.add('info-card-photo--empty')">
+      </div>
+      <p class="info-card-text">Adicione aqui o texto explicativo sobre prazos e formas de envio.</p>
+    </div>
+
+    <!--
+      PAGAMENTOS — troque livremente.
+      Substitua o arquivo em img/info-pagamentos.jpg (ex: arte com as formas aceitas) e o texto abaixo.
+    -->
+    <div class="info-card" id="info-card-pagamentos" hidden>
+      <div class="info-card-photo">
+        <img src="img/info-pagamentos.jpg" alt="Pagamentos" onerror="this.parentElement.classList.add('info-card-photo--empty')">
+      </div>
+      <p class="info-card-text">Adicione aqui o texto sobre as formas de pagamento aceitas.</p>
+    </div>
+
+    <!--
+      DEVOLUÇÃO — troque livremente.
+      Substitua o arquivo em img/info-devolucao.jpg e o texto abaixo.
+    -->
+    <div class="info-card" id="info-card-devolucao" hidden>
+      <div class="info-card-photo">
+        <img src="img/info-devolucao.jpg" alt="Devolução" onerror="this.parentElement.classList.add('info-card-photo--empty')">
+      </div>
+      <p class="info-card-text">Adicione aqui o texto sobre a política de trocas e devolução.</p>
+    </div>
+
+    <!-- REDES SOCIAIS — links configurados em CONFIG.instagram / CONFIG.tiktok (js/app.js) -->
+    <div class="info-card info-card-social" id="info-card-redes" hidden>
+      <a class="social-link" id="info-instagram" href="#" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.1" fill="currentColor"/></svg>
+        Instagram
+      </a>
+      <a class="social-link" id="info-tiktok" href="#" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M14 3v10.6a3.4 3.4 0 11-3.4-3.4c.3 0 .6.03.9.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 3a5.4 5.4 0 005.4 5.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        TikTok
+      </a>
+    </div>
+  </div>
 </div>
 
 <!-- TOAST -->

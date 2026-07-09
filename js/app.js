@@ -4,6 +4,7 @@
 const CONFIG = {
   whatsappNumber: "5521999999999", // troque pelo número real (DDI+DDD+numero, só dígitos)
   instagram: "https://instagram.com/re.cyber",
+  tiktok: "https://tiktok.com/@re.cyber", // troque pelo usuário real
   storeName: "Re.cyber"
 };
 
@@ -515,6 +516,43 @@ function closeModal() {
 }
 document.getElementById("modal-overlay").addEventListener("click", e => {
   if (e.target.id === "modal-overlay") closeModal();
+});
+
+/* =====================================================
+   INFORMAÇÕES (Envios / Pagamentos / Devolução / Redes / Contato)
+===================================================== */
+function openInfo() {
+  document.getElementById("info-instagram").href = CONFIG.instagram;
+  document.getElementById("info-tiktok").href = CONFIG.tiktok;
+  const msg = encodeURIComponent(`Olá! Vim do site ${CONFIG.storeName} e preciso de suporte.`);
+  document.getElementById("info-contato-link").href = whatsappLink(msg);
+  document.getElementById("info-overlay").classList.add("open");
+}
+function closeInfo() {
+  document.getElementById("info-overlay").classList.remove("open");
+}
+
+const stickyInfo = document.getElementById("sticky-info");
+if (stickyInfo) stickyInfo.addEventListener("click", openInfo);
+document.getElementById("info-close").addEventListener("click", closeInfo);
+document.getElementById("info-overlay").addEventListener("click", e => {
+  if (e.target.id === "info-overlay") closeInfo();
+});
+
+document.getElementById("info-pills").addEventListener("click", e => {
+  const pill = e.target.closest("[data-info]");
+  if (!pill) return;
+  const key = pill.dataset.info;
+  const card = document.getElementById(`info-card-${key}`);
+  const isOpen = !card.hidden;
+
+  document.querySelectorAll("#info-pills .pill[data-info]").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".info-card").forEach(c => (c.hidden = true));
+
+  if (!isOpen) {
+    card.hidden = false;
+    pill.classList.add("active");
+  }
 });
 
 /* =====================================================

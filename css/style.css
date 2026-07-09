@@ -520,6 +520,54 @@ ul{list-style:none;}
 .modal-specs{font-size:.75rem;color:var(--grey);display:flex;flex-direction:column;gap:4px;}
 .modal-actions{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
 
+/* ===================== INFORMAÇÕES ===================== */
+.info-modal{
+  background:var(--paper);border:2px solid var(--ink);border-radius:10px;
+  max-width:520px;width:100%;max-height:88vh;overflow-y:auto;
+  padding:28px;position:relative;
+  display:flex;flex-direction:column;gap:20px;
+}
+.info-title{font-family:var(--font-pixel);font-size:1rem;}
+.info-pills{display:flex;flex-wrap:wrap;gap:10px;}
+.pill{
+  display:inline-flex;align-items:center;
+  border:2px solid var(--ink);background:var(--paper-alt);
+  border-radius:999px;padding:9px 18px;
+  font-family:var(--font-mono);font-size:.76rem;
+  text-decoration:none;color:var(--ink);
+  transition:background .15s,color .15s;
+}
+.pill:hover{background:var(--ink);color:var(--paper);}
+.pill.active{background:var(--ink);color:var(--paper);}
+.info-card{
+  border:2px solid var(--ink);border-radius:12px;
+  padding:16px;display:flex;flex-direction:column;gap:14px;
+}
+.info-card-photo{
+  position:relative;
+  aspect-ratio:16/9;width:100%;
+  overflow:hidden;border-radius:8px;
+  background:var(--paper-alt);border:2px dashed var(--grey-light);
+}
+.info-card-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+.info-card-photo--empty img{visibility:hidden;}
+.info-card-photo--empty::after{
+  content:"ADICIONE FOTO";
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:.72rem;
+  letter-spacing:.5px;color:var(--grey);
+}
+.info-card-text{font-size:.85rem;color:var(--ink);line-height:1.6;}
+.info-card-social{flex-direction:row;flex-wrap:wrap;gap:12px;}
+.social-link{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1.5px solid var(--ink);border-radius:8px;
+  padding:10px 16px;text-decoration:none;color:var(--ink);
+  font-size:.8rem;transition:background .15s,color .15s;
+}
+.social-link:hover{background:var(--ink);color:var(--paper);}
+
 /* ===================== TOAST ===================== */
 .toast{
   position:fixed;bottom:72px;left:50%;
