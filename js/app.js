@@ -95,7 +95,7 @@ function buildBarcode() {
    ESTADO
 ===================================================== */
 let state = {
-  filter: "todos",
+  filter: null, // null = tela de categorias · "todos" = todas as peças · id de categoria = filtrado
   search: "",
   sort: "novidades",
   cart: JSON.parse(localStorage.getItem("recyber_cart") || "[]")
@@ -114,7 +114,7 @@ function money(v) {
    RENDER — GRID DE PRODUTOS
 ===================================================== */
 function isProductView() {
-  return state.filter !== "todos" || !!state.search.trim();
+  return !!state.filter || !!state.search.trim();
 }
 
 function getFilteredProducts() {
@@ -122,7 +122,7 @@ function getFilteredProducts() {
 
   const q = state.search.trim().toLowerCase();
   let list = PRODUCTS.filter(p => {
-    const matchesFilter = state.filter === "todos" || p.category === state.filter;
+    const matchesFilter = !state.filter || state.filter === "todos" || p.category === state.filter;
     const matchesSearch =
       !q ||
       p.name.toLowerCase().includes(q) ||
@@ -147,7 +147,9 @@ function updateCatalogView() {
   document.getElementById("back-to-categories").hidden = !showProducts;
   document.getElementById("catalog-title").textContent = !showProducts
     ? "Categorias"
-    : state.filter === "todos" ? "Resultados da busca" : labelCategory(state.filter);
+    : state.filter === "todos" ? "Todos"
+    : state.filter ? labelCategory(state.filter)
+    : "Resultados da busca";
 }
 
 function renderGrid() {
@@ -231,13 +233,15 @@ function renderCategoryCards() {
    ROTEAMENTO POR HASH (#catalogo | #categoria-<id>)
 ===================================================== */
 function filterToHash(filter) {
-  return filter === "todos" ? "#catalogo" : `#categoria-${filter}`;
+  return filter ? `#categoria-${filter}` : "#catalogo";
 }
 
 function hashToFilter() {
   const m = window.location.hash.match(/^#categoria-(.+)$/);
-  if (m && CATEGORIES.some(c => c.id === m[1])) return m[1];
-  return "todos";
+  if (!m) return null;
+  const id = m[1];
+  if (id === "todos" || CATEGORIES.some(c => c.id === id)) return id;
+  return null;
 }
 
 /* =====================================================
@@ -267,7 +271,7 @@ document.querySelectorAll("[data-filter]").forEach(el => {
     document.getElementById("catalogo").scrollIntoView({ behavior: "smooth" });
   });
 });
-document.getElementById("back-to-categories").addEventListener("click", () => setFilter("todos"));
+document.getElementById("back-to-categories").addEventListener("click", () => setFilter(null));
 
 window.addEventListener("popstate", () => setFilter(hashToFilter(), { skipHash: true }));
 window.addEventListener("hashchange", () => setFilter(hashToFilter(), { skipHash: true }));
