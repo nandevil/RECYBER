@@ -434,7 +434,8 @@ document.getElementById("checkout-btn").addEventListener("click", () => {
     showToast("Seu carrinho está vazio");
     return;
   }
-  window.open(whatsappLink(buildWhatsappMessage(state.cart)), "_blank");
+  closeCart();
+  if (typeof openCheckout === "function") openCheckout();
 });
 
 const stickyCart = document.getElementById("sticky-cart");
