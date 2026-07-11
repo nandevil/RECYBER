@@ -348,21 +348,33 @@ ul{list-style:none;}
   gap:48px;align-items:start;
 }
 .about-text p{font-size:.92rem;margin-bottom:20px;}
-.about-tags{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px;}
-.about-tags span{
-  font-family:var(--font-pixel);font-size:.6rem;
-  border:2px solid var(--ink);padding:8px 12px;
+/* ---- FEEDBACK DE CLIENTES ---- */
+.feedback-section{margin-top:8px;}
+.feedback-title{
+  font-family:var(--font-pixel);font-size:.78rem;
+  text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:16px;
 }
-.steps{display:flex;flex-direction:column;gap:14px;}
-.step{
-  display:flex;align-items:flex-start;gap:14px;
-  border-left:2px solid var(--accent);padding-left:14px;
+.feedback-cards{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;
 }
-.step-num{
-  font-family:var(--font-pixel);font-size:.8rem;
-  color:var(--accent);flex-shrink:0;
+.feedback-card{
+  border:2px solid var(--ink);border-radius:10px;
+  background:var(--paper-alt);
+  padding:14px;display:flex;flex-direction:column;gap:8px;
 }
-.step p{font-size:.82rem;margin:0;}
+.feedback-head{display:flex;align-items:center;gap:10px;}
+.feedback-avatar{
+  width:32px;height:32px;border-radius:50%;
+  border:1.5px solid var(--ink);background:var(--paper);
+  display:flex;align-items:flex-end;justify-content:center;
+  overflow:hidden;color:var(--ink);flex-shrink:0;
+}
+.feedback-avatar svg{width:22px;height:22px;}
+.feedback-name{font-weight:700;font-size:.78rem;}
+.feedback-text{font-size:.78rem;margin:0;line-height:1.5;}
+.feedback-stars{color:var(--ink);font-size:.82rem;letter-spacing:2px;}
 
 .about-visual{
   display:grid;grid-template-columns:repeat(3,1fr);
@@ -612,6 +624,14 @@ ul{list-style:none;}
   border:2px solid var(--ink);border-radius:8px;padding:14px 16px;
   background:var(--paper-alt);font-size:.82rem;display:flex;flex-direction:column;gap:4px;
 }
+.checkbox-field{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:.78rem;line-height:1.5;cursor:pointer;
+}
+.checkbox-field input{
+  width:18px;height:18px;flex-shrink:0;margin-top:1px;
+  accent-color:var(--accent);
+}
 
 /* ===================== POP-UP DE SUCESSO ===================== */
 .success-modal{
@@ -669,6 +689,35 @@ body.admin-open{overflow:hidden;}
 .order-action-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.72rem;}
 .order-action-group span{color:var(--grey);min-width:96px;}
 .pill-sm{padding:5px 12px;font-size:.68rem;}
+
+/* ---- ADMINISTRAÇÃO DE LEADS ---- */
+.admin-leads{max-width:var(--maxw);margin:40px auto 0;}
+.admin-leads-title{font-family:var(--font-pixel);font-size:.85rem;margin-bottom:6px;}
+.admin-leads-subtitle{
+  font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--grey);margin-bottom:14px;
+}
+.admin-leads-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:10px;}
+.admin-leads-table{
+  width:100%;border-collapse:collapse;
+  font-size:.78rem;background:var(--paper-alt);
+}
+.admin-leads-table th,.admin-leads-table td{
+  padding:10px 14px;text-align:left;white-space:nowrap;
+  border-bottom:1.5px solid var(--grey-light);
+}
+.admin-leads-table th{
+  font-family:var(--font-pixel);font-size:.6rem;
+  text-transform:uppercase;letter-spacing:.5px;
+  background:var(--paper);
+}
+.admin-leads-table tr:last-child td{border-bottom:none;}
+.lead-status{
+  font-size:.64rem;text-transform:uppercase;letter-spacing:.5px;
+  padding:3px 10px;border-radius:20px;border:1.5px solid var(--ink);
+}
+.lead-status--inscrito{background:#e2f3e6;border-color:var(--accent);}
+.lead-status--nao{background:var(--paper);color:var(--grey);border-color:var(--grey-light);}
 
 /* ===================== TOAST ===================== */
 .toast{

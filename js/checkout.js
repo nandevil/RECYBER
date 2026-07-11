@@ -165,6 +165,7 @@ document.getElementById("checkout-form").addEventListener("submit", e => {
       bairro: document.getElementById("ck-bairro").value.trim(),
       complemento: document.getElementById("ck-complemento").value.trim()
     },
+    marketingOptIn: document.getElementById("ck-marketing").checked,
     payment: checkoutPayment,
     status: "recebido"
   };

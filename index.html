@@ -94,15 +94,42 @@
     <div class="about-text">
       <h2 class="section-title">Slow Fashion</h2>
       <p>Cada peça do Re.cyber já teve uma história — e ganha outra com você. Desde 2021, resgatamos roupas, acessórios e calçados do Rio de Janeiro para o Brasil inteiro.</p>
-      <div class="about-tags">
-        <span>Receba</span>
-        <span>Reuse</span>
-        <span>Repense</span>
-      </div>
-      <div class="steps">
-        <div class="step"><span class="step-num">01</span><p>Escolha suas peças e adicione ao carrinho</p></div>
-        <div class="step"><span class="step-num">02</span><p>Finalize pelo WhatsApp e combine o pagamento</p></div>
-        <div class="step"><span class="step-num">03</span><p>Receba sua peça e dê um novo ciclo a ela</p></div>
+
+      <!-- FEEDBACK DE CLIENTES — edite nomes e textos livremente -->
+      <div class="feedback-section">
+        <h3 class="feedback-title">Feedback de Clientes</h3>
+        <div class="feedback-cards">
+          <div class="feedback-card">
+            <div class="feedback-head">
+              <span class="feedback-avatar" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" fill="currentColor"/><path d="M4.5 20a7.5 7.5 0 0115 0" fill="currentColor"/></svg>
+              </span>
+              <span class="feedback-name">Clara S.</span>
+            </div>
+            <p class="feedback-text">Peça incrível! Chegou rápido.</p>
+            <span class="feedback-stars" aria-label="5 de 5 estrelas">★★★★★</span>
+          </div>
+          <div class="feedback-card">
+            <div class="feedback-head">
+              <span class="feedback-avatar" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" fill="currentColor"/><path d="M4.5 20a7.5 7.5 0 0115 0" fill="currentColor"/></svg>
+              </span>
+              <span class="feedback-name">João M.</span>
+            </div>
+            <p class="feedback-text">Amo a proposta sustentável.</p>
+            <span class="feedback-stars" aria-label="5 de 5 estrelas">★★★★★</span>
+          </div>
+          <div class="feedback-card">
+            <div class="feedback-head">
+              <span class="feedback-avatar" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" fill="currentColor"/><path d="M4.5 20a7.5 7.5 0 0115 0" fill="currentColor"/></svg>
+              </span>
+              <span class="feedback-name">Ana B.</span>
+            </div>
+            <p class="feedback-text">Super atenciosos no WhatsApp!</p>
+            <span class="feedback-stars" aria-label="5 de 5 estrelas">★★★★★</span>
+          </div>
+        </div>
       </div>
     </div>
     <div class="about-visual">
@@ -328,6 +355,11 @@
         </label>
       </div>
 
+      <label class="checkbox-field">
+        <input type="checkbox" id="ck-marketing">
+        <span>Aceito receber novidades e ofertas exclusivas do marketing da Re.cyber.</span>
+      </label>
+
       <div class="checkout-totals" id="checkout-totals" hidden>
         <div class="checkout-total-row"><span>Subtotal</span><span id="ck-subtotal">R$ 0,00</span></div>
         <div class="checkout-total-row"><span>Frete</span><span id="ck-frete">Calculando...</span></div>
@@ -381,6 +413,21 @@
   </div>
   <div class="admin-orders" id="admin-orders"></div>
   <p class="empty-state" id="admin-empty" hidden>Nenhum pedido registrado neste navegador ainda.</p>
+
+  <!-- ADMINISTRAÇÃO DE LEADS — e-mails capturados no checkout -->
+  <div class="admin-leads">
+    <h2 class="admin-leads-title">Administração de Leads</h2>
+    <h3 class="admin-leads-subtitle">Lista de e-mails capturados</h3>
+    <div class="admin-leads-table-wrap">
+      <table class="admin-leads-table">
+        <thead>
+          <tr><th>E-mail</th><th>WhatsApp</th><th>Origem</th><th>Status de Marketing</th></tr>
+        </thead>
+        <tbody id="admin-leads-body"></tbody>
+      </table>
+    </div>
+    <p class="empty-state" id="admin-leads-empty" hidden>Nenhum lead capturado ainda.</p>
+  </div>
 </div>
 
 <script src="js/products.js"></script>

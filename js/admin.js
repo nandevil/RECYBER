@@ -100,6 +100,22 @@ function renderAdmin() {
   document.getElementById("admin-count").textContent = `${orders.length} pedido${orders.length === 1 ? "" : "s"}`;
   document.getElementById("admin-orders").innerHTML = orders.map(orderCardHtml).join("");
   document.getElementById("admin-empty").hidden = orders.length !== 0;
+  renderLeads(orders);
+}
+
+/* Lista de leads de marketing capturados no checkout */
+function renderLeads(orders) {
+  const rows = orders.map(o => `
+    <tr>
+      <td>${o.customer.email}</td>
+      <td>${o.customer.telefone}</td>
+      <td>Checkout — Finalizado</td>
+      <td><span class="lead-status lead-status--${o.marketingOptIn ? "inscrito" : "nao"}">${o.marketingOptIn ? "Inscrito" : "Não inscrito"}</span></td>
+    </tr>
+  `).join("");
+  document.getElementById("admin-leads-body").innerHTML = rows;
+  document.getElementById("admin-leads-empty").hidden = orders.length !== 0;
+  document.querySelector(".admin-leads-table-wrap").hidden = orders.length === 0;
 }
 
 document.getElementById("admin-orders").addEventListener("click", e => {
