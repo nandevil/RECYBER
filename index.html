@@ -397,37 +397,78 @@
 <div class="toast" id="toast"></div>
 
 <!--
-  PAINEL DE CONTROLE (ADMIN) — rota oculta #painel-admin.
-  Não é protegido por senha: quem tiver o link acessa. Os pedidos são
-  lidos do localStorage deste navegador (não há backend/servidor), ou
-  seja, só aparecem aqui os pedidos finalizados no mesmo dispositivo/
-  navegador em que o painel é aberto.
+  LOGIN DO ADMIN — rota #admin-login.
+  A senha é verificada por hash SHA-256 no front-end e a sessão fica em
+  sessionStorage. IMPORTANTE: sem backend isso é um obstáculo, não
+  segurança de verdade — quem souber usar o DevTools contorna. Os dados
+  ficam no localStorage de cada navegador, então só existem no
+  dispositivo do dono de qualquer forma. Para segurança real
+  (multiusuário/multidispositivo), migrar para Supabase/Firebase Auth.
 -->
+<div class="admin-panel admin-login" id="admin-login" hidden>
+  <form class="admin-login-box" id="admin-login-form">
+    <h1 class="admin-title">Área restrita</h1>
+    <p class="admin-login-hint">Acesso exclusivo do proprietário.</p>
+    <label class="field">
+      <span>Senha</span>
+      <input type="password" id="admin-password" autocomplete="current-password" required>
+    </label>
+    <p class="admin-login-error" id="admin-login-error" hidden>Senha incorreta. Tente novamente.</p>
+    <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+    <button type="button" class="back-to-categories" id="admin-login-back">&larr; Voltar à loja</button>
+  </form>
+</div>
+
+<!-- PAINEL DE CONTROLE (ADMIN) — rota protegida #admin-dashboard -->
 <div class="admin-panel" id="admin-panel" hidden>
   <div class="admin-header">
     <h1 class="admin-title">Painel de Controle</h1>
     <div class="admin-header-actions">
       <span class="admin-count" id="admin-count">0 pedidos</span>
+      <button class="back-to-categories" id="admin-logout">Sair</button>
       <button class="back-to-categories" id="admin-close">&larr; Voltar à loja</button>
     </div>
   </div>
-  <div class="admin-orders" id="admin-orders"></div>
-  <p class="empty-state" id="admin-empty" hidden>Nenhum pedido registrado neste navegador ainda.</p>
 
-  <!-- ADMINISTRAÇÃO DE LEADS — e-mails capturados no checkout -->
-  <div class="admin-leads">
-    <h2 class="admin-leads-title">Administração de Leads</h2>
-    <h3 class="admin-leads-subtitle">Lista de e-mails capturados</h3>
-    <div class="admin-leads-table-wrap">
-      <table class="admin-leads-table">
-        <thead>
-          <tr><th>E-mail</th><th>WhatsApp</th><th>Origem</th><th>Status de Marketing</th></tr>
-        </thead>
-        <tbody id="admin-leads-body"></tbody>
-      </table>
-    </div>
-    <p class="empty-state" id="admin-leads-empty" hidden>Nenhum lead capturado ainda.</p>
+  <div class="admin-tabs info-pills" id="admin-tabs">
+    <button class="pill active" data-tab="leads">&#128230; Controle de Marketing</button>
+    <button class="pill" data-tab="pedidos">&#128179; Monitoramento de Pagamentos</button>
+    <button class="pill" data-tab="clientes">&#128101; Informações de Clientes</button>
   </div>
+
+  <!-- ABA: LEADS -->
+  <section class="admin-tab-panel" id="admin-tab-leads">
+    <div class="admin-leads">
+      <div class="admin-leads-head">
+        <div>
+          <h2 class="admin-leads-title">Controle de Marketing</h2>
+          <h3 class="admin-leads-subtitle">Lista de e-mails capturados no checkout</h3>
+        </div>
+        <button class="pill pill-sm" id="admin-export-csv">Exportar CSV</button>
+      </div>
+      <div class="admin-leads-table-wrap">
+        <table class="admin-leads-table">
+          <thead>
+            <tr><th>E-mail</th><th>WhatsApp</th><th>Origem</th><th>Status de Marketing</th></tr>
+          </thead>
+          <tbody id="admin-leads-body"></tbody>
+        </table>
+      </div>
+      <p class="empty-state" id="admin-leads-empty" hidden>Nenhum lead capturado ainda.</p>
+    </div>
+  </section>
+
+  <!-- ABA: PEDIDOS / PAGAMENTOS -->
+  <section class="admin-tab-panel" id="admin-tab-pedidos" hidden>
+    <div class="admin-orders" id="admin-orders"></div>
+    <p class="empty-state" id="admin-empty" hidden>Nenhum pedido registrado neste navegador ainda.</p>
+  </section>
+
+  <!-- ABA: CLIENTES -->
+  <section class="admin-tab-panel" id="admin-tab-clientes" hidden>
+    <div class="admin-clients" id="admin-clients"></div>
+    <p class="empty-state" id="admin-clients-empty" hidden>Nenhum cliente registrado ainda.</p>
+  </section>
 </div>
 
 <script src="js/products.js"></script>

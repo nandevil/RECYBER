@@ -167,6 +167,7 @@ document.getElementById("checkout-form").addEventListener("submit", e => {
     },
     marketingOptIn: document.getElementById("ck-marketing").checked,
     payment: checkoutPayment,
+    paymentStatus: "pendente",
     status: "recebido"
   };
 

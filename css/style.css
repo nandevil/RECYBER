@@ -690,8 +690,38 @@ body.admin-open{overflow:hidden;}
 .order-action-group span{color:var(--grey);min-width:96px;}
 .pill-sm{padding:5px 12px;font-size:.68rem;}
 
+/* ---- LOGIN DO ADMIN ---- */
+.admin-login{display:flex;align-items:center;justify-content:center;}
+.admin-login[hidden]{display:none!important;}
+.admin-login-box{
+  width:100%;max-width:380px;
+  border:2px solid var(--ink);border-radius:12px;
+  background:var(--paper-alt);padding:28px;
+  display:flex;flex-direction:column;gap:16px;
+}
+.admin-login-hint{font-size:.78rem;color:var(--grey);}
+.admin-login-error{font-size:.76rem;color:var(--danger);}
+
+/* ---- ABAS DO PAINEL ---- */
+.admin-tabs{max-width:var(--maxw);margin:0 auto 24px;}
+.admin-tab-panel{max-width:var(--maxw);margin:0 auto;}
+
+/* ---- STATUS DE PAGAMENTO ---- */
+.pay-status-select{width:100%;font-size:.78rem;}
+.pay-status--pago{background:#e2f3e6;border-color:var(--accent);}
+.pay-status--cancelado{background:#f6e3e3;border-color:var(--danger);}
+
 /* ---- ADMINISTRAÇÃO DE LEADS ---- */
-.admin-leads{max-width:var(--maxw);margin:40px auto 0;}
+.admin-leads{max-width:var(--maxw);margin:0 auto;}
+.admin-leads-head{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;margin-bottom:14px;
+}
+
+/* ---- CLIENTES ---- */
+.admin-clients{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;
+}
 .admin-leads-title{font-family:var(--font-pixel);font-size:.85rem;margin-bottom:6px;}
 .admin-leads-subtitle{
   font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;
@@ -755,6 +785,7 @@ body.admin-open{overflow:hidden;}
   .checkout-grid{grid-template-columns:1fr;}
   .field{grid-column:1 / -1;}
   .admin-orders{grid-template-columns:1fr;}
+  .admin-clients{grid-template-columns:1fr;}
 
   /* mobile bottom nav */
   .mobile-bottom-nav{
