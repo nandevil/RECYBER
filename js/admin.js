@@ -3,16 +3,14 @@
    Depende de: CONFIG, money() (js/app.js) e getOrders()/saveOrders()
    (js/checkout.js).
 
-   SEGURANÇA — leia antes de confiar:
-   - A senha é conferida por hash SHA-256 no front-end e a sessão fica
-     em sessionStorage. Isso é um OBSTÁCULO, não segurança real: como
-     não há backend, qualquer pessoa com conhecimento técnico consegue
-     contornar pelo DevTools.
-   - Na prática o risco é baixo porque os pedidos vivem no localStorage
-     de CADA navegador — os dados só existem no seu dispositivo.
-   - Para segurança de verdade (e pedidos centralizados), migre para um
-     serviço com autenticação no servidor (Supabase Auth/Firebase Auth)
-     quando o site tiver hospedagem.
+   SEGURANÇA — dois modos (ver js/supabase-client.js e SUPABASE.md):
+   - MODO NUVEM (Supabase configurado): login por e-mail/senha validado
+     no servidor (Supabase Auth) e pedidos no banco com RLS — leitura
+     exige sessão autenticada; isso É segurança real.
+   - MODO LOCAL (Supabase vazio): senha conferida por hash SHA-256 no
+     front-end e sessão em sessionStorage. É um OBSTÁCULO, não
+     segurança real (contornável pelo DevTools); o risco é baixo porque
+     os pedidos vivem no localStorage de cada navegador.
 
    Para trocar a senha: gere o novo hash executando no console
      crypto.subtle.digest("SHA-256", new TextEncoder().encode("SUA-SENHA"))
@@ -27,8 +25,29 @@ async function sha256Hex(text) {
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-function isOwner() {
+/* Com Supabase configurado, "dono" = sessão autenticada no servidor. */
+async function isOwner() {
+  if (supabaseEnabled()) {
+    const { data } = await sb.auth.getSession();
+    return !!data.session;
+  }
   return sessionStorage.getItem(ADMIN_SESSION_KEY) === ADMIN_PASSWORD_HASH;
+}
+
+/* Cache dos pedidos carregados (nuvem ou local) para os handlers. */
+let adminOrders = [];
+
+async function loadOrders() {
+  if (supabaseEnabled()) {
+    const { data, error } = await sb.from("orders").select("*").order("created_at", { ascending: false });
+    if (error) {
+      console.error("Supabase select:", error);
+      showToast("Erro ao carregar os pedidos");
+      return [];
+    }
+    return data.map(rowToOrder);
+  }
+  return getOrders().slice().reverse();
 }
 
 /* =====================================================
@@ -49,16 +68,27 @@ function statusMessage(order, status) {
   return `Olá ${order.customer.nome}! Seu pedido ${order.id} no ${CONFIG.storeName} foi enviado! Em breve você recebe o código de rastreio para acompanhar a entrega. 📦`;
 }
 
-function updateOrder(orderId, patch) {
-  const orders = getOrders();
-  const order = orders.find(o => o.id === orderId);
-  if (order) Object.assign(order, patch);
-  saveOrders(orders);
+async function updateOrder(orderId, patch) {
+  if (supabaseEnabled()) {
+    const row = {};
+    if (patch.status) row.status = patch.status;
+    if (patch.paymentStatus) row.payment_status = patch.paymentStatus;
+    const { error } = await sb.from("orders").update(row).eq("id", orderId);
+    if (error) {
+      console.error("Supabase update:", error);
+      showToast("Erro ao atualizar o pedido");
+    }
+  } else {
+    const orders = getOrders();
+    const order = orders.find(o => o.id === orderId);
+    if (order) Object.assign(order, patch);
+    saveOrders(orders);
+  }
   renderAdmin();
 }
 
 function triggerNotification(orderId, status, channel) {
-  const order = getOrders().find(o => o.id === orderId);
+  const order = adminOrders.find(o => o.id === orderId);
   if (!order) return;
   const text = statusMessage(order, status);
 
@@ -156,7 +186,7 @@ function renderLeads(orders) {
 }
 
 function exportLeadsCsv() {
-  const orders = getOrders();
+  const orders = adminOrders;
   if (orders.length === 0) {
     showToast("Nenhum lead para exportar");
     return;
@@ -225,8 +255,9 @@ function renderClients(orders) {
 /* =====================================================
    RENDER GERAL + ABAS
 ===================================================== */
-function renderAdmin() {
-  const orders = getOrders().slice().reverse();
+async function renderAdmin() {
+  const orders = await loadOrders();
+  adminOrders = orders;
   document.getElementById("admin-count").textContent = `${orders.length} pedido${orders.length === 1 ? "" : "s"}`;
   document.getElementById("admin-orders").innerHTML = orders.map(orderCardHtml).join("");
   document.getElementById("admin-empty").hidden = orders.length !== 0;
@@ -262,18 +293,35 @@ document.getElementById("admin-export-csv").addEventListener("click", exportLead
 document.getElementById("admin-login-form").addEventListener("submit", async e => {
   e.preventDefault();
   const input = document.getElementById("admin-password");
+  const errorEl = document.getElementById("admin-login-error");
+
+  if (supabaseEnabled()) {
+    const email = document.getElementById("admin-email").value.trim();
+    const { error } = await sb.auth.signInWithPassword({ email, password: input.value });
+    if (error) {
+      errorEl.textContent = "E-mail ou senha incorretos.";
+      errorEl.hidden = false;
+      return;
+    }
+    input.value = "";
+    errorEl.hidden = true;
+    window.location.hash = "#admin-dashboard";
+    return;
+  }
+
   const hash = await sha256Hex(input.value);
   if (hash === ADMIN_PASSWORD_HASH) {
     sessionStorage.setItem(ADMIN_SESSION_KEY, hash);
     input.value = "";
-    document.getElementById("admin-login-error").hidden = true;
+    errorEl.hidden = true;
     window.location.hash = "#admin-dashboard";
   } else {
-    document.getElementById("admin-login-error").hidden = false;
+    errorEl.hidden = false;
   }
 });
 
-document.getElementById("admin-logout").addEventListener("click", () => {
+document.getElementById("admin-logout").addEventListener("click", async () => {
+  if (supabaseEnabled()) await sb.auth.signOut();
   sessionStorage.removeItem(ADMIN_SESSION_KEY);
   window.location.hash = "#catalogo";
 });
@@ -294,7 +342,11 @@ function showAdminLogin() {
   document.getElementById("admin-panel").hidden = true;
   document.getElementById("admin-login").hidden = false;
   document.body.classList.add("admin-open");
-  document.getElementById("admin-password").focus();
+  // Com Supabase, o login é por e-mail + senha (validado no servidor)
+  const emailField = document.getElementById("admin-email-field");
+  emailField.hidden = !supabaseEnabled();
+  document.getElementById("admin-email").required = supabaseEnabled();
+  document.getElementById(supabaseEnabled() ? "admin-email" : "admin-password").focus();
 }
 function hideAdminViews() {
   document.getElementById("admin-panel").hidden = true;
@@ -303,13 +355,13 @@ function hideAdminViews() {
 }
 
 /* Guarda de rota: #admin-dashboard exige sessão de dono ativa. */
-function syncAdminRoute() {
+async function syncAdminRoute() {
   const hash = window.location.hash;
   if (hash === "#admin-dashboard" || hash === "#painel-admin") {
-    if (isOwner()) showAdminPanel();
+    if (await isOwner()) showAdminPanel();
     else window.location.hash = "#admin-login"; // intercepta e redireciona
   } else if (hash === "#admin-login") {
-    if (isOwner()) window.location.hash = "#admin-dashboard";
+    if (await isOwner()) window.location.hash = "#admin-dashboard";
     else showAdminLogin();
   } else {
     hideAdminViews();

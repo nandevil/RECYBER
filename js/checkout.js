@@ -123,8 +123,25 @@ function buildOrderWhatsappMessage(order) {
   return encodeURIComponent(msg);
 }
 
+/* Persiste o pedido: Supabase quando configurado, senão localStorage. */
+async function persistOrder(order) {
+  if (supabaseEnabled()) {
+    const { error } = await sb.from("orders").insert(orderToRow(order));
+    if (error) {
+      console.error("Supabase insert:", error);
+      showToast("Erro ao registrar o pedido. Tente novamente.");
+      return false;
+    }
+    return true;
+  }
+  const orders = getOrders();
+  orders.push(order);
+  saveOrders(orders);
+  return true;
+}
+
 /* Finalizar compra */
-document.getElementById("checkout-form").addEventListener("submit", e => {
+document.getElementById("checkout-form").addEventListener("submit", async e => {
   e.preventDefault();
   const form = e.target;
 
@@ -171,9 +188,13 @@ document.getElementById("checkout-form").addEventListener("submit", e => {
     status: "recebido"
   };
 
-  const orders = getOrders();
-  orders.push(order);
-  saveOrders(orders);
+  const submitBtn = document.getElementById("checkout-submit");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Enviando...";
+  const ok = await persistOrder(order);
+  submitBtn.disabled = false;
+  submitBtn.textContent = "Finalizar Compra";
+  if (!ok) return;
 
   state.cart = [];
   saveCart();
