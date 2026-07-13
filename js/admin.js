@@ -299,7 +299,7 @@ document.getElementById("admin-login-form").addEventListener("submit", async e =
     const email = document.getElementById("admin-email").value.trim();
     const { error } = await sb.auth.signInWithPassword({ email, password: input.value });
     if (error) {
-      errorEl.textContent = "E-mail ou senha incorretos.";
+      errorEl.textContent = "Acesso Negado: Credenciais Inválidas";
       errorEl.hidden = false;
       return;
     }
@@ -354,12 +354,21 @@ function hideAdminViews() {
   document.body.classList.remove("admin-open");
 }
 
-/* Guarda de rota: #admin-dashboard exige sessão de dono ativa. */
+/* Guarda de rota: #admin-dashboard exige sessão de dono ativa.
+   Acesso direto sem sessão válida NÃO revela a tela de login — volta
+   silenciosamente para a home pública. A tela de login só aparece via
+   #admin-login (gatilho secreto ou digitação direta), mantendo o
+   painel discreto para quem não conhece o caminho. */
 async function syncAdminRoute() {
   const hash = window.location.hash;
   if (hash === "#admin-dashboard" || hash === "#painel-admin") {
-    if (await isOwner()) showAdminPanel();
-    else window.location.hash = "#admin-login"; // intercepta e redireciona
+    if (await isOwner()) {
+      showAdminPanel();
+    } else {
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      hideAdminViews();
+      window.location.hash = "#catalogo"; // redireciona silenciosamente
+    }
   } else if (hash === "#admin-login") {
     if (await isOwner()) window.location.hash = "#admin-dashboard";
     else showAdminLogin();
@@ -370,3 +379,20 @@ async function syncAdminRoute() {
 
 window.addEventListener("hashchange", syncAdminRoute);
 syncAdminRoute();
+
+/* "Porta secreta": 3 cliques seguidos em "SINCE 2021" abrem #admin-login. */
+(function setupSecretAdminTrigger() {
+  const trigger = document.getElementById("secret-admin-trigger");
+  if (!trigger) return;
+  let clicks = 0;
+  let resetTimer;
+  trigger.addEventListener("click", () => {
+    clicks += 1;
+    clearTimeout(resetTimer);
+    resetTimer = setTimeout(() => { clicks = 0; }, 800);
+    if (clicks >= 3) {
+      clicks = 0;
+      window.location.hash = "#admin-login";
+    }
+  });
+})();
