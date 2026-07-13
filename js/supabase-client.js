@@ -52,3 +52,19 @@ function rowToOrder(r) {
     status: r.status
   };
 }
+
+/* Peça cadastrada no painel (tabela public.products) -> formato do catálogo */
+function rowToProduct(r) {
+  return {
+    id: r.id,
+    category: r.category,
+    name: r.name,
+    price: Number(r.price) || 0,
+    size: r.size || "Único",
+    condition: r.condition || "",
+    description: r.description || "",
+    image: r.image_url || "",
+    tag: r.tag || "",
+    empty: false
+  };
+}

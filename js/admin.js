@@ -269,7 +269,7 @@ document.getElementById("admin-tabs").addEventListener("click", e => {
   const pill = e.target.closest("[data-tab]");
   if (!pill) return;
   document.querySelectorAll("#admin-tabs .pill").forEach(p => p.classList.toggle("active", p === pill));
-  ["leads", "pedidos", "clientes"].forEach(tab => {
+  ["leads", "pedidos", "clientes", "cadastro"].forEach(tab => {
     document.getElementById(`admin-tab-${tab}`).hidden = tab !== pill.dataset.tab;
   });
 });
@@ -334,6 +334,7 @@ document.getElementById("admin-close").addEventListener("click", () => {
 
 function showAdminPanel() {
   renderAdmin();
+  setupProductForm();
   document.getElementById("admin-login").hidden = true;
   document.getElementById("admin-panel").hidden = false;
   document.body.classList.add("admin-open");
@@ -379,6 +380,78 @@ async function syncAdminRoute() {
 
 window.addEventListener("hashchange", syncAdminRoute);
 syncAdminRoute();
+
+/* =====================================================
+   CADASTRO DE PEÇA (aba "Cadastro de Peça")
+   Sobe a foto para o Storage (bucket product-images) e insere a linha
+   na tabela public.products — a peça aparece no catálogo público na
+   próxima sincronização (js/catalog-sync.js).
+===================================================== */
+function setupProductForm() {
+  const select = document.getElementById("pf-category");
+  if (select && !select.dataset.filled) {
+    select.innerHTML = CATEGORIES.map(c => `<option value="${c.id}">${c.label}</option>`).join("");
+    select.dataset.filled = "1";
+  }
+
+  const unavailable = document.getElementById("product-form-unavailable");
+  const form = document.getElementById("product-form");
+  const submitBtn = document.getElementById("product-form-submit");
+  if (!supabaseEnabled()) {
+    unavailable.hidden = false;
+    unavailable.textContent = "Cadastro indisponível: configure o Supabase (veja SUPABASE.md).";
+    submitBtn.disabled = true;
+  } else {
+    unavailable.hidden = true;
+    submitBtn.disabled = false;
+  }
+}
+
+document.getElementById("product-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!supabaseEnabled()) return;
+
+  const submitBtn = document.getElementById("product-form-submit");
+  const unavailable = document.getElementById("product-form-unavailable");
+  const fileInput = document.getElementById("pf-image");
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Cadastrando...";
+  unavailable.hidden = true;
+
+  try {
+    let imageUrl = "";
+    const file = fileInput.files[0];
+    if (file) {
+      const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
+      const { error: uploadError } = await sb.storage.from("product-images").upload(path, file);
+      if (uploadError) throw uploadError;
+      imageUrl = sb.storage.from("product-images").getPublicUrl(path).data.publicUrl;
+    }
+
+    const { error: insertError } = await sb.from("products").insert({
+      name: document.getElementById("pf-name").value.trim(),
+      price: Number(document.getElementById("pf-price").value) || 0,
+      size: document.getElementById("pf-size").value.trim(),
+      category: document.getElementById("pf-category").value,
+      description: document.getElementById("pf-description").value.trim(),
+      image_url: imageUrl,
+      tag: "novo"
+    });
+    if (insertError) throw insertError;
+
+    document.getElementById("product-form").reset();
+    showToast("Peça cadastrada com sucesso");
+    if (typeof syncCatalog === "function") syncCatalog();
+  } catch (err) {
+    console.error("Cadastro de peça:", err);
+    unavailable.hidden = false;
+    unavailable.textContent = `Erro ao cadastrar: ${err.message || "tente novamente."}`;
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Cadastrar Peça";
+  }
+});
 
 /* "Porta secreta": 3 cliques seguidos em "SINCE 2021" abrem #admin-login. */
 (function setupSecretAdminTrigger() {

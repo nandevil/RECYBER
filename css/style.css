@@ -605,12 +605,17 @@ ul{list-style:none;}
 .field-wide{grid-column:1 / -1;}
 .field span{text-transform:uppercase;letter-spacing:.5px;color:var(--grey);font-size:.68rem;}
 .field span em{font-style:normal;text-transform:none;letter-spacing:0;}
-.field input{
+.field input,.field select,.field textarea{
   border:1.5px solid var(--ink);border-radius:var(--radius);
   padding:10px 12px;font-family:var(--font-mono);font-size:.85rem;
   background:var(--paper-alt);color:var(--ink);
+  width:100%;
 }
-.field input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.field textarea{resize:vertical;min-height:80px;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.field input[type="file"]{
+  padding:8px;cursor:pointer;
+}
 .checkout-totals{
   border:2px solid var(--ink);border-radius:8px;padding:12px 14px;
   display:flex;flex-direction:column;gap:4px;
@@ -737,6 +742,16 @@ body.admin-open{overflow:hidden;}
   display:flex;align-items:flex-start;justify-content:space-between;
   gap:12px;flex-wrap:wrap;margin-bottom:14px;
 }
+
+/* ---- CADASTRO DE PEÇA ---- */
+.admin-upload{max-width:640px;margin:0 auto;}
+.admin-upload-submit{
+  align-self:flex-start;
+  padding:13px 32px;
+  font-family:var(--font-mono);font-weight:700;font-size:.8rem;
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.admin-upload-submit:disabled{opacity:.5;cursor:not-allowed;}
 
 /* ---- CLIENTES ---- */
 .admin-clients{
