@@ -478,9 +478,17 @@ function openModal(id) {
   }
 
   const idx = PRODUCTS.indexOf(p);
-  const img = p.image || placeholderImage(p.category, idx);
+  const gallery = Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
+  const img = gallery[0] || placeholderImage(p.category, idx);
+  const thumbsHtml = gallery.length > 1 ? `
+    <div class="modal-gallery">
+      ${gallery.map((src, i) => `<button type="button" class="modal-gallery-thumb${i === 0 ? " active" : ""}" data-src="${src}"><img src="${src}" alt=""></button>`).join("")}
+    </div>` : "";
   modal.innerHTML = `
-    <div class="modal-image"><img src="${img}" alt="${p.name}"></div>
+    <div class="modal-image">
+      <img src="${img}" alt="${p.name}" id="modal-main-image">
+      ${thumbsHtml}
+    </div>
     <div class="modal-body">
       <button class="modal-close" aria-label="Fechar">&times;</button>
       <span class="modal-cat">${labelCategory(p.category)}</span>
@@ -498,6 +506,15 @@ function openModal(id) {
     </div>
   `;
   modal.querySelector(".modal-close").addEventListener("click", closeModal);
+  const galleryEl = modal.querySelector(".modal-gallery");
+  if (galleryEl) {
+    galleryEl.addEventListener("click", e => {
+      const thumb = e.target.closest(".modal-gallery-thumb");
+      if (!thumb) return;
+      document.getElementById("modal-main-image").src = thumb.dataset.src;
+      galleryEl.querySelectorAll(".modal-gallery-thumb").forEach(t => t.classList.toggle("active", t === thumb));
+    });
+  }
   modal.querySelector("#modal-add").addEventListener("click", () => {
     addToCart(p.id, 1);
     showToast("Adicionado ao carrinho");

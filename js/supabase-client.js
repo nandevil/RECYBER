@@ -55,6 +55,7 @@ function rowToOrder(r) {
 
 /* Peça cadastrada no painel (tabela public.products) -> formato do catálogo */
 function rowToProduct(r) {
+  const images = Array.isArray(r.image_urls) ? r.image_urls : [];
   return {
     id: r.id,
     category: r.category,
@@ -63,7 +64,8 @@ function rowToProduct(r) {
     size: r.size || "Único",
     condition: r.condition || "",
     description: r.description || "",
-    image: r.image_url || "",
+    image: images[0] || "",
+    images,
     tag: r.tag || "",
     empty: false
   };

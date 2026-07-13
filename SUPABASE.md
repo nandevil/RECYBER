@@ -103,7 +103,7 @@ create table public.products (
   category text not null,
   size text,
   condition text,
-  image_url text,
+  image_urls jsonb not null default '[]'::jsonb,
   tag text
 );
 
@@ -147,6 +147,15 @@ create policy "dono pode apagar fotos de produtos"
 
 Pronto — sem reiniciar nada, a aba "Cadastro de Peça" do painel já
 passa a funcionar (ela detecta sozinha se a tabela existe).
+
+> Se você já criou a tabela `products` com a coluna antiga `image_url`
+> (uma foto só), rode este bloco para migrar para várias fotos por
+> peça sem perder dados:
+> ```sql
+> alter table public.products add column if not exists image_urls jsonb not null default '[]'::jsonb;
+> update public.products set image_urls = jsonb_build_array(image_url) where image_url is not null and image_urls = '[]'::jsonb;
+> alter table public.products drop column if exists image_url;
+> ```
 
 ## Segurança — como fica
 

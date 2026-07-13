@@ -488,9 +488,10 @@
 
       <form class="checkout-form" id="product-form">
         <label class="field field-wide">
-          <span>Foto da peça</span>
-          <input type="file" id="pf-image" accept="image/*">
+          <span>Fotos da peça <em>(pode escolher várias)</em></span>
+          <input type="file" id="pf-image" accept="image/*" multiple>
         </label>
+        <div class="pf-image-previews" id="pf-image-previews"></div>
         <label class="field field-wide">
           <span>Nome da peça</span>
           <input type="text" id="pf-name" placeholder="Ex: Camiseta Cyber-Goth" required>

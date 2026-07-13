@@ -395,7 +395,6 @@ function setupProductForm() {
   }
 
   const unavailable = document.getElementById("product-form-unavailable");
-  const form = document.getElementById("product-form");
   const submitBtn = document.getElementById("product-form-submit");
   if (!supabaseEnabled()) {
     unavailable.hidden = false;
@@ -407,26 +406,72 @@ function setupProductForm() {
   }
 }
 
+/* Fotos selecionadas ficam nesta lista (não no <input>) para permitir
+   remover uma a uma e ir acumulando várias seleções. */
+let selectedProductImages = [];
+
+function renderProductImagePreviews() {
+  const wrap = document.getElementById("pf-image-previews");
+  wrap.innerHTML = selectedProductImages.map((file, i) => `
+    <div class="pf-image-thumb">
+      <img src="${URL.createObjectURL(file)}" alt="${file.name}">
+      <button type="button" class="pf-image-remove" data-index="${i}" aria-label="Remover foto">&times;</button>
+    </div>
+  `).join("");
+}
+
+document.getElementById("pf-image").addEventListener("change", e => {
+  selectedProductImages.push(...e.target.files);
+  e.target.value = ""; // limpa o input para poder escolher mais fotos depois
+  renderProductImagePreviews();
+});
+
+document.getElementById("pf-image-previews").addEventListener("click", e => {
+  const btn = e.target.closest(".pf-image-remove");
+  if (!btn) return;
+  selectedProductImages.splice(Number(btn.dataset.index), 1);
+  renderProductImagePreviews();
+});
+
+function resetProductForm() {
+  document.getElementById("product-form").reset();
+  selectedProductImages = [];
+  renderProductImagePreviews();
+}
+
+/* Traduz erros comuns do Supabase para mensagens acionáveis. */
+function describeProductFormError(err) {
+  const msg = err && err.message ? err.message : "";
+  if (err.code === "PGRST205" || msg.includes("Could not find the table")) {
+    return 'A tabela "products" ainda não existe no Supabase. Rode o SQL do Passo 5 em SUPABASE.md.';
+  }
+  if (msg.includes("Bucket not found")) {
+    return 'O bucket de fotos "product-images" ainda não existe no Supabase. Crie-o no Passo 5 de SUPABASE.md.';
+  }
+  if (msg.includes("row-level security") || msg.includes("permission denied")) {
+    return "Sem permissão para cadastrar — confirme que você está logado como dono (não em modo local).";
+  }
+  return `Erro ao cadastrar: ${msg || "tente novamente."}`;
+}
+
 document.getElementById("product-form").addEventListener("submit", async e => {
   e.preventDefault();
   if (!supabaseEnabled()) return;
 
   const submitBtn = document.getElementById("product-form-submit");
   const unavailable = document.getElementById("product-form-unavailable");
-  const fileInput = document.getElementById("pf-image");
 
   submitBtn.disabled = true;
   submitBtn.textContent = "Cadastrando...";
   unavailable.hidden = true;
 
   try {
-    let imageUrl = "";
-    const file = fileInput.files[0];
-    if (file) {
-      const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
+    const imageUrls = [];
+    for (const file of selectedProductImages) {
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
       const { error: uploadError } = await sb.storage.from("product-images").upload(path, file);
       if (uploadError) throw uploadError;
-      imageUrl = sb.storage.from("product-images").getPublicUrl(path).data.publicUrl;
+      imageUrls.push(sb.storage.from("product-images").getPublicUrl(path).data.publicUrl);
     }
 
     const { error: insertError } = await sb.from("products").insert({
@@ -435,18 +480,18 @@ document.getElementById("product-form").addEventListener("submit", async e => {
       size: document.getElementById("pf-size").value.trim(),
       category: document.getElementById("pf-category").value,
       description: document.getElementById("pf-description").value.trim(),
-      image_url: imageUrl,
+      image_urls: imageUrls,
       tag: "novo"
     });
     if (insertError) throw insertError;
 
-    document.getElementById("product-form").reset();
+    resetProductForm();
     showToast("Peça cadastrada com sucesso");
     if (typeof syncCatalog === "function") syncCatalog();
   } catch (err) {
     console.error("Cadastro de peça:", err);
     unavailable.hidden = false;
-    unavailable.textContent = `Erro ao cadastrar: ${err.message || "tente novamente."}`;
+    unavailable.textContent = describeProductFormError(err);
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = "Cadastrar Peça";
