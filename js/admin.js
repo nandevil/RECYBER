@@ -174,10 +174,10 @@ function orderCardHtml(order) {
 function renderLeads(orders) {
   const rows = orders.map(o => `
     <tr>
-      <td>${o.customer.email}</td>
-      <td>${o.customer.telefone}</td>
-      <td>Checkout — Finalizado</td>
-      <td><span class="lead-status lead-status--${o.marketingOptIn ? "inscrito" : "nao"}">${o.marketingOptIn ? "Inscrito" : "Não inscrito"}</span></td>
+      <td data-label="E-mail">${o.customer.email}</td>
+      <td data-label="WhatsApp">${o.customer.telefone}</td>
+      <td data-label="Origem">Checkout — Finalizado</td>
+      <td data-label="Status de Marketing"><span class="lead-status lead-status--${o.marketingOptIn ? "inscrito" : "nao"}">${o.marketingOptIn ? "Inscrito" : "Não inscrito"}</span></td>
     </tr>
   `).join("");
   document.getElementById("admin-leads-body").innerHTML = rows;

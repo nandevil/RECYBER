@@ -769,6 +769,67 @@ body.admin-open{overflow:hidden;}
 .lead-status--inscrito{background:#e2f3e6;border-color:var(--accent);}
 .lead-status--nao{background:var(--paper);color:var(--grey);border-color:var(--grey-light);}
 
+/* ===================== ADMIN — RESPONSIVIDADE ===================== */
+
+/* Tablet: 768px–1024px */
+@media (max-width:1024px) and (min-width:768px){
+  .admin-panel{padding:20px 20px 64px;}
+  .admin-orders,.admin-clients{grid-template-columns:repeat(2,1fr);}
+}
+
+/* Mobile: < 768px */
+@media (max-width:767px){
+  .admin-panel{padding:16px 16px 80px;}
+  .admin-header{gap:10px;}
+  .admin-header-actions{gap:8px;flex-wrap:wrap;}
+  .admin-orders,.admin-clients{grid-template-columns:1fr;gap:14px;}
+  .order-card{padding:14px;}
+
+  /* Pílulas de navegação: rolagem horizontal fina em vez de quebrar ou espremer texto */
+  .admin-tabs{
+    flex-wrap:nowrap;overflow-x:auto;
+    padding-bottom:8px;margin-bottom:16px;
+    scrollbar-width:thin;scrollbar-color:var(--ink) transparent;
+  }
+  .admin-tabs::-webkit-scrollbar{height:4px;}
+  .admin-tabs::-webkit-scrollbar-thumb{background:var(--ink);border-radius:4px;}
+  .admin-tabs .pill{flex-shrink:0;white-space:nowrap;}
+
+  /* Alvos de toque confortáveis (mín. 48px) */
+  .admin-tabs .pill,
+  .order-actions .pill-sm,
+  .admin-header-actions .back-to-categories,
+  .admin-login-submit{min-height:48px;}
+  .pay-status-select{min-height:48px;}
+  .field input{min-height:48px;}
+
+  /* Tabela "Lista de e-mails capturados" vira cards empilhados */
+  .admin-leads-table-wrap{overflow-x:visible;border:none;}
+  .admin-leads-table,
+  .admin-leads-table thead,
+  .admin-leads-table tbody,
+  .admin-leads-table tr,
+  .admin-leads-table td{display:block;width:100%;}
+  .admin-leads-table thead{display:none;}
+  .admin-leads-table tr{
+    border:2px solid var(--ink);border-radius:10px;
+    margin-bottom:12px;padding:4px 14px;
+  }
+  .admin-leads-table td{
+    border:none;white-space:normal;
+    padding:8px 0;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    border-bottom:1px solid var(--grey-light);
+  }
+  .admin-leads-table td:last-child{border-bottom:none;}
+  .admin-leads-table td::before{
+    content:attr(data-label);
+    font-family:var(--font-pixel);font-size:.56rem;
+    text-transform:uppercase;letter-spacing:.5px;color:var(--grey);
+    flex-shrink:0;
+  }
+}
+
 /* ===================== TOAST ===================== */
 .toast{
   position:fixed;bottom:72px;left:50%;
