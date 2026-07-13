@@ -35,18 +35,32 @@ create table public.orders (
 );
 
 alter table public.orders enable row level security;
+alter table public.orders force row level security;
 
 -- Clientes (anônimos) podem apenas CRIAR pedidos
 create policy "anon pode inserir pedidos"
   on public.orders for insert to anon with check (true);
 
--- Apenas usuários logados (você) podem LER e ATUALIZAR
+-- Apenas usuários logados (você) podem LER, ATUALIZAR e APAGAR
 create policy "dono pode ler pedidos"
   on public.orders for select to authenticated using (true);
 
 create policy "dono pode atualizar pedidos"
-  on public.orders for update to authenticated using (true);
+  on public.orders for update to authenticated using (true) with check (true);
+
+create policy "dono pode deletar pedidos"
+  on public.orders for delete to authenticated using (true);
 ```
+
+> Se você já criou a tabela antes desta política de DELETE existir,
+> rode este bloco extra uma vez no SQL Editor para aplicar a correção
+> sem perder os dados:
+> ```sql
+> alter table public.orders force row level security;
+> drop policy if exists "dono pode deletar pedidos" on public.orders;
+> create policy "dono pode deletar pedidos"
+>   on public.orders for delete to authenticated using (true);
+> ```
 
 ## Passo 3 — Criar o SEU usuário de acesso ao painel
 
