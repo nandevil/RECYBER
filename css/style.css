@@ -299,6 +299,10 @@ body.promo-mode-active .hero-globe-wrap{
 .promo-countdown-inner{
   text-align:center;padding:24px 28px 0;
 }
+.promo-alert-title{
+  font-family:var(--font-pixel);font-size:1rem;letter-spacing:1px;
+  color:#ffffff;margin-bottom:14px;
+}
 .promo-alert-text{
   font-family:var(--font-mono);font-size:.8rem;line-height:1.6;
   color:#ffffff;max-width:640px;margin:0 auto;
