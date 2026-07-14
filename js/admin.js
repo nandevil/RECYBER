@@ -443,6 +443,8 @@ function resetProductForm() {
 function describeProductFormError(err) {
   const msg = err && err.message ? err.message : "";
   const extra = [err.code, err.details, err.hint].filter(Boolean).join(" · ");
+  const stepLabel = err.step === "upload" ? "no envio da FOTO" : err.step === "insert" ? "ao SALVAR a peça" : "";
+
   if (err.code === "PGRST205" || msg.includes("Could not find the table")) {
     return 'A tabela "products" ainda não existe no Supabase. Rode o SQL do Passo 5 em SUPABASE.md.';
   }
@@ -450,9 +452,12 @@ function describeProductFormError(err) {
     return 'O bucket de fotos "product-images" ainda não existe no Supabase. Crie-o no Passo 5 de SUPABASE.md.';
   }
   if (msg.includes("row-level security") || msg.includes("permission denied")) {
-    return `Sem permissão para cadastrar (sessão pode ter expirado — saia e entre de novo). Detalhe técnico: ${extra || msg}`;
+    if (err.step === "upload") {
+      return 'Sem permissão para ENVIAR FOTO — as políticas de segurança do bucket "product-images" (Passo 5, bloco de Storage em SUPABASE.md) não foram aplicadas ainda. Rode aquele SQL de novo.';
+    }
+    return `Sem permissão ${stepLabel} (sessão pode ter expirado — saia e entre de novo). Detalhe técnico: ${extra || msg}`;
   }
-  return `Erro ao cadastrar: ${msg || "tente novamente."}${extra ? ` (${extra})` : ""}`;
+  return `Erro ${stepLabel || "ao cadastrar"}: ${msg || "tente novamente."}${extra ? ` (${extra})` : ""}`;
 }
 
 document.getElementById("product-form").addEventListener("submit", async e => {
@@ -482,7 +487,7 @@ document.getElementById("product-form").addEventListener("submit", async e => {
     for (const file of selectedProductImages) {
       const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
       const { error: uploadError } = await sb.storage.from("product-images").upload(path, file);
-      if (uploadError) throw uploadError;
+      if (uploadError) { uploadError.step = "upload"; throw uploadError; }
       imageUrls.push(sb.storage.from("product-images").getPublicUrl(path).data.publicUrl);
     }
 
@@ -495,7 +500,7 @@ document.getElementById("product-form").addEventListener("submit", async e => {
       image_urls: imageUrls,
       tag: "novo"
     });
-    if (insertError) throw insertError;
+    if (insertError) { insertError.step = "insert"; throw insertError; }
 
     resetProductForm();
     showToast("Peça cadastrada com sucesso");
