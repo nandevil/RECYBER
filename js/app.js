@@ -225,11 +225,11 @@ function renderCategoryCards() {
   if (!wrap) return;
   const promoCount = PRODUCTS.filter(p => p.isPromo).length;
   const showPromo = isPromoWindowOpen() && promoCount > 0;
-  const list = [
-    { id: "todos", label: "Todos" },
-    ...(showPromo ? [{ id: "promocoes", label: "Promoções" }] : []),
-    ...CATEGORIES
-  ];
+  /* Modo Promo ativo: funil de vendas — some com as demais categorias e
+     deixa só "Promoções" visível, para focar o cliente na campanha. */
+  const list = showPromo
+    ? [{ id: "promocoes", label: "Promoções" }]
+    : [{ id: "todos", label: "Todos" }, ...CATEGORIES];
   const cards = list.map(cat => {
     const count = cat.id === "todos"
       ? PRODUCTS.length

@@ -283,6 +283,14 @@ body.promo-mode-active{
   --grey:#a8a8a4;
   --grey-light:#2a2a28;
 }
+
+/* A foto do hero (globo) tem fundo branco; no tema escuro do Modo Promo,
+   sem isso, as laterais do container ficam pretas e "cortam" a imagem
+   (efeito letterbox). Fundo branco aqui funde o container com a foto. */
+body.promo-mode-active .hero-globe-wrap{
+  background-color:#ffffff;
+  transition:background-color .3s ease;
+}
 body.promo-mode-active .btn,
 body.promo-mode-active .pill,
 body.promo-mode-active .add-btn,
