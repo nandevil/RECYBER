@@ -323,6 +323,10 @@ document.getElementById("main-nav-close").addEventListener("click", closeMobileN
 document.querySelectorAll(".main-nav a").forEach(a => {
   a.addEventListener("click", closeMobileNav);
 });
+document.getElementById("main-nav-info").addEventListener("click", () => {
+  closeMobileNav();
+  openInfo();
+});
 
 /* =====================================================
    CARRINHO

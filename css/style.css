@@ -904,13 +904,17 @@ body.admin-open{overflow:hidden;}
     font-size:1.6rem;line-height:1;color:var(--ink);
     display:flex;align-items:center;justify-content:center;
   }
-  .main-nav a{
+  .main-nav a,.main-nav-info-btn{
     padding:16px 24px;
     font-family:var(--font-pixel);font-size:.78rem;
     text-transform:uppercase;letter-spacing:.5px;
     border-bottom:1px solid var(--grey-light);width:100%;
   }
-  .main-nav a:hover{color:var(--accent);}
+  .main-nav a:hover,.main-nav-info-btn:hover{color:var(--accent);}
+  .main-nav-info-btn{
+    text-align:left;background:none;border-left:none;border-right:none;border-top:none;
+    color:var(--ink);cursor:pointer;
+  }
   .menu-toggle{display:flex;}
 
   /* sticky bar → hide on mobile */
@@ -974,6 +978,27 @@ body.admin-open{overflow:hidden;}
   .product-info{padding:12px 14px;}
 
   .footer-inner{grid-template-columns:1fr;}
+}
+
+/* ===================== RESPIRO MOBILE (<768px) ===================== */
+@media (max-width:767px){
+  /* Cabeçalho do catálogo: botão voltar / título empilhados sobre o
+     seletor de ordenação, com respiro entre eles */
+  .catalog-head{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:16px;
+    margin-bottom:24px;
+  }
+  .sort-select{width:100%;}
+
+  /* Respiro entre os filtros/grade e a linha divisória da próxima seção */
+  .catalog{padding-bottom:32px;}
+  .product-grid{margin-bottom:32px;}
+
+  /* Margem de segurança para o conteúdo não ficar embaixo da barra
+     inferior fixa (altura da barra + folga) */
+  body{padding-bottom:90px;}
 }
 
 @media (max-width:500px){
