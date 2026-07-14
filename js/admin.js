@@ -269,7 +269,7 @@ document.getElementById("admin-tabs").addEventListener("click", e => {
   const pill = e.target.closest("[data-tab]");
   if (!pill) return;
   document.querySelectorAll("#admin-tabs .pill").forEach(p => p.classList.toggle("active", p === pill));
-  ["leads", "pedidos", "clientes", "cadastro", "feedbacks"].forEach(tab => {
+  ["leads", "pedidos", "clientes", "cadastro", "feedbacks", "textos"].forEach(tab => {
     document.getElementById(`admin-tab-${tab}`).hidden = tab !== pill.dataset.tab;
   });
 });
@@ -336,6 +336,7 @@ function showAdminPanel() {
   renderAdmin();
   setupProductForm();
   setupFeedbackForm();
+  setupSettingsForm();
   document.getElementById("admin-login").hidden = true;
   document.getElementById("admin-panel").hidden = false;
   document.body.classList.add("admin-open");
@@ -614,6 +615,69 @@ document.getElementById("feedback-form").addEventListener("submit", async e => {
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = "Salvar Feedback";
+  }
+});
+
+/* =====================================================
+   TEXTOS DO MODAL (aba "Textos do Modal")
+   Carrega os textos atuais nos textareas e salva de volta na tabela
+   public.site_settings (linha única, id=1) — o modal público
+   (js/settings-sync.js) reflete a mudança na próxima sincronização.
+===================================================== */
+async function setupSettingsForm() {
+  const unavailable = document.getElementById("settings-form-unavailable");
+  const submitBtn = document.getElementById("settings-form-submit");
+  if (!supabaseEnabled()) {
+    unavailable.hidden = false;
+    unavailable.textContent = "Edição indisponível: configure o Supabase (veja SUPABASE.md).";
+    submitBtn.disabled = true;
+    return;
+  }
+  unavailable.hidden = true;
+  submitBtn.disabled = false;
+
+  const settings = typeof fetchSiteSettings === "function" ? await fetchSiteSettings() : null;
+  if (settings) {
+    document.getElementById("st-envios").value = settings.envios;
+    document.getElementById("st-pagamentos").value = settings.pagamentos;
+    document.getElementById("st-devolucao").value = settings.devolucao;
+  }
+}
+
+document.getElementById("settings-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!supabaseEnabled()) return;
+
+  const submitBtn = document.getElementById("settings-form-submit");
+  const unavailable = document.getElementById("settings-form-unavailable");
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Salvando...";
+  unavailable.hidden = true;
+
+  try {
+    const { data: sessionData } = await sb.auth.getSession();
+    if (!sessionData.session) {
+      throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
+    }
+
+    const { error: updateError } = await sb.from("site_settings").update({
+      envios_text: document.getElementById("st-envios").value.trim(),
+      pagamentos_text: document.getElementById("st-pagamentos").value.trim(),
+      devolucao_text: document.getElementById("st-devolucao").value.trim(),
+      updated_at: new Date().toISOString()
+    }).eq("id", 1);
+    if (updateError) { updateError.step = "insert"; throw updateError; }
+
+    showToast("Textos salvos com sucesso");
+    if (typeof syncSiteSettings === "function") syncSiteSettings();
+  } catch (err) {
+    console.error("Textos do modal:", err);
+    unavailable.hidden = false;
+    unavailable.textContent = describeSupabaseFormError(err, { table: "site_settings", step: "Passo 7" });
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Salvar Textos";
   }
 });
 

@@ -18,9 +18,9 @@
     <a href="#top" class="logo">Re<span class="dot">.</span>cyber</a>
     <nav class="main-nav" id="main-nav">
       <button class="main-nav-close" id="main-nav-close" aria-label="Fechar menu">&times;</button>
-      <a href="#top">Home</a>
-      <a href="#catalogo">Disponíveis</a>
-      <a href="#contato">Contato</a>
+      <a href="#top" id="main-nav-home">Home</a>
+      <a href="#catalogo" id="main-nav-disponiveis">Disponíveis</a>
+      <a href="#contato" id="main-nav-contato">Contato</a>
       <button type="button" class="main-nav-info-btn" id="main-nav-info">Informações</button>
     </nav>
     <div class="header-actions">
@@ -234,37 +234,19 @@
       <a class="pill" id="info-contato-link" href="#" target="_blank" rel="noopener">Contato</a>
     </div>
 
-    <!--
-      ENVIOS — troque livremente.
-      Substitua o arquivo em img/info-envios.jpg e o texto abaixo.
-    -->
+    <!-- ENVIOS — texto gerenciado pelo painel (#admin-dashboard -> Textos do Modal) -->
     <div class="info-card" id="info-card-envios" hidden>
-      <div class="info-card-photo">
-        <img src="img/info-envios.jpg" alt="Envios" onerror="this.parentElement.classList.add('info-card-photo--empty')">
-      </div>
-      <p class="info-card-text">Adicione aqui o texto explicativo sobre prazos e formas de envio.</p>
+      <p class="info-card-text" id="info-text-envios">Adicione aqui o texto explicativo sobre prazos e formas de envio.</p>
     </div>
 
-    <!--
-      PAGAMENTOS — troque livremente.
-      Substitua o arquivo em img/info-pagamentos.jpg (ex: arte com as formas aceitas) e o texto abaixo.
-    -->
+    <!-- PAGAMENTOS — texto gerenciado pelo painel (#admin-dashboard -> Textos do Modal) -->
     <div class="info-card" id="info-card-pagamentos" hidden>
-      <div class="info-card-photo">
-        <img src="img/info-pagamentos.jpg" alt="Pagamentos" onerror="this.parentElement.classList.add('info-card-photo--empty')">
-      </div>
-      <p class="info-card-text">Adicione aqui o texto sobre as formas de pagamento aceitas.</p>
+      <p class="info-card-text" id="info-text-pagamentos">Adicione aqui o texto sobre as formas de pagamento aceitas.</p>
     </div>
 
-    <!--
-      DEVOLUÇÃO — troque livremente.
-      Substitua o arquivo em img/info-devolucao.jpg e o texto abaixo.
-    -->
+    <!-- DEVOLUÇÃO — texto gerenciado pelo painel (#admin-dashboard -> Textos do Modal) -->
     <div class="info-card" id="info-card-devolucao" hidden>
-      <div class="info-card-photo">
-        <img src="img/info-devolucao.jpg" alt="Devolução" onerror="this.parentElement.classList.add('info-card-photo--empty')">
-      </div>
-      <p class="info-card-text">Adicione aqui o texto sobre a política de trocas e devolução.</p>
+      <p class="info-card-text" id="info-text-devolucao">Adicione aqui o texto sobre a política de trocas e devolução.</p>
     </div>
 
     <!-- REDES SOCIAIS — links configurados em CONFIG.instagram / CONFIG.tiktok (js/app.js) -->
@@ -415,6 +397,7 @@
     <button class="pill" data-tab="clientes">&#128101; Informações de Clientes</button>
     <button class="pill" data-tab="cadastro">&#128247; Cadastro de Peça</button>
     <button class="pill" data-tab="feedbacks">&#128172; Feedbacks</button>
+    <button class="pill" data-tab="textos">&#128221; Textos do Modal</button>
   </div>
 
   <!-- ABA: LEADS -->
@@ -534,6 +517,34 @@
       </form>
     </div>
   </section>
+
+  <!-- ABA: TEXTOS DO MODAL -->
+  <section class="admin-tab-panel" id="admin-tab-textos" hidden>
+    <div class="admin-upload">
+      <h2 class="admin-leads-title">Gerenciar Textos do Modal</h2>
+      <h3 class="admin-leads-subtitle">Esses textos aparecem no modal "Informações" do site público</h3>
+
+      <p class="admin-login-error" id="settings-form-unavailable" hidden>
+        Edição indisponível: configure a tabela "site_settings" no Supabase (veja SUPABASE.md, Passo 7).
+      </p>
+
+      <form class="checkout-form" id="settings-form">
+        <label class="field field-wide">
+          <span>Texto de Envios</span>
+          <textarea id="st-envios" rows="4" placeholder="Prazos e formas de envio..."></textarea>
+        </label>
+        <label class="field field-wide">
+          <span>Texto de Pagamentos</span>
+          <textarea id="st-pagamentos" rows="4" placeholder="Formas de pagamento aceitas..."></textarea>
+        </label>
+        <label class="field field-wide">
+          <span>Texto de Devolução</span>
+          <textarea id="st-devolucao" rows="4" placeholder="Política de trocas e devolução..."></textarea>
+        </label>
+        <button type="submit" class="pill admin-upload-submit" id="settings-form-submit">Salvar Textos</button>
+      </form>
+    </div>
+  </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -544,5 +555,6 @@
 <script src="js/admin.js"></script>
 <script src="js/catalog-sync.js"></script>
 <script src="js/feedback-sync.js"></script>
+<script src="js/settings-sync.js"></script>
 </body>
 </html>

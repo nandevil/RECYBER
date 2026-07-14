@@ -196,13 +196,50 @@ Pronto — a aba "Feedbacks" do painel já passa a funcionar, e a seção
 "Feedback de Clientes" da home só aparece quando existir pelo menos
 um feedback cadastrado (antes disso ela fica escondida).
 
+## Passo 7 — Textos do modal "Informações"
+
+Permite editar, pelo painel (`#admin-dashboard` -> aba "Textos do
+Modal"), os textos de Envios/Pagamentos/Devolução que aparecem no
+modal "Informações" do site público, sem tocar em código.
+
+No **SQL Editor**, cole e rode:
+
+```sql
+create table public.site_settings (
+  id int primary key default 1,
+  envios_text text not null default '',
+  pagamentos_text text not null default '',
+  devolucao_text text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+-- Garante que só existe a linha 1 (configuração única do site)
+insert into public.site_settings (id) values (1) on conflict (id) do nothing;
+
+alter table public.site_settings enable row level security;
+alter table public.site_settings force row level security;
+
+-- Qualquer visitante pode LER os textos (aparecem no modal público)
+create policy "qualquer um pode ler configuracoes"
+  on public.site_settings for select to anon, authenticated using (true);
+
+-- Só você, logado, pode ATUALIZAR os textos
+create policy "dono pode atualizar configuracoes"
+  on public.site_settings for update to authenticated using (true) with check (true);
+```
+
+Pronto — a aba "Textos do Modal" já passa a funcionar. Os cartões de
+Envios, Pagamentos e Devolução do modal "Informações" carregam esses
+textos automaticamente para qualquer visitante.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.
 - **Pedidos**: visitantes só conseguem **inserir**, nunca ler/apagar.
-- **Produtos** e **feedbacks**: são públicos por natureza (é uma
-  vitrine), então qualquer visitante pode **ler**; só o dono logado
-  pode cadastrar/editar/apagar.
-- Ler/atualizar pedidos e cadastrar produtos/feedbacks exigem login
-  validado **no servidor** — não é mais contornável pelo DevTools.
+- **Produtos**, **feedbacks** e **textos do modal**: são públicos por
+  natureza (é uma vitrine), então qualquer visitante pode **ler**; só
+  o dono logado pode cadastrar/editar/apagar.
+- Ler/atualizar pedidos e cadastrar produtos/feedbacks/textos exigem
+  login validado **no servidor** — não é mais contornável pelo
+  DevTools.
 - Não use a `service_role key` no site em hipótese alguma.

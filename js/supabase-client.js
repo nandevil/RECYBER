@@ -81,3 +81,12 @@ function rowToFeedback(r) {
     photo: r.photo_url || ""
   };
 }
+
+/* Textos do modal "Informações" (tabela public.site_settings, linha única id=1) */
+function rowToSettings(r) {
+  return {
+    envios: r.envios_text || "",
+    pagamentos: r.pagamentos_text || "",
+    devolucao: r.devolucao_text || ""
+  };
+}

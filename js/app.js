@@ -320,9 +320,32 @@ function closeMobileNav() {
 }
 document.getElementById("menu-toggle").addEventListener("click", openMobileNav);
 document.getElementById("main-nav-close").addEventListener("click", closeMobileNav);
-document.querySelectorAll(".main-nav a").forEach(a => {
-  a.addEventListener("click", closeMobileNav);
+
+/* HOME — fecha o menu, vai para o topo e rola suavemente até lá. */
+document.getElementById("main-nav-home").addEventListener("click", e => {
+  e.preventDefault();
+  closeMobileNav();
+  window.location.hash = "#top";
+  window.scrollTo({ top: 0, behavior: "smooth" });
 });
+
+/* DISPONÍVEIS — fecha o menu e leva ao catálogo (a mudança de hash já
+   dispara a renderização das peças reais via setFilter/hashToFilter). */
+document.getElementById("main-nav-disponiveis").addEventListener("click", e => {
+  e.preventDefault();
+  closeMobileNav();
+  window.location.hash = "#catalogo";
+  document.getElementById("catalogo").scrollIntoView({ behavior: "smooth" });
+});
+
+/* CONTATO — fecha o menu e rola suavemente até o rodapé/contato. */
+document.getElementById("main-nav-contato").addEventListener("click", e => {
+  e.preventDefault();
+  closeMobileNav();
+  document.getElementById("contato").scrollIntoView({ behavior: "smooth" });
+});
+
+/* INFORMAÇÕES — fecha o menu e abre o modal central (mesmo do desktop). */
 document.getElementById("main-nav-info").addEventListener("click", () => {
   closeMobileNav();
   openInfo();
