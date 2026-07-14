@@ -127,6 +127,33 @@
   </div>
 </section>
 
+<!-- REDES SOCIAIS — links configurados no painel (#admin-dashboard -> Textos do Modal) -->
+<section class="social-section" id="redes">
+  <div class="container social-inner">
+    <h2 class="social-title">Conecte-se</h2>
+    <div class="social-cards">
+      <div class="social-card">
+        <div class="social-card-head">
+          <svg class="social-card-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.1" fill="currentColor"/></svg>
+          <span class="social-card-handle" id="social-instagram-handle">Instagram</span>
+        </div>
+        <p class="social-card-text">Fotos, novidades e bastidores do brechó direto no feed.</p>
+        <a class="pill social-card-link" id="social-instagram-link" href="#" target="_blank" rel="noopener">Ver no Instagram</a>
+      </div>
+      <div class="social-card">
+        <div class="social-card-head">
+          <svg class="social-card-icon" viewBox="0 0 24 24"><path d="M14 3v10.6a3.4 3.4 0 11-3.4-3.4c.3 0 .6.03.9.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 3a5.4 5.4 0 005.4 5.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="social-card-handle" id="social-tiktok-handle">TikTok</span>
+        </div>
+        <p class="social-card-text">Vídeos rápidos com os looks e a proposta sustentável da marca.</p>
+        <a class="pill social-card-link" id="social-tiktok-link" href="#" target="_blank" rel="noopener">Ver no TikTok</a>
+        <!-- Preenchido via TikTok oEmbed (público, sem login) quando um vídeo é configurado no painel -->
+        <div class="social-tiktok-embed" id="social-tiktok-embed" hidden></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- FOOTER -->
 <footer class="site-footer" id="contato">
   <div class="container footer-inner">
@@ -521,8 +548,8 @@
   <!-- ABA: TEXTOS DO MODAL -->
   <section class="admin-tab-panel" id="admin-tab-textos" hidden>
     <div class="admin-upload">
-      <h2 class="admin-leads-title">Gerenciar Textos do Modal</h2>
-      <h3 class="admin-leads-subtitle">Esses textos aparecem no modal "Informações" do site público</h3>
+      <h2 class="admin-leads-title">Gerenciar Textos &amp; Redes Sociais</h2>
+      <h3 class="admin-leads-subtitle">Alimenta o modal "Informações" e a seção "Conecte-se" do site público</h3>
 
       <p class="admin-login-error" id="settings-form-unavailable" hidden>
         Edição indisponível: configure a tabela "site_settings" no Supabase (veja SUPABASE.md, Passo 7).
@@ -541,6 +568,20 @@
           <span>Texto de Devolução</span>
           <textarea id="st-devolucao" rows="4" placeholder="Política de trocas e devolução..."></textarea>
         </label>
+        <div class="checkout-grid">
+          <label class="field field-wide">
+            <span>Link do Instagram</span>
+            <input type="url" id="st-instagram" placeholder="https://instagram.com/re.cyber">
+          </label>
+          <label class="field field-wide">
+            <span>Link do TikTok</span>
+            <input type="url" id="st-tiktok" placeholder="https://tiktok.com/@re.cyber">
+          </label>
+          <label class="field field-wide">
+            <span>Vídeo em destaque do TikTok <em>(opcional — mostra a prévia tocando na home)</em></span>
+            <input type="url" id="st-tiktok-video" placeholder="https://www.tiktok.com/@re.cyber/video/...">
+          </label>
+        </div>
         <button type="submit" class="pill admin-upload-submit" id="settings-form-submit">Salvar Textos</button>
       </form>
     </div>

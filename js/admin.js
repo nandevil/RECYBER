@@ -641,6 +641,9 @@ async function setupSettingsForm() {
     document.getElementById("st-envios").value = settings.envios;
     document.getElementById("st-pagamentos").value = settings.pagamentos;
     document.getElementById("st-devolucao").value = settings.devolucao;
+    document.getElementById("st-instagram").value = settings.instagram;
+    document.getElementById("st-tiktok").value = settings.tiktok;
+    document.getElementById("st-tiktok-video").value = settings.tiktokVideoUrl;
   }
 }
 
@@ -665,6 +668,9 @@ document.getElementById("settings-form").addEventListener("submit", async e => {
       envios_text: document.getElementById("st-envios").value.trim(),
       pagamentos_text: document.getElementById("st-pagamentos").value.trim(),
       devolucao_text: document.getElementById("st-devolucao").value.trim(),
+      instagram_link: document.getElementById("st-instagram").value.trim(),
+      tiktok_link: document.getElementById("st-tiktok").value.trim(),
+      tiktok_video_url: document.getElementById("st-tiktok-video").value.trim(),
       updated_at: new Date().toISOString()
     }).eq("id", 1);
     if (updateError) { updateError.step = "insert"; throw updateError; }

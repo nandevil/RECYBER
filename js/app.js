@@ -570,8 +570,12 @@ document.getElementById("modal-overlay").addEventListener("click", e => {
    INFORMAÇÕES (Envios / Pagamentos / Devolução / Redes / Contato)
 ===================================================== */
 function openInfo() {
-  document.getElementById("info-instagram").href = CONFIG.instagram;
-  document.getElementById("info-tiktok").href = CONFIG.tiktok;
+  // Prefere os links cadastrados no painel (Textos do Modal); cai para
+  // CONFIG quando o Supabase ainda não está configurado.
+  const insta = (typeof siteSettingsCache !== "undefined" && siteSettingsCache && siteSettingsCache.instagram) || CONFIG.instagram;
+  const tiktok = (typeof siteSettingsCache !== "undefined" && siteSettingsCache && siteSettingsCache.tiktok) || CONFIG.tiktok;
+  document.getElementById("info-instagram").href = insta;
+  document.getElementById("info-tiktok").href = tiktok;
   const msg = encodeURIComponent(`Olá! Vim do site ${CONFIG.storeName} e preciso de suporte.`);
   document.getElementById("info-contato-link").href = whatsappLink(msg);
   document.getElementById("info-overlay").classList.add("open");

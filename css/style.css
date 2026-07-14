@@ -394,6 +394,39 @@ ul{list-style:none;}
 .about-icon-card svg{width:28px;height:28px;}
 .about-icon-card span{font-size:.58rem;text-transform:uppercase;letter-spacing:.5px;}
 
+/* ===================== REDES SOCIAIS ===================== */
+.social-section{
+  border-top:2px solid var(--ink);
+  padding:56px 0;
+  background:var(--paper);
+}
+.social-title{
+  font-family:var(--font-pixel);font-size:.95rem;
+  text-align:center;letter-spacing:1px;
+  margin-bottom:32px;
+}
+.social-cards{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:24px;
+}
+.social-card{
+  border:2px solid var(--ink);border-radius:12px;
+  background:var(--paper-alt);
+  padding:24px;
+  display:flex;flex-direction:column;gap:14px;
+}
+.social-card-head{display:flex;align-items:center;gap:10px;}
+.social-card-icon{width:26px;height:26px;color:var(--ink);flex-shrink:0;}
+.social-card-handle{font-family:var(--font-pixel);font-size:.72rem;}
+.social-card-text{
+  font-family:var(--font-mono);font-size:.82rem;
+  line-height:1.6;color:var(--ink);
+}
+.social-card-link{align-self:flex-start;}
+.social-tiktok-embed{width:100%;overflow:hidden;border-radius:8px;}
+.social-tiktok-embed[hidden]{display:none!important;}
+.social-tiktok-embed iframe{width:100%;border:none;display:block;}
+
 /* ===================== FOOTER ===================== */
 .site-footer{background:var(--paper-alt);padding:48px 0 0;}
 .footer-inner{
@@ -875,6 +908,7 @@ body.admin-open{overflow:hidden;}
   .about-inner{grid-template-columns:1fr;}
   .about-visual{grid-template-columns:repeat(3,80px);justify-content:center;}
   .footer-inner{grid-template-columns:1fr 1fr;}
+  .social-cards{grid-template-columns:1fr;gap:24px;}
 }
 
 @media (max-width:720px){

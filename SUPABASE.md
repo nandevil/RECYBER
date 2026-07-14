@@ -232,6 +232,30 @@ Pronto — a aba "Textos do Modal" já passa a funcionar. Os cartões de
 Envios, Pagamentos e Devolução do modal "Informações" carregam esses
 textos automaticamente para qualquer visitante.
 
+## Passo 8 — Links de redes sociais (seção "Conecte-se")
+
+Adiciona os links de Instagram/TikTok à mesma tabela `site_settings`
+do Passo 7, para editar pelo painel (aba "Textos do Modal") em vez de
+ficarem fixos no código. Alimenta tanto a nova seção "Conecte-se" da
+home quanto o botão "Redes Sociais" do modal "Informações".
+
+No **SQL Editor**, cole e rode:
+
+```sql
+alter table public.site_settings
+  add column if not exists instagram_link text not null default '',
+  add column if not exists tiktok_link text not null default '',
+  add column if not exists tiktok_video_url text not null default '';
+```
+
+> A prévia do TikTok (vídeo tocando direto na página) só aparece se
+> você preencher "Vídeo em destaque do TikTok" com a URL de um vídeo
+> específico — usa o oEmbed oficial e público do TikTok, sem login.
+> Não existe API pública para puxar automaticamente "o feed mais
+> recente" do Instagram ou TikTok sem um app aprovado pela Meta/TikTok
+> (exige revisão e conta comercial) — por isso os cards mostram um
+> convite estilizado com o link, não fotos/vídeos "ao vivo".
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

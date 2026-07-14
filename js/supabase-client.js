@@ -87,6 +87,9 @@ function rowToSettings(r) {
   return {
     envios: r.envios_text || "",
     pagamentos: r.pagamentos_text || "",
-    devolucao: r.devolucao_text || ""
+    devolucao: r.devolucao_text || "",
+    instagram: r.instagram_link || "",
+    tiktok: r.tiktok_link || "",
+    tiktokVideoUrl: r.tiktok_video_url || ""
   };
 }
