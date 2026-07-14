@@ -291,6 +291,31 @@ body.promo-mode-active .hero-globe-wrap{
   background-color:#ffffff;
   transition:background-color .3s ease;
 }
+
+/* Banner de urgência (barra de "tempo esgotando" em pixel art) — a
+   visibilidade é controlada via JS (atributo hidden), não só CSS,
+   porque [hidden] tem display:none!important no site inteiro. */
+.promo-countdown-banner{background:#000000;}
+.promo-countdown-inner{
+  text-align:center;padding:24px 28px 0;
+}
+.promo-alert-text{
+  font-family:var(--font-mono);font-size:.8rem;line-height:1.6;
+  color:#ffffff;max-width:640px;margin:0 auto;
+}
+.pixel-loading-container{
+  border:3px solid #ffffff;width:200px;height:12px;
+  margin:18px auto 22px;padding:2px;background:transparent;
+}
+.pixel-loading-bar{
+  background:#ffffff;height:100%;width:0%;
+  animation:pixelFill 3s steps(10) infinite;
+}
+@keyframes pixelFill{ to{width:100%;} }
+.promo-divider-line{border:none;border-top:2px solid #ffffff;margin:0;}
+@media (prefers-reduced-motion:reduce){
+  .pixel-loading-bar{animation:none;width:60%;}
+}
 body.promo-mode-active .btn,
 body.promo-mode-active .pill,
 body.promo-mode-active .add-btn,
@@ -428,9 +453,10 @@ body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
 .feedback-card{
   flex:0 0 100%;scroll-snap-align:start;
   border:2px solid var(--ink);border-radius:12px;
-  background:var(--paper-alt);
-  padding:20px;display:flex;flex-direction:column;gap:10px;
+  background:var(--paper-alt);overflow:hidden;
+  display:flex;flex-direction:column;
 }
+.feedback-card-body{padding:20px;display:flex;flex-direction:column;gap:10px;}
 .feedback-head{display:flex;align-items:center;gap:10px;}
 .feedback-avatar{
   width:32px;height:32px;border-radius:50%;
@@ -442,11 +468,10 @@ body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
 .feedback-name{font-weight:700;font-size:.78rem;}
 .feedback-text{font-size:.82rem;margin:0;line-height:1.5;font-family:var(--font-mono);}
 .feedback-photo{
-  width:100%;max-height:220px;object-fit:cover;
-  border:1.5px solid var(--ink);border-radius:8px;
+  width:100%;aspect-ratio:4/3;object-fit:cover;
   display:block;
 }
-.feedback-stars{color:var(--ink);font-size:.82rem;letter-spacing:2px;}
+.feedback-stars{color:var(--ink);font-size:.82rem;letter-spacing:2px;margin-top:auto;}
 .feedback-nav{
   flex-shrink:0;width:36px;height:36px;border-radius:50%;
   border:2px solid var(--ink);background:var(--paper);
@@ -456,10 +481,10 @@ body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
 .feedback-nav:hover{background:var(--ink);color:var(--paper);}
 @media (max-width:860px){
   .feedback-nav{display:none;}
-  .feedback-card{padding:16px;}
+  .feedback-card-body{padding:16px;}
 }
 @media (min-width:861px){
-  .feedback-card{flex:0 0 calc((100% - 32px) / 3);}
+  .feedback-card{flex:0 0 calc((100% - 16px) / 2);}
 }
 
 /* ===================== ADMIN — LISTA DE FEEDBACKS ATIVOS ===================== */

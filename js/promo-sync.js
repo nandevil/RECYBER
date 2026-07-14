@@ -36,7 +36,10 @@ async function fetchPromoSettings() {
    independente de recarregar a página, reavaliado a cada sincronização
    e a cada minuto (para reverter sozinho quando o prazo expira). */
 function applyPromoModeClass() {
-  document.body.classList.toggle("promo-mode-active", isPromoWindowOpen());
+  const active = isPromoWindowOpen();
+  document.body.classList.toggle("promo-mode-active", active);
+  const banner = document.getElementById("promo-countdown-banner");
+  if (banner) banner.hidden = !active;
 }
 
 async function syncPromoState() {

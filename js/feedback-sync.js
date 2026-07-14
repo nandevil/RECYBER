@@ -21,13 +21,15 @@ function feedbackCardHtml(f) {
   const photoHtml = f.photo ? `<img class="feedback-photo" src="${f.photo}" alt="Foto enviada por ${f.name}" loading="lazy">` : "";
   return `
     <div class="feedback-card">
-      <div class="feedback-head">
-        <span class="feedback-avatar" aria-hidden="true">${AVATAR_ICON}</span>
-        <span class="feedback-name">${f.name}</span>
-      </div>
-      <p class="feedback-text">${f.comment}</p>
       ${photoHtml}
-      <span class="feedback-stars" aria-label="${f.rating} de 5 estrelas">${stars}</span>
+      <div class="feedback-card-body">
+        <div class="feedback-head">
+          <span class="feedback-avatar" aria-hidden="true">${AVATAR_ICON}</span>
+          <span class="feedback-name">${f.name}</span>
+        </div>
+        <p class="feedback-text">${f.comment}</p>
+        <span class="feedback-stars" aria-label="${f.rating} de 5 estrelas">${stars}</span>
+      </div>
     </div>
   `;
 }
