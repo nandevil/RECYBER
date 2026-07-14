@@ -354,6 +354,14 @@ body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
 @media (prefers-reduced-motion:reduce){
   body.promo-mode-active .cat-card--promo{animation:none;}
 }
+/* No Modo Promo só existe esse card na grade — centraliza em vez de
+   ficar colado à esquerda com espaço vazio ao lado. */
+body.promo-mode-active .category-cards{
+  display:flex;justify-content:center;
+}
+body.promo-mode-active .cat-card--promo{
+  flex:0 1 260px;
+}
 
 /* ---- PRODUCT GRID ---- */
 .product-grid{
