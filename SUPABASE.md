@@ -300,14 +300,70 @@ alter table public.products add column if not exists is_promo boolean not null d
 > (`start_date` ≤ agora ≤ `end_date`) **e** a peça tem "Modo Promo"
 > ativado individualmente no painel.
 
+## Passo 10 — Pagamento automático com InfinitePay
+
+Ativa o checkout integrado da InfinitePay (Pix e Cartão numa página
+segura hospedada por eles) e a confirmação automática de pagamento:
+quando o cliente paga, o pedido muda sozinho de "pendente" para
+"pago" no painel, sem você precisar fazer nada manualmente.
+
+Isso passou a exigir um pequeno backend (`worker.js` na raiz do
+projeto) rodando dentro do próprio Cloudflare Worker que já hospeda o
+site — o deploy continua automático a cada `git push`, nada muda no
+seu fluxo.
+
+### 10.1 — Configurar os segredos no Cloudflare
+
+Esses dois valores **nunca** devem ir para o código público (por isso
+são "secrets", não variáveis normais). No terminal, dentro da pasta do
+projeto (precisa ter o Node.js instalado):
+
+```sh
+npx wrangler secret put SUPABASE_URL
+# cole quando pedir: https://pzsbmenyseilagvbrnxn.supabase.co
+
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+# cole a "service_role key" — Project Settings -> API no Supabase.
+# ATENÇÃO: essa chave ignora todas as políticas RLS. Só é segura aqui
+# porque vive exclusivamente no ambiente do Worker (servidor), nunca
+# chega ao navegador do cliente.
+```
+
+Se preferir sem terminal: no painel do Cloudflare, abra o Worker
+`recyber` → **Settings → Variables and Secrets → Add** → marque como
+**Secret** (não "Text") para os dois valores acima.
+
+### 10.2 — Verificar a resposta da InfinitePay antes de ativar
+
+O `worker.js` já confirma cada pagamento chamando o endpoint oficial
+`/payment_check` da InfinitePay antes de marcar o pedido como pago
+(evita que alguém finja uma notificação de pagamento aprovado). Mas o
+campo exato da resposta que indica "confirmado" pode variar — antes de
+divulgar o checkout para clientes de verdade:
+
+1. Faça uma compra de teste (Pix de valor baixo, por exemplo).
+2. No painel do Cloudflare, veja os logs do Worker em tempo real:
+   `npx wrangler tail` (ou pela aba **Logs** do dashboard).
+3. Procure a linha `PAYMENT_CHECK_RESPONSE` e confira o campo real que
+   indica sucesso.
+4. Se não for `success`/`paid`/`status:"paid"` (o que o código já
+   verifica), ajuste a condição `confirmed` em `worker.js` para bater
+   com a resposta real, faça commit e envie.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.
-- **Pedidos**: visitantes só conseguem **inserir**, nunca ler/apagar.
+- **Pedidos**: visitantes só conseguem **inserir**, nunca ler/apagar
+  diretamente do navegador.
 - **Produtos**, **feedbacks** e **textos do modal**: são públicos por
   natureza (é uma vitrine), então qualquer visitante pode **ler**; só
   o dono logado pode cadastrar/editar/apagar.
 - Ler/atualizar pedidos e cadastrar produtos/feedbacks/textos exigem
   login validado **no servidor** — não é mais contornável pelo
   DevTools.
-- Não use a `service_role key` no site em hipótese alguma.
+- Não use a `service_role key` **no código do site** (o que roda no
+  navegador do cliente) em hipótese alguma. A única exceção é o
+  `worker.js` do Passo 10: ele roda inteiramente no servidor da
+  Cloudflare, o navegador do cliente nunca vê essa chave, e é assim
+  que o webhook de pagamento consegue marcar o pedido como "pago" sem
+  exigir login.

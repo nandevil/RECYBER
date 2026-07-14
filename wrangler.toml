@@ -1,0 +1,12 @@
+name = "recyber"
+main = "worker.js"
+compatibility_date = "2026-07-14"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./"
+binding = "ASSETS"
+
+# Não é segredo — é só o @ público da sua conta InfinitePay.
+[vars]
+INFINITEPAY_HANDLE = "recyber"

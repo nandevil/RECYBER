@@ -782,6 +782,7 @@ body.promo-mode-active .cat-card--promo{
 }
 .checkout-summary-row em{color:var(--grey);font-style:normal;}
 .checkout-subtitle{font-family:var(--font-pixel);font-size:.78rem;margin-bottom:2px;}
+.checkout-payment-note{font-size:.72rem;color:var(--grey);}
 .checkout-form{display:flex;flex-direction:column;gap:18px;}
 .checkout-grid{
   display:grid;grid-template-columns:1fr 1fr;gap:14px;

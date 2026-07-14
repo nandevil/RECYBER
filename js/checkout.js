@@ -35,7 +35,6 @@ function renderCheckoutSummary() {
 function resetCheckoutForm() {
   document.getElementById("checkout-form").reset();
   document.getElementById("checkout-totals").hidden = true;
-  document.getElementById("pix-card").hidden = true;
   document.querySelectorAll("#checkout-payment-pills .pill").forEach(p => p.classList.remove("active"));
   checkoutPayment = null;
   shippingCalculated = false;
@@ -110,17 +109,31 @@ document.getElementById("checkout-payment-pills").addEventListener("click", e =>
   if (!pill) return;
   checkoutPayment = pill.dataset.payment;
   document.querySelectorAll("#checkout-payment-pills .pill").forEach(p => p.classList.toggle("active", p === pill));
-  document.getElementById("pix-card").hidden = checkoutPayment !== "pix";
 });
 
-/* Mensagem de WhatsApp para pagamento no Cartão de Crédito */
-function buildOrderWhatsappMessage(order) {
-  let msg = `Olá! Sou ${order.customer.nome} e quero pagar com cartão o pedido *${order.id}* do site *${CONFIG.storeName}*:\n\n`;
-  order.items.forEach(item => {
-    msg += `• ${item.name} (Tam. ${item.size}) x${item.qty} — ${money(item.price * item.qty)}\n`;
-  });
-  msg += `\nSubtotal: ${money(order.subtotal)}\nFrete: ${money(order.shipping)}\n*Total: ${money(order.total)}*\n\nPodemos combinar o pagamento pelo cartão?`;
-  return encodeURIComponent(msg);
+/* Cria o link de pagamento hospedado pela InfinitePay (PIX ou cartão,
+   o cliente escolhe na página deles) e redireciona pra lá. O pedido já
+   foi salvo como "pendente"; o webhook do Worker confirma o pagamento
+   e atualiza o status quando a InfinitePay avisar. */
+async function startInfinitePayCheckout(order) {
+  const submitBtn = document.getElementById("checkout-submit");
+  try {
+    const res = await fetch("/api/create-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order })
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || !data.url) {
+      throw new Error(data && data.error ? data.error : "Falha ao iniciar o pagamento");
+    }
+    window.location.href = data.url;
+  } catch (err) {
+    console.error("InfinitePay:", err);
+    showToast("Não foi possível abrir o pagamento. Tente novamente.");
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Finalizar Compra";
+  }
 }
 
 /* Persiste o pedido: Supabase quando configurado, senão localStorage. */
@@ -190,22 +203,32 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
 
   const submitBtn = document.getElementById("checkout-submit");
   submitBtn.disabled = true;
-  submitBtn.textContent = "Enviando...";
+  submitBtn.textContent = "Salvando pedido...";
   const ok = await persistOrder(order);
-  submitBtn.disabled = false;
-  submitBtn.textContent = "Finalizar Compra";
-  if (!ok) return;
+  if (!ok) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Finalizar Compra";
+    return;
+  }
 
   state.cart = [];
   saveCart();
-
   closeCheckout();
-  document.getElementById("success-overlay").classList.add("open");
 
-  if (checkoutPayment === "cartao") {
-    window.open(whatsappLink(buildOrderWhatsappMessage(order)), "_blank");
-  }
+  submitBtn.textContent = "Abrindo pagamento...";
+  await startInfinitePayCheckout(order);
 });
+
+/* Cliente volta do checkout da InfinitePay via redirect_url (?pedido=ID) */
+(function handlePaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const orderId = params.get("pedido");
+  if (!orderId) return;
+  params.delete("pedido");
+  const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : "") + window.location.hash;
+  window.history.replaceState(null, "", cleanUrl);
+  document.getElementById("success-overlay").classList.add("open");
+})();
 
 function closeSuccess() {
   document.getElementById("success-overlay").classList.remove("open");
