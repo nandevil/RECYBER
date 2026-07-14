@@ -445,6 +445,7 @@ body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
   position:relative;display:flex;align-items:center;gap:12px;
 }
 .feedback-track{
+  flex:1 1 auto;min-width:0;
   display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;
   scroll-behavior:smooth;-webkit-overflow-scrolling:touch;
   padding-bottom:4px;
