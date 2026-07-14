@@ -157,13 +157,52 @@ passa a funcionar (ela detecta sozinha se a tabela existe).
 > alter table public.products drop column if exists image_url;
 > ```
 
+## Passo 6 — Feedback de clientes
+
+Permite cadastrar depoimentos no painel (`#admin-dashboard` -> aba
+"Feedbacks") e eles aparecerem na home, na seção "Feedback de
+Clientes". As fotos usam o **mesmo bucket `product-images`** já
+criado no Passo 5 — não precisa criar outro bucket.
+
+No **SQL Editor**, cole e rode:
+
+```sql
+create table public.feedbacks (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  name text not null,
+  comment text not null,
+  rating int not null default 5,
+  photo_url text
+);
+
+alter table public.feedbacks enable row level security;
+alter table public.feedbacks force row level security;
+
+-- Qualquer visitante pode VER os feedbacks (aparecem na home)
+create policy "qualquer um pode ler feedbacks"
+  on public.feedbacks for select to anon, authenticated using (true);
+
+-- Só você, logado, pode cadastrar/editar/remover feedbacks
+create policy "dono pode inserir feedbacks"
+  on public.feedbacks for insert to authenticated with check (true);
+create policy "dono pode atualizar feedbacks"
+  on public.feedbacks for update to authenticated using (true) with check (true);
+create policy "dono pode deletar feedbacks"
+  on public.feedbacks for delete to authenticated using (true);
+```
+
+Pronto — a aba "Feedbacks" do painel já passa a funcionar, e a seção
+"Feedback de Clientes" da home só aparece quando existir pelo menos
+um feedback cadastrado (antes disso ela fica escondida).
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.
 - **Pedidos**: visitantes só conseguem **inserir**, nunca ler/apagar.
-- **Produtos**: o catálogo é público por natureza (é uma vitrine), então
-  qualquer visitante pode **ler**; só o dono logado pode
-  cadastrar/editar/apagar peças.
-- Ler/atualizar pedidos e cadastrar produtos exigem login validado
-  **no servidor** — não é mais contornável pelo DevTools.
+- **Produtos** e **feedbacks**: são públicos por natureza (é uma
+  vitrine), então qualquer visitante pode **ler**; só o dono logado
+  pode cadastrar/editar/apagar.
+- Ler/atualizar pedidos e cadastrar produtos/feedbacks exigem login
+  validado **no servidor** — não é mais contornável pelo DevTools.
 - Não use a `service_role key` no site em hipótese alguma.

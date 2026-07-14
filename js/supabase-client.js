@@ -70,3 +70,14 @@ function rowToProduct(r) {
     empty: false
   };
 }
+
+/* Depoimento cadastrado no painel (tabela public.feedbacks) -> formato do card */
+function rowToFeedback(r) {
+  return {
+    id: r.id,
+    name: r.name,
+    comment: r.comment,
+    rating: Number(r.rating) || 5,
+    photo: r.photo_url || ""
+  };
+}

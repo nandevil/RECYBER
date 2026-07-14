@@ -348,8 +348,15 @@ ul{list-style:none;}
   gap:48px;align-items:start;
 }
 .about-text p{font-size:.92rem;margin-bottom:20px;}
+
+.section-divider{
+  border:none;border-top:2px solid var(--ink);
+  margin:40px 0;
+}
+
 /* ---- FEEDBACK DE CLIENTES ---- */
 .feedback-section{margin-top:8px;}
+.feedback-section[hidden]{display:none!important;}
 .feedback-title{
   font-family:var(--font-pixel);font-size:.78rem;
   text-transform:uppercase;letter-spacing:.5px;
@@ -374,6 +381,11 @@ ul{list-style:none;}
 .feedback-avatar svg{width:22px;height:22px;}
 .feedback-name{font-weight:700;font-size:.78rem;}
 .feedback-text{font-size:.78rem;margin:0;line-height:1.5;}
+.feedback-photo{
+  width:100%;max-height:220px;object-fit:cover;
+  border:1.5px solid var(--ink);border-radius:8px;
+  display:block;
+}
 .feedback-stars{color:var(--ink);font-size:.82rem;letter-spacing:2px;}
 
 .about-visual{

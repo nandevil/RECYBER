@@ -269,7 +269,7 @@ document.getElementById("admin-tabs").addEventListener("click", e => {
   const pill = e.target.closest("[data-tab]");
   if (!pill) return;
   document.querySelectorAll("#admin-tabs .pill").forEach(p => p.classList.toggle("active", p === pill));
-  ["leads", "pedidos", "clientes", "cadastro"].forEach(tab => {
+  ["leads", "pedidos", "clientes", "cadastro", "feedbacks"].forEach(tab => {
     document.getElementById(`admin-tab-${tab}`).hidden = tab !== pill.dataset.tab;
   });
 });
@@ -335,6 +335,7 @@ document.getElementById("admin-close").addEventListener("click", () => {
 function showAdminPanel() {
   renderAdmin();
   setupProductForm();
+  setupFeedbackForm();
   document.getElementById("admin-login").hidden = true;
   document.getElementById("admin-panel").hidden = false;
   document.body.classList.add("admin-open");
@@ -439,25 +440,32 @@ function resetProductForm() {
   renderProductImagePreviews();
 }
 
-/* Traduz erros comuns do Supabase para mensagens acionáveis. */
-function describeProductFormError(err) {
+/* Traduz erros comuns do Supabase para mensagens acionáveis.
+   opts: { table: "products"|"feedbacks", step: "Passo 5"|"Passo 6" } */
+function describeSupabaseFormError(err, opts) {
+  const table = opts && opts.table || "products";
+  const step = opts && opts.step || "Passo 5";
   const msg = err && err.message ? err.message : "";
   const extra = [err.code, err.details, err.hint].filter(Boolean).join(" · ");
-  const stepLabel = err.step === "upload" ? "no envio da FOTO" : err.step === "insert" ? "ao SALVAR a peça" : "";
+  const stepLabel = err.step === "upload" ? "no envio da FOTO" : err.step === "insert" ? "ao SALVAR o registro" : "";
 
   if (err.code === "PGRST205" || msg.includes("Could not find the table")) {
-    return 'A tabela "products" ainda não existe no Supabase. Rode o SQL do Passo 5 em SUPABASE.md.';
+    return `A tabela "${table}" ainda não existe no Supabase. Rode o SQL do ${step} em SUPABASE.md.`;
   }
   if (msg.includes("Bucket not found")) {
-    return 'O bucket de fotos "product-images" ainda não existe no Supabase. Crie-o no Passo 5 de SUPABASE.md.';
+    return `O bucket de fotos "product-images" ainda não existe no Supabase. Crie-o no Passo 5 de SUPABASE.md.`;
   }
   if (msg.includes("row-level security") || msg.includes("permission denied")) {
     if (err.step === "upload") {
-      return 'Sem permissão para ENVIAR FOTO — as políticas de segurança do bucket "product-images" (Passo 5, bloco de Storage em SUPABASE.md) não foram aplicadas ainda. Rode aquele SQL de novo.';
+      return `Sem permissão para ENVIAR FOTO — as políticas de segurança do bucket "product-images" (Passo 5, bloco de Storage em SUPABASE.md) não foram aplicadas ainda. Rode aquele SQL de novo.`;
     }
     return `Sem permissão ${stepLabel} (sessão pode ter expirado — saia e entre de novo). Detalhe técnico: ${extra || msg}`;
   }
   return `Erro ${stepLabel || "ao cadastrar"}: ${msg || "tente novamente."}${extra ? ` (${extra})` : ""}`;
+}
+
+function describeProductFormError(err) {
+  return describeSupabaseFormError(err, { table: "products", step: "Passo 5" });
 }
 
 document.getElementById("product-form").addEventListener("submit", async e => {
@@ -512,6 +520,100 @@ document.getElementById("product-form").addEventListener("submit", async e => {
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = "Cadastrar Peça";
+  }
+});
+
+/* =====================================================
+   GERENCIAR FEEDBACKS (aba "Feedbacks")
+   Sobe a foto (opcional) para o bucket product-images e insere a
+   linha na tabela public.feedbacks — o depoimento aparece na home
+   (js/feedback-sync.js) na próxima sincronização.
+===================================================== */
+let selectedFeedbackImage = null;
+
+function setupFeedbackForm() {
+  const unavailable = document.getElementById("feedback-form-unavailable");
+  const submitBtn = document.getElementById("feedback-form-submit");
+  if (!supabaseEnabled()) {
+    unavailable.hidden = false;
+    unavailable.textContent = "Cadastro indisponível: configure o Supabase (veja SUPABASE.md).";
+    submitBtn.disabled = true;
+  } else {
+    unavailable.hidden = true;
+    submitBtn.disabled = false;
+  }
+}
+
+function renderFeedbackImagePreview() {
+  const wrap = document.getElementById("fb-image-previews");
+  wrap.innerHTML = !selectedFeedbackImage ? "" : `
+    <div class="pf-image-thumb">
+      <img src="${URL.createObjectURL(selectedFeedbackImage)}" alt="${selectedFeedbackImage.name}">
+      <button type="button" class="pf-image-remove" id="fb-image-remove" aria-label="Remover foto">&times;</button>
+    </div>
+  `;
+}
+
+document.getElementById("fb-image").addEventListener("change", e => {
+  selectedFeedbackImage = e.target.files[0] || null;
+  e.target.value = "";
+  renderFeedbackImagePreview();
+});
+document.getElementById("fb-image-previews").addEventListener("click", e => {
+  if (!e.target.closest("#fb-image-remove")) return;
+  selectedFeedbackImage = null;
+  renderFeedbackImagePreview();
+});
+
+function resetFeedbackForm() {
+  document.getElementById("feedback-form").reset();
+  selectedFeedbackImage = null;
+  renderFeedbackImagePreview();
+}
+
+document.getElementById("feedback-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!supabaseEnabled()) return;
+
+  const submitBtn = document.getElementById("feedback-form-submit");
+  const unavailable = document.getElementById("feedback-form-unavailable");
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Salvando...";
+  unavailable.hidden = true;
+
+  try {
+    const { data: sessionData } = await sb.auth.getSession();
+    if (!sessionData.session) {
+      throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
+    }
+
+    let photoUrl = "";
+    if (selectedFeedbackImage) {
+      const path = `feedback-${Date.now()}-${selectedFeedbackImage.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
+      const { error: uploadError } = await sb.storage.from("product-images").upload(path, selectedFeedbackImage);
+      if (uploadError) { uploadError.step = "upload"; throw uploadError; }
+      photoUrl = sb.storage.from("product-images").getPublicUrl(path).data.publicUrl;
+    }
+
+    const { error: insertError } = await sb.from("feedbacks").insert({
+      name: document.getElementById("fb-name").value.trim(),
+      comment: document.getElementById("fb-comment").value.trim(),
+      rating: Number(document.getElementById("fb-rating").value) || 5,
+      photo_url: photoUrl
+    });
+    if (insertError) { insertError.step = "insert"; throw insertError; }
+
+    resetFeedbackForm();
+    showToast("Feedback salvo com sucesso");
+    if (typeof syncFeedbacks === "function") syncFeedbacks();
+  } catch (err) {
+    console.error("Cadastro de feedback:", err);
+    unavailable.hidden = false;
+    unavailable.textContent = describeSupabaseFormError(err, { table: "feedbacks", step: "Passo 6" });
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Salvar Feedback";
   }
 });
 
