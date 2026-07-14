@@ -456,7 +456,7 @@ body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
 }
 .feedback-track::-webkit-scrollbar{display:none;}
 .feedback-card{
-  flex:0 0 100%;scroll-snap-align:start;
+  flex:0 0 100%;max-width:340px;scroll-snap-align:start;
   border:2px solid var(--ink);border-radius:12px;
   background:var(--paper-alt);overflow:hidden;
   display:flex;flex-direction:column;
