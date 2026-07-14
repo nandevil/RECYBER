@@ -273,6 +273,51 @@ ul{list-style:none;}
 .cat-card--promo.active .cat-card-thumb{background:#c0392b;}
 .cat-card--promo.active .cat-card-label{color:#c0392b;}
 
+/* ===================== MODO PROMO — TEMA ESCURO PÚBLICO =====================
+   Ativado/desativado automaticamente (js/promo-sync.js) enquanto a campanha
+   global estiver dentro do período configurado no painel. */
+body.promo-mode-active{
+  --ink:#ffffff;
+  --paper:#0b0b0b;
+  --paper-alt:#141414;
+  --grey:#a8a8a4;
+  --grey-light:#2a2a28;
+}
+body.promo-mode-active .btn,
+body.promo-mode-active .pill,
+body.promo-mode-active .add-btn,
+body.promo-mode-active .cat-card,
+body.promo-mode-active .product-card,
+body.promo-mode-active .social-card,
+body.promo-mode-active .feedback-card{
+  box-shadow:0 0 0 1px var(--ink),0 0 14px rgba(255,255,255,.18);
+}
+body.promo-mode-active .cat-card:hover,
+body.promo-mode-active .product-card:hover{
+  box-shadow:0 0 0 1px var(--ink),0 0 24px rgba(255,255,255,.32);
+}
+
+/* Categoria "Promoções" em destaque: bloco invertido + pulso suave */
+body.promo-mode-active .cat-card--promo{
+  background:#ffffff;border-color:#ffffff;
+  animation:promoPulse 1.8s ease-in-out infinite;
+}
+body.promo-mode-active .cat-card--promo .cat-card-thumb{background:#ffffff;}
+body.promo-mode-active .cat-card--promo .cat-card-icon{color:#0b0b0b;}
+body.promo-mode-active .cat-card--promo .cat-card-label,
+body.promo-mode-active .cat-card--promo .cat-card-count{color:#0b0b0b;}
+body.promo-mode-active .cat-card--promo.active{background:#ffffff;}
+body.promo-mode-active .cat-card--promo.active .cat-card-thumb{background:#ffffff;}
+body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
+
+@keyframes promoPulse{
+  0%,100%{box-shadow:0 0 0 1px #fff,0 0 10px rgba(255,255,255,.35);}
+  50%{box-shadow:0 0 0 1px #fff,0 0 26px rgba(255,255,255,.75);}
+}
+@media (prefers-reduced-motion:reduce){
+  body.promo-mode-active .cat-card--promo{animation:none;}
+}
+
 /* ---- PRODUCT GRID ---- */
 .product-grid{
   display:grid;

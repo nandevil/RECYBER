@@ -32,11 +32,24 @@ async function fetchPromoSettings() {
   return rowToPromoSettings(data);
 }
 
+/* Liga/desliga o tema "Modo Promo" do site público (classe na <body>) —
+   independente de recarregar a página, reavaliado a cada sincronização
+   e a cada minuto (para reverter sozinho quando o prazo expira). */
+function applyPromoModeClass() {
+  document.body.classList.toggle("promo-mode-active", isPromoWindowOpen());
+}
+
 async function syncPromoState() {
   const settings = await fetchPromoSettings();
   if (settings) promoState = settings;
+  applyPromoModeClass();
   if (typeof renderCategoryCards === "function") renderCategoryCards();
   if (typeof renderGrid === "function") renderGrid();
 }
 
 syncPromoState();
+setInterval(() => {
+  applyPromoModeClass();
+  if (typeof renderCategoryCards === "function") renderCategoryCards();
+  if (typeof renderGrid === "function") renderGrid();
+}, 60000);
