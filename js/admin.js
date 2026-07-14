@@ -442,6 +442,7 @@ function resetProductForm() {
 /* Traduz erros comuns do Supabase para mensagens acionáveis. */
 function describeProductFormError(err) {
   const msg = err && err.message ? err.message : "";
+  const extra = [err.code, err.details, err.hint].filter(Boolean).join(" · ");
   if (err.code === "PGRST205" || msg.includes("Could not find the table")) {
     return 'A tabela "products" ainda não existe no Supabase. Rode o SQL do Passo 5 em SUPABASE.md.';
   }
@@ -449,9 +450,9 @@ function describeProductFormError(err) {
     return 'O bucket de fotos "product-images" ainda não existe no Supabase. Crie-o no Passo 5 de SUPABASE.md.';
   }
   if (msg.includes("row-level security") || msg.includes("permission denied")) {
-    return "Sem permissão para cadastrar — confirme que você está logado como dono (não em modo local).";
+    return `Sem permissão para cadastrar (sessão pode ter expirado — saia e entre de novo). Detalhe técnico: ${extra || msg}`;
   }
-  return `Erro ao cadastrar: ${msg || "tente novamente."}`;
+  return `Erro ao cadastrar: ${msg || "tente novamente."}${extra ? ` (${extra})` : ""}`;
 }
 
 document.getElementById("product-form").addEventListener("submit", async e => {
@@ -466,6 +467,17 @@ document.getElementById("product-form").addEventListener("submit", async e => {
   unavailable.hidden = true;
 
   try {
+    const { data: sessionData } = await sb.auth.getSession();
+    console.log("Sessão no momento do envio:", sessionData.session ? {
+      userId: sessionData.session.user.id,
+      email: sessionData.session.user.email,
+      role: sessionData.session.user.role,
+      expiresAt: new Date(sessionData.session.expires_at * 1000).toISOString()
+    } : "NENHUMA SESSÃO ATIVA");
+    if (!sessionData.session) {
+      throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
+    }
+
     const imageUrls = [];
     for (const file of selectedProductImages) {
       const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
