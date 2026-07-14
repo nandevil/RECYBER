@@ -67,7 +67,18 @@ function rowToProduct(r) {
     image: images[0] || "",
     images,
     tag: r.tag || "",
+    isPromo: !!r.is_promo,
     empty: false
+  };
+}
+
+/* Campanha de desconto global (tabela public.promo_settings, linha única id=1) */
+function rowToPromoSettings(r) {
+  return {
+    active: !!r.is_active,
+    discountPercent: Number(r.discount_percent) || 0,
+    startDate: r.start_date,
+    endDate: r.end_date
   };
 }
 

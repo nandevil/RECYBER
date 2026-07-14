@@ -269,7 +269,7 @@ document.getElementById("admin-tabs").addEventListener("click", e => {
   const pill = e.target.closest("[data-tab]");
   if (!pill) return;
   document.querySelectorAll("#admin-tabs .pill").forEach(p => p.classList.toggle("active", p === pill));
-  ["leads", "pedidos", "clientes", "cadastro", "feedbacks", "textos"].forEach(tab => {
+  ["leads", "pedidos", "clientes", "cadastro", "feedbacks", "textos", "promo"].forEach(tab => {
     document.getElementById(`admin-tab-${tab}`).hidden = tab !== pill.dataset.tab;
   });
 });
@@ -337,6 +337,7 @@ function showAdminPanel() {
   setupProductForm();
   setupFeedbackForm();
   setupSettingsForm();
+  setupPromoForm();
   document.getElementById("admin-login").hidden = true;
   document.getElementById("admin-panel").hidden = false;
   document.body.classList.add("admin-open");
@@ -746,6 +747,160 @@ document.getElementById("settings-form").addEventListener("submit", async e => {
     submitBtn.textContent = "Salvar Textos";
   }
 });
+
+/* =====================================================
+   CAMPANHA DE DESCONTO (aba "Promoções")
+   Salva na tabela public.promo_settings (linha única, id=1) e no
+   campo is_promo de cada peça (tabela public.products) — o site
+   público (js/promo-sync.js) reflete a mudança na próxima sincronização.
+===================================================== */
+
+/* "2026-07-20T00:00:00+00:00" (banco) <-> "2026-07-20T00:00" (input datetime-local, hora local) */
+function toDatetimeLocalValue(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function fromDatetimeLocalValue(value) {
+  return value ? new Date(value).toISOString() : null;
+}
+
+async function setupPromoForm() {
+  const unavailable = document.getElementById("promo-form-unavailable");
+  const submitBtn = document.getElementById("promo-form-submit");
+  if (!supabaseEnabled()) {
+    unavailable.hidden = false;
+    unavailable.textContent = "Edição indisponível: configure o Supabase (veja SUPABASE.md).";
+    submitBtn.disabled = true;
+  } else {
+    unavailable.hidden = true;
+    submitBtn.disabled = false;
+
+    const { data, error } = await sb.from("promo_settings").select("*").eq("id", 1).maybeSingle();
+    if (!error && data) {
+      const settings = rowToPromoSettings(data);
+      document.getElementById("promo-active").checked = settings.active;
+      document.getElementById("promo-discount").value = settings.discountPercent;
+      document.getElementById("promo-start").value = toDatetimeLocalValue(settings.startDate);
+      document.getElementById("promo-end").value = toDatetimeLocalValue(settings.endDate);
+    } else if (error) {
+      unavailable.hidden = false;
+      unavailable.textContent = describeSupabaseFormError(error, { table: "promo_settings", step: "Passo 9" });
+      submitBtn.disabled = true;
+    }
+  }
+  renderPromoProductsList();
+}
+
+document.getElementById("promo-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!supabaseEnabled()) return;
+
+  const submitBtn = document.getElementById("promo-form-submit");
+  const unavailable = document.getElementById("promo-form-unavailable");
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Salvando...";
+  unavailable.hidden = true;
+
+  try {
+    const { data: sessionData } = await sb.auth.getSession();
+    if (!sessionData.session) {
+      throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
+    }
+
+    const { error: updateError } = await sb.from("promo_settings").update({
+      is_active: document.getElementById("promo-active").checked,
+      discount_percent: Number(document.getElementById("promo-discount").value) || 0,
+      start_date: fromDatetimeLocalValue(document.getElementById("promo-start").value),
+      end_date: fromDatetimeLocalValue(document.getElementById("promo-end").value),
+      updated_at: new Date().toISOString()
+    }).eq("id", 1);
+    if (updateError) { updateError.step = "insert"; throw updateError; }
+
+    showToast("Campanha salva com sucesso");
+    if (typeof syncPromoState === "function") syncPromoState();
+  } catch (err) {
+    console.error("Campanha de desconto:", err);
+    unavailable.hidden = false;
+    unavailable.textContent = describeSupabaseFormError(err, { table: "promo_settings", step: "Passo 9" });
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Salvar Configurações";
+  }
+});
+
+/* Lista "Modo Promo por peça" — toggle individual, salva na hora. */
+async function renderPromoProductsList() {
+  const list = document.getElementById("admin-promo-products");
+  const empty = document.getElementById("admin-promo-products-empty");
+  if (!supabaseEnabled()) {
+    list.innerHTML = "";
+    empty.hidden = true;
+    return;
+  }
+  const { data, error } = await sb.from("products").select("*").order("created_at", { ascending: false });
+  if (error) {
+    console.error("Listar peças (promo):", error);
+    list.innerHTML = "";
+    empty.hidden = true;
+    return;
+  }
+  const products = data.map(rowToProduct);
+  empty.hidden = products.length !== 0;
+  list.innerHTML = products.map(p => `
+    <div class="admin-promo-item" data-product-id="${p.id}">
+      <img class="admin-promo-photo" src="${p.image || ""}" alt="${p.name}" onerror="this.style.visibility='hidden'">
+      <div class="admin-promo-body">
+        <span class="admin-promo-name">${p.name}</span>
+        <span class="admin-promo-meta">${labelCategory(p.category)} · ${money(p.price)}</span>
+      </div>
+      <label class="admin-promo-switch-field">
+        <span>Modo Promo</span>
+        <input type="checkbox" class="promo-switch admin-promo-item-toggle" data-product-id="${p.id}" ${p.isPromo ? "checked" : ""}>
+      </label>
+    </div>
+  `).join("");
+}
+
+document.getElementById("admin-promo-products").addEventListener("change", async e => {
+  const toggle = e.target.closest(".admin-promo-item-toggle");
+  if (!toggle) return;
+  const id = toggle.dataset.productId;
+  toggle.disabled = true;
+
+  const { error } = await sb.from("products").update({ is_promo: toggle.checked }).eq("id", id);
+  if (error) {
+    console.error("Atualizar Modo Promo:", error);
+    showToast("Erro ao atualizar Modo Promo");
+    toggle.checked = !toggle.checked;
+  } else {
+    showToast(toggle.checked ? "Peça marcada para a promoção" : "Peça removida da promoção");
+    if (typeof syncCatalog === "function") syncCatalog();
+  }
+  toggle.disabled = false;
+});
+
+/* =====================================================
+   TEMA CLARO/ESCURO DO PAINEL
+===================================================== */
+const ADMIN_THEME_KEY = "recyber_admin_theme";
+
+function applyAdminTheme(theme) {
+  document.getElementById("admin-panel").dataset.theme = theme;
+  document.getElementById("admin-theme-toggle").innerHTML = theme === "dark" ? "&#9789;" : "&#9788;";
+}
+
+(function setupAdminThemeToggle() {
+  const saved = localStorage.getItem(ADMIN_THEME_KEY) || "light";
+  applyAdminTheme(saved);
+  document.getElementById("admin-theme-toggle").addEventListener("click", () => {
+    const next = document.getElementById("admin-panel").dataset.theme === "dark" ? "light" : "dark";
+    localStorage.setItem(ADMIN_THEME_KEY, next);
+    applyAdminTheme(next);
+  });
+})();
 
 /* "Porta secreta": 3 cliques seguidos em "SINCE 2021" abrem #admin-login. */
 (function setupSecretAdminTrigger() {

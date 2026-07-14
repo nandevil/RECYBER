@@ -20,7 +20,8 @@ const CATEGORY_ICON_PATHS = {
   calcas: "M6 3h12l1 18h-5l-1-11-1 11H7L6 3z",
   "casacos-sobreposicoes": HANGER_PATH,
   bolsas: "M6 8h12l1 13H5L6 8zM9 8a3 3 0 016 0",
-  sapatos: "M4 15c0-2 1-3 3-4l6-3 2 2 5 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-1z"
+  sapatos: "M4 15c0-2 1-3 3-4l6-3 2 2 5 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-1z",
+  promocoes: "M12 2l2 5 5 .8-3.6 3.6.9 5.1L12 14l-4.3 2.5.9-5.1L5 8.8 10 8l2-6z"
 };
 const CATEGORY_BG = {
   camisas: "#dcdcd8",
@@ -123,7 +124,11 @@ function getFilteredProducts() {
 
   const q = state.search.trim().toLowerCase();
   let list = PRODUCTS.filter(p => {
-    const matchesFilter = !state.filter || state.filter === "todos" || p.category === state.filter;
+    const matchesFilter = !state.filter || state.filter === "todos"
+      ? true
+      : state.filter === "promocoes"
+      ? (isPromoWindowOpen() && p.isPromo)
+      : p.category === state.filter;
     const matchesSearch =
       !q ||
       p.name.toLowerCase().includes(q) ||
@@ -168,11 +173,18 @@ function renderGrid() {
 
   list.forEach((p, idx) => {
     const img = p.image || placeholderImage(p.category, idx);
+    const onPromo = isPromoWindowOpen() && p.isPromo;
+    const badgeHtml = onPromo
+      ? `<span class="product-badge product-badge--promo">-${promoState.discountPercent}%</span>`
+      : (p.tag ? `<span class="product-badge">${p.tag === "novo" ? "Novo" : "Promo"}</span>` : "");
+    const priceHtml = onPromo
+      ? `<span class="product-price product-price--promo"><s class="product-price-original">${money(p.price)}</s>${money(effectivePrice(p))}</span>`
+      : `<span class="product-price">${money(p.price)}</span>`;
     const card = document.createElement("div");
     card.className = "product-card";
     card.innerHTML = `
       <div class="product-thumb" data-id="${p.id}">
-        ${p.tag ? `<span class="product-badge">${p.tag === "novo" ? "Novo" : "Promo"}</span>` : ""}
+        ${badgeHtml}
         <img src="${img}" alt="${p.name}" loading="lazy">
       </div>
       <div class="product-info">
@@ -180,7 +192,7 @@ function renderGrid() {
         <p class="product-name" data-id="${p.id}">${p.name}</p>
         <span class="product-meta">Tam. ${p.size} · ${p.condition}</span>
         <div class="product-price-row">
-          <span class="product-price">${money(p.price)}</span>
+          ${priceHtml}
           <button class="add-btn" data-id="${p.id}" aria-label="Adicionar ao carrinho">+</button>
         </div>
       </div>
@@ -200,6 +212,7 @@ function renderGrid() {
 }
 
 function labelCategory(cat) {
+  if (cat === "promocoes") return "Promoções";
   const found = CATEGORIES.find(c => c.id === cat);
   return found ? found.label : cat;
 }
@@ -210,13 +223,22 @@ function labelCategory(cat) {
 function renderCategoryCards() {
   const wrap = document.getElementById("category-cards");
   if (!wrap) return;
-  const cards = [{ id: "todos", label: "Todos" }, ...CATEGORIES].map(cat => {
+  const promoCount = PRODUCTS.filter(p => p.isPromo).length;
+  const showPromo = isPromoWindowOpen() && promoCount > 0;
+  const list = [
+    { id: "todos", label: "Todos" },
+    ...(showPromo ? [{ id: "promocoes", label: "Promoções" }] : []),
+    ...CATEGORIES
+  ];
+  const cards = list.map(cat => {
     const count = cat.id === "todos"
       ? PRODUCTS.length
+      : cat.id === "promocoes"
+      ? promoCount
       : PRODUCTS.filter(p => p.category === cat.id).length;
     const iconPath = CATEGORY_ICON_PATHS[cat.id] || HANGER_PATH;
     return `
-      <button class="cat-card${cat.id === state.filter ? " active" : ""}" data-filter="${cat.id}">
+      <button class="cat-card${cat.id === "promocoes" ? " cat-card--promo" : ""}${cat.id === state.filter ? " active" : ""}" data-filter="${cat.id}">
         <span class="cat-card-thumb">
           <svg class="cat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="${iconPath}"/></svg>
         </span>
@@ -242,6 +264,7 @@ function hashToFilter() {
   if (!m) return null;
   const id = m[1];
   if (id === "todos" || CATEGORIES.some(c => c.id === id)) return id;
+  if (id === "promocoes" && isPromoWindowOpen()) return id;
   return null;
 }
 
@@ -382,7 +405,7 @@ function removeFromCart(id) {
 function cartTotal() {
   return state.cart.reduce((sum, item) => {
     const p = PRODUCTS.find(pr => pr.id === item.id);
-    return p ? sum + p.price * item.qty : sum;
+    return p ? sum + effectivePrice(p) * item.qty : sum;
   }, 0);
 }
 
@@ -415,7 +438,7 @@ function updateCartUI() {
         <div class="cart-item-thumb"><img src="${img}" alt="${p.name}"></div>
         <div class="cart-item-info">
           <span class="cart-item-name">${p.name}</span>
-          <span class="cart-item-meta">Tam. ${p.size} · ${money(p.price)}</span>
+          <span class="cart-item-meta">Tam. ${p.size} · ${money(effectivePrice(p))}</span>
           <div class="cart-item-row">
             <div class="qty-control">
               <button data-action="dec" data-id="${p.id}">-</button>
@@ -466,7 +489,7 @@ function buildWhatsappMessage(items) {
   items.forEach(item => {
     const p = PRODUCTS.find(pr => pr.id === item.id);
     if (!p) return;
-    msg += `• ${p.name} (Tam. ${p.size}) x${item.qty} — ${money(p.price * item.qty)}\n`;
+    msg += `• ${p.name} (Tam. ${p.size}) x${item.qty} — ${money(effectivePrice(p) * item.qty)}\n`;
   });
   msg += `\n*Total: ${money(cartTotal())}*\n\nPodemos combinar pagamento e entrega?`;
   return encodeURIComponent(msg);
@@ -523,7 +546,9 @@ function openModal(id) {
       <button class="modal-close" aria-label="Fechar">&times;</button>
       <span class="modal-cat">${labelCategory(p.category)}</span>
       <h3 class="modal-name">${p.name}</h3>
-      <span class="modal-price">${money(p.price)}</span>
+      <span class="modal-price">${isPromoWindowOpen() && p.isPromo
+        ? `<s class="modal-price-original">${money(p.price)}</s> ${money(effectivePrice(p))}`
+        : money(p.price)}</span>
       <p class="modal-desc">${p.description}</p>
       <div class="modal-specs">
         <span>Tamanho: ${p.size}</span>

@@ -417,6 +417,7 @@
     <h1 class="admin-title">Painel de Controle</h1>
     <div class="admin-header-actions">
       <span class="admin-count" id="admin-count">0 pedidos</span>
+      <button class="admin-theme-toggle" id="admin-theme-toggle" type="button" aria-label="Alternar tema claro/escuro">&#9788;</button>
       <button class="back-to-categories" id="admin-logout">Sair</button>
       <button class="back-to-categories" id="admin-close">&larr; Voltar à loja</button>
     </div>
@@ -429,6 +430,7 @@
     <button class="pill" data-tab="cadastro">&#128247; Cadastro de Peça</button>
     <button class="pill" data-tab="feedbacks">&#128172; Feedbacks</button>
     <button class="pill" data-tab="textos">&#128221; Textos do Modal</button>
+    <button class="pill" data-tab="promo">&#127991; Promoções</button>
   </div>
 
   <!-- ABA: LEADS -->
@@ -594,11 +596,51 @@
       </form>
     </div>
   </section>
+
+  <!-- ABA: PROMOÇÕES -->
+  <section class="admin-tab-panel" id="admin-tab-promo" hidden>
+    <div class="admin-upload">
+      <h2 class="admin-leads-title">Campanha de Desconto Global</h2>
+      <h3 class="admin-leads-subtitle">Vale só para as peças com "Modo Promo" ativado, dentro do período</h3>
+
+      <p class="admin-login-error" id="promo-form-unavailable" hidden>
+        Edição indisponível: configure a tabela "promo_settings" no Supabase (veja SUPABASE.md, Passo 9).
+      </p>
+
+      <form class="checkout-form" id="promo-form">
+        <label class="field field-wide promo-toggle-field">
+          <span>Campanha ativa</span>
+          <input type="checkbox" id="promo-active" class="promo-switch">
+        </label>
+        <div class="checkout-grid">
+          <label class="field">
+            <span>Desconto (%)</span>
+            <input type="number" id="promo-discount" min="1" max="99" value="10">
+          </label>
+          <label class="field">
+            <span>Início</span>
+            <input type="datetime-local" id="promo-start">
+          </label>
+          <label class="field">
+            <span>Término</span>
+            <input type="datetime-local" id="promo-end">
+          </label>
+        </div>
+        <button type="submit" class="pill admin-upload-submit" id="promo-form-submit">Salvar Configurações</button>
+      </form>
+
+      <h3 class="admin-leads-subtitle admin-feedbacks-list-title">Modo Promo por peça</h3>
+      <p class="admin-leads-subtitle admin-promo-products-hint">Ative nas peças que devem entrar na campanha acima</p>
+      <div class="admin-promo-products" id="admin-promo-products"></div>
+      <p class="empty-state" id="admin-promo-products-empty" hidden>Nenhuma peça cadastrada ainda.</p>
+    </div>
+  </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/products.js"></script>
+<script src="js/promo-sync.js"></script>
 <script src="js/app.js"></script>
 <script src="js/checkout.js"></script>
 <script src="js/admin.js"></script>

@@ -256,6 +256,50 @@ alter table public.site_settings
 > (exige revisão e conta comercial) — por isso os cards mostram um
 > convite estilizado com o link, não fotos/vídeos "ao vivo".
 
+## Passo 9 — Campanha de desconto (Promoções)
+
+Permite configurar, pelo painel (aba "Promoções"), uma campanha de
+desconto global com data de início/fim, e marcar peças individuais
+como elegíveis ("Modo Promo"). Enquanto a campanha estiver ativa e
+dentro do período, o site público risca o preço original, mostra o
+preço com desconto e exibe a categoria dinâmica "Promoções" — que
+some sozinha quando a campanha expira ou é desativada.
+
+No **SQL Editor**, cole e rode:
+
+```sql
+create table public.promo_settings (
+  id int primary key default 1,
+  is_active boolean not null default false,
+  discount_percent int not null default 10,
+  start_date timestamptz,
+  end_date timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.promo_settings (id) values (1) on conflict (id) do nothing;
+
+alter table public.promo_settings enable row level security;
+alter table public.promo_settings force row level security;
+
+-- Qualquer visitante pode LER a campanha (para calcular o desconto no site)
+create policy "qualquer um pode ler campanha"
+  on public.promo_settings for select to anon, authenticated using (true);
+
+-- Só você, logado, pode ATUALIZAR a campanha
+create policy "dono pode atualizar campanha"
+  on public.promo_settings for update to authenticated using (true) with check (true);
+
+-- Marca individual "Modo Promo" em cada peça (reaproveita as políticas
+-- de UPDATE já criadas para "products" no Passo 5 — não precisa de nenhuma nova)
+alter table public.products add column if not exists is_promo boolean not null default false;
+```
+
+> O desconto só é aplicado a uma peça quando **as duas coisas** forem
+> verdade: a campanha está `is_active = true` e dentro do período
+> (`start_date` ≤ agora ≤ `end_date`) **e** a peça tem "Modo Promo"
+> ativado individualmente no painel.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.
