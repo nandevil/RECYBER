@@ -281,14 +281,13 @@ window.addEventListener("hashchange", () => setFilter(hashToFilter(), { skipHash
 function updateMobileNavActive() {
   const hash = window.location.hash;
   const isCatalog = hash.startsWith("#catalogo") || hash.startsWith("#categoria-");
-  const isAdmin = hash.startsWith("#admin-");
-  const isHome = !isCatalog && !isAdmin;
   document.getElementById("mob-nav-grid").classList.toggle("active", isCatalog);
-  document.getElementById("mob-nav-home").classList.toggle("active", isHome);
-  document.getElementById("mob-nav-admin").classList.toggle("active", isAdmin);
 }
 window.addEventListener("hashchange", updateMobileNavActive);
 updateMobileNavActive();
+
+const mobInfoBtn = document.getElementById("mob-nav-info");
+if (mobInfoBtn) mobInfoBtn.addEventListener("click", openInfo);
 
 document.getElementById("sort-select").addEventListener("change", e => {
   state.sort = e.target.value;
