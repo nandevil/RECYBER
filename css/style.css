@@ -347,21 +347,28 @@ ul{list-style:none;}
 }
 
 /* ---- FEEDBACK DE CLIENTES ---- */
-.feedback-section{margin-top:8px;}
+/* ===================== FEEDBACK DE CLIENTES (carrossel) ===================== */
+.feedback-section{padding:56px 0;background:var(--paper);}
 .feedback-section[hidden]{display:none!important;}
 .feedback-title{
-  font-family:var(--font-pixel);font-size:.78rem;
-  text-transform:uppercase;letter-spacing:.5px;
-  margin-bottom:16px;
+  font-family:var(--font-pixel);font-size:.95rem;
+  text-align:center;letter-spacing:1px;
+  margin-bottom:32px;
 }
-.feedback-cards{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:12px;
+.feedback-carousel{
+  position:relative;display:flex;align-items:center;gap:12px;
 }
+.feedback-track{
+  display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;
+  scroll-behavior:smooth;-webkit-overflow-scrolling:touch;
+  padding-bottom:4px;
+}
+.feedback-track::-webkit-scrollbar{display:none;}
 .feedback-card{
-  border:2px solid var(--ink);border-radius:10px;
+  flex:0 0 100%;scroll-snap-align:start;
+  border:2px solid var(--ink);border-radius:12px;
   background:var(--paper-alt);
-  padding:14px;display:flex;flex-direction:column;gap:8px;
+  padding:20px;display:flex;flex-direction:column;gap:10px;
 }
 .feedback-head{display:flex;align-items:center;gap:10px;}
 .feedback-avatar{
@@ -372,13 +379,53 @@ ul{list-style:none;}
 }
 .feedback-avatar svg{width:22px;height:22px;}
 .feedback-name{font-weight:700;font-size:.78rem;}
-.feedback-text{font-size:.78rem;margin:0;line-height:1.5;}
+.feedback-text{font-size:.82rem;margin:0;line-height:1.5;font-family:var(--font-mono);}
 .feedback-photo{
   width:100%;max-height:220px;object-fit:cover;
   border:1.5px solid var(--ink);border-radius:8px;
   display:block;
 }
 .feedback-stars{color:var(--ink);font-size:.82rem;letter-spacing:2px;}
+.feedback-nav{
+  flex-shrink:0;width:36px;height:36px;border-radius:50%;
+  border:2px solid var(--ink);background:var(--paper);
+  cursor:pointer;font-size:1rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+.feedback-nav:hover{background:var(--ink);color:var(--paper);}
+@media (max-width:860px){
+  .feedback-nav{display:none;}
+  .feedback-card{padding:16px;}
+}
+@media (min-width:861px){
+  .feedback-card{flex:0 0 calc((100% - 32px) / 3);}
+}
+
+/* ===================== ADMIN — LISTA DE FEEDBACKS ATIVOS ===================== */
+.admin-feedbacks-list-title{margin-top:32px;}
+.admin-feedbacks-list{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+.admin-feedback-item{
+  border:2px solid var(--ink);border-radius:10px;
+  background:var(--paper-alt);padding:14px 16px;
+  display:flex;align-items:flex-start;gap:14px;
+  transition:opacity .25s ease, transform .25s ease;
+}
+.admin-feedback-item.is-removing{opacity:0;transform:translateX(12px);}
+.admin-feedback-photo{
+  width:48px;height:48px;object-fit:cover;border-radius:8px;
+  border:1.5px solid var(--ink);flex-shrink:0;
+}
+.admin-feedback-body{flex:1;min-width:0;}
+.admin-feedback-name{font-weight:700;font-size:.82rem;}
+.admin-feedback-stars{color:var(--ink);font-size:.78rem;letter-spacing:1px;margin-left:8px;}
+.admin-feedback-text{font-size:.82rem;margin:4px 0 0;line-height:1.5;}
+.admin-feedback-delete{
+  flex-shrink:0;border:1.5px solid var(--ink);border-radius:8px;
+  background:var(--paper);color:var(--ink);
+  padding:6px 12px;font-size:.72rem;cursor:pointer;
+  font-family:var(--font-mono);
+}
+.admin-feedback-delete:hover{background:var(--ink);color:var(--paper);}
 
 .about-visual{
   display:grid;grid-template-columns:repeat(3,1fr);

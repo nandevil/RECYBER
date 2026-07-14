@@ -543,7 +543,66 @@ function setupFeedbackForm() {
     unavailable.hidden = true;
     submitBtn.disabled = false;
   }
+  renderFeedbacksList();
 }
+
+/* Lista "Feedbacks ativos" (aba Feedbacks) com botão de apagar. */
+async function renderFeedbacksList() {
+  const list = document.getElementById("admin-feedbacks-list");
+  const empty = document.getElementById("admin-feedbacks-empty");
+  if (!supabaseEnabled()) {
+    list.innerHTML = "";
+    empty.hidden = true;
+    return;
+  }
+  const { data, error } = await sb.from("feedbacks").select("*").order("created_at", { ascending: false });
+  if (error) {
+    console.error("Listar feedbacks:", error);
+    list.innerHTML = "";
+    empty.hidden = true;
+    return;
+  }
+  const feedbacks = data.map(rowToFeedback);
+  empty.hidden = feedbacks.length !== 0;
+  list.innerHTML = feedbacks.map(f => {
+    const stars = "★".repeat(f.rating) + "☆".repeat(5 - f.rating);
+    const photoHtml = f.photo ? `<img class="admin-feedback-photo" src="${f.photo}" alt="Foto de ${f.name}">` : "";
+    return `
+      <div class="admin-feedback-item" data-feedback-id="${f.id}">
+        ${photoHtml}
+        <div class="admin-feedback-body">
+          <span class="admin-feedback-name">${f.name}</span>
+          <span class="admin-feedback-stars">${stars}</span>
+          <p class="admin-feedback-text">${f.comment}</p>
+        </div>
+        <button type="button" class="admin-feedback-delete" data-feedback-id="${f.id}">Apagar</button>
+      </div>
+    `;
+  }).join("");
+}
+
+document.getElementById("admin-feedbacks-list").addEventListener("click", async e => {
+  const btn = e.target.closest(".admin-feedback-delete");
+  if (!btn) return;
+  if (!confirm("Tem certeza que deseja excluir permanentemente este feedback?")) return;
+
+  const id = btn.dataset.feedbackId;
+  const item = btn.closest(".admin-feedback-item");
+  btn.disabled = true;
+
+  const { error } = await sb.from("feedbacks").delete().eq("id", id);
+  if (error) {
+    console.error("Apagar feedback:", error);
+    showToast("Erro ao apagar o feedback");
+    btn.disabled = false;
+    return;
+  }
+
+  item.classList.add("is-removing");
+  setTimeout(() => item.remove(), 250);
+  showToast("Feedback apagado");
+  if (typeof syncFeedbacks === "function") syncFeedbacks();
+});
 
 function renderFeedbackImagePreview() {
   const wrap = document.getElementById("fb-image-previews");
@@ -607,6 +666,7 @@ document.getElementById("feedback-form").addEventListener("submit", async e => {
 
     resetFeedbackForm();
     showToast("Feedback salvo com sucesso");
+    renderFeedbacksList();
     if (typeof syncFeedbacks === "function") syncFeedbacks();
   } catch (err) {
     console.error("Cadastro de feedback:", err);

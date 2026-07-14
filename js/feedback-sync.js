@@ -43,4 +43,16 @@ async function syncFeedbacks() {
   section.hidden = false;
 }
 
+/* Setas do carrossel: rolam pela largura de um card (a rolagem por toque
+   funciona nativamente no mobile via scroll-snap, sem precisar de JS). */
+function scrollFeedbackTrack(direction) {
+  const track = document.getElementById("feedback-cards");
+  const card = track.querySelector(".feedback-card");
+  if (!card) return;
+  const amount = card.getBoundingClientRect().width + 16;
+  track.scrollBy({ left: direction * amount, behavior: "smooth" });
+}
+document.getElementById("feedback-prev").addEventListener("click", () => scrollFeedbackTrack(-1));
+document.getElementById("feedback-next").addEventListener("click", () => scrollFeedbackTrack(1));
+
 syncFeedbacks();

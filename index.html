@@ -101,14 +101,6 @@
     <div class="about-text">
       <h2 class="section-title">Slow Fashion</h2>
       <p>Cada peça do Re.cyber já teve uma história — e ganha outra com você. Desde 2021, resgatamos roupas, acessórios e calçados do Rio de Janeiro para o Brasil inteiro.</p>
-
-      <hr class="section-divider">
-
-      <!-- FEEDBACK DE CLIENTES — cadastrado no painel (#admin-dashboard -> Feedbacks) -->
-      <div class="feedback-section" id="feedback-section" hidden>
-        <h3 class="feedback-title">Feedback de Clientes</h3>
-        <div class="feedback-cards" id="feedback-cards"></div>
-      </div>
     </div>
     <div class="about-visual">
       <div class="about-icon-card">
@@ -123,6 +115,18 @@
         <svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 00-3 11.2V16h6v-1.8A6 6 0 0012 3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="9" y1="19" x2="15" y2="19" stroke="currentColor" stroke-width="1.6"/><line x1="10" y1="22" x2="14" y2="22" stroke="currentColor" stroke-width="1.6"/></svg>
         <span>Repense</span>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEEDBACK DE CLIENTES — cadastrado no painel (#admin-dashboard -> Feedbacks) -->
+<section class="feedback-section" id="feedback-section" hidden>
+  <div class="container">
+    <h2 class="feedback-title">Feedback de Clientes</h2>
+    <div class="feedback-carousel">
+      <button type="button" class="feedback-nav feedback-nav--prev" id="feedback-prev" aria-label="Depoimento anterior">&larr;</button>
+      <div class="feedback-track" id="feedback-cards"></div>
+      <button type="button" class="feedback-nav feedback-nav--next" id="feedback-next" aria-label="Próximo depoimento">&rarr;</button>
     </div>
   </div>
 </section>
@@ -542,6 +546,10 @@
         <div class="pf-image-previews" id="fb-image-previews"></div>
         <button type="submit" class="pill admin-upload-submit" id="feedback-form-submit">Salvar Feedback</button>
       </form>
+
+      <h3 class="admin-leads-subtitle admin-feedbacks-list-title">Feedbacks ativos</h3>
+      <div class="admin-feedbacks-list" id="admin-feedbacks-list"></div>
+      <p class="empty-state" id="admin-feedbacks-empty" hidden>Nenhum feedback cadastrado ainda.</p>
     </div>
   </section>
 
