@@ -277,6 +277,19 @@ document.getElementById("back-to-categories").addEventListener("click", () => se
 window.addEventListener("popstate", () => setFilter(hashToFilter(), { skipHash: true }));
 window.addEventListener("hashchange", () => setFilter(hashToFilter(), { skipHash: true }));
 
+/* Destaca o ícone correspondente à tela atual na barra inferior mobile. */
+function updateMobileNavActive() {
+  const hash = window.location.hash;
+  const isCatalog = hash.startsWith("#catalogo") || hash.startsWith("#categoria-");
+  const isAdmin = hash.startsWith("#admin-");
+  const isHome = !isCatalog && !isAdmin;
+  document.getElementById("mob-nav-grid").classList.toggle("active", isCatalog);
+  document.getElementById("mob-nav-home").classList.toggle("active", isHome);
+  document.getElementById("mob-nav-admin").classList.toggle("active", isAdmin);
+}
+window.addEventListener("hashchange", updateMobileNavActive);
+updateMobileNavActive();
+
 document.getElementById("sort-select").addEventListener("change", e => {
   state.sort = e.target.value;
   renderGrid();
@@ -297,12 +310,19 @@ document.getElementById("search-close").addEventListener("click", () => {
   document.getElementById("search-bar").classList.remove("open");
 });
 
-/* menu mobile */
-document.getElementById("menu-toggle").addEventListener("click", () => {
-  document.getElementById("main-nav").classList.toggle("open");
-});
+/* menu mobile — gaveta lateral (main-nav) */
+function openMobileNav() {
+  document.getElementById("main-nav").classList.add("open");
+  document.getElementById("overlay").classList.add("open");
+}
+function closeMobileNav() {
+  document.getElementById("main-nav").classList.remove("open");
+  document.getElementById("overlay").classList.remove("open");
+}
+document.getElementById("menu-toggle").addEventListener("click", openMobileNav);
+document.getElementById("main-nav-close").addEventListener("click", closeMobileNav);
 document.querySelectorAll(".main-nav a").forEach(a => {
-  a.addEventListener("click", () => document.getElementById("main-nav").classList.remove("open"));
+  a.addEventListener("click", closeMobileNav);
 });
 
 /* =====================================================
@@ -409,6 +429,7 @@ document.getElementById("cart-close").addEventListener("click", closeCart);
 document.getElementById("overlay").addEventListener("click", () => {
   closeCart();
   closeModal();
+  closeMobileNav();
 });
 
 /* =====================================================
@@ -442,8 +463,6 @@ const stickyCart = document.getElementById("sticky-cart");
 if (stickyCart) stickyCart.addEventListener("click", openCart);
 const mobCartBtn = document.getElementById("mob-cart-btn");
 if (mobCartBtn) mobCartBtn.addEventListener("click", openCart);
-const mobMenuBtn = document.getElementById("mob-menu-btn");
-if (mobMenuBtn) mobMenuBtn.addEventListener("click", () => document.getElementById("main-nav").classList.toggle("open"));
 document.getElementById("footer-whatsapp").addEventListener("click", e => {
   e.preventDefault();
   const msg = encodeURIComponent(`Olá! Vim do site ${CONFIG.storeName}.`);

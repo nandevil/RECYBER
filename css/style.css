@@ -76,17 +76,9 @@ ul{list-style:none;}
 }
 .logo .dot,.logo-text .dot{color:var(--accent);}
 
-.main-nav{
-  display:flex;gap:24px;
-  font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;
-}
-.main-nav a{position:relative;padding:3px 0;}
-.main-nav a:hover{color:var(--accent);}
-.main-nav a::after{
-  content:'';position:absolute;left:0;bottom:-2px;
-  width:0;height:2px;background:var(--accent);transition:width .2s;
-}
-.main-nav a:hover::after{width:100%;}
+/* Só aparece dentro da gaveta mobile (ver @media max-width:720px) — no
+   desktop o header não tem links de navegação. */
+.main-nav{display:none;}
 
 .header-actions{display:flex;align-items:center;gap:4px;}
 .icon-btn{
@@ -892,15 +884,33 @@ body.admin-open{overflow:hidden;}
 }
 
 @media (max-width:720px){
+  /* Gaveta lateral (drawer) do menu mobile, desliza da direita */
   .main-nav{
-    position:fixed;top:var(--header-h);left:0;right:0;
-    background:var(--paper);border-bottom:2px solid var(--ink);
-    flex-direction:column;gap:0;
-    max-height:0;overflow:hidden;transition:max-height .25s;
-    z-index:55;
+    display:flex;flex-direction:column;gap:0;
+    position:fixed;top:0;right:0;bottom:0;
+    width:min(78vw,300px);
+    background:#f5f5f3;border-left:2px solid var(--ink);
+    box-shadow:-8px 0 24px rgba(22,22,22,.12);
+    transform:translateX(100%);
+    transition:transform .3s ease;
+    z-index:120;
+    padding:20px 0 24px;
+    overflow-y:auto;
   }
-  .main-nav.open{max-height:320px;}
-  .main-nav a{padding:15px 24px;border-bottom:1px solid var(--grey-light);width:100%;}
+  .main-nav.open{transform:translateX(0);}
+  .main-nav-close{
+    align-self:flex-end;
+    width:40px;height:40px;margin:0 12px 12px 0;
+    font-size:1.6rem;line-height:1;color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .main-nav a{
+    padding:16px 24px;
+    font-family:var(--font-pixel);font-size:.78rem;
+    text-transform:uppercase;letter-spacing:.5px;
+    border-bottom:1px solid var(--grey-light);width:100%;
+  }
+  .main-nav a:hover{color:var(--accent);}
   .menu-toggle{display:flex;}
 
   /* sticky bar → hide on mobile */
@@ -931,6 +941,11 @@ body.admin-open{overflow:hidden;}
   .mob-nav-btn:last-child{border-right:none;}
   .mob-nav-btn svg{width:22px;height:22px;}
   .mob-nav-btn:hover,.mob-nav-btn:active{background:var(--ink);color:var(--paper);}
+  .mob-nav-btn.active{
+    color:var(--accent);
+    border-top:2px solid var(--accent);
+    margin-top:-2px;
+  }
   .mob-cart{position:relative;}
   .mob-cart-badge{
     position:absolute;top:8px;right:calc(50% - 18px);
