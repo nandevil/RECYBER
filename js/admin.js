@@ -105,8 +105,18 @@ function triggerNotification(orderId, status, channel) {
 /* =====================================================
    ABA: PEDIDOS / PAGAMENTOS
 ===================================================== */
+/* Miniatura da peça — busca a foto no catálogo público (PRODUCTS,
+   compartilhado via js/catalog-sync.js) pelo id salvo no pedido. */
+function productThumbHtml(itemId, itemName) {
+  const p = typeof PRODUCTS !== "undefined" ? PRODUCTS.find(pr => pr.id === itemId) : null;
+  const img = p && p.image;
+  if (!img) return `<span class="order-item-thumb order-item-thumb--empty" aria-hidden="true"></span>`;
+  return `<img class="order-item-thumb" src="${img}" alt="${itemName}" loading="lazy">`;
+}
+
 function orderCardHtml(order) {
   const date = new Date(order.createdAt).toLocaleString("pt-BR");
+  const thumbsHtml = order.items.map(i => productThumbHtml(i.id, i.name)).join("");
   const itemsHtml = order.items.map(i => `<li>${i.qty}x ${i.name} (Tam. ${i.size}) — ${money(i.price * i.qty)}</li>`).join("");
   const paymentLabel = order.payment === "pix" ? "Pix" : "Cartão de Crédito";
   const payStatus = order.paymentStatus || "pendente";
@@ -137,6 +147,7 @@ function orderCardHtml(order) {
 
       <div class="order-block">
         <h4>Peças (${order.items.reduce((n, i) => n + i.qty, 0)})</h4>
+        <div class="order-item-thumbs">${thumbsHtml}</div>
         <ul class="order-items">${itemsHtml}</ul>
       </div>
 
@@ -228,7 +239,16 @@ function renderClients(orders) {
     const history = c.orders.map(o => {
       const date = new Date(o.createdAt).toLocaleDateString("pt-BR");
       const items = o.items.map(i => `${i.qty}x ${i.name}`).join(", ");
-      return `<li>${date} · ${o.id} · ${items} — ${money(o.total)}</li>`;
+      const thumbs = o.items.map(i => productThumbHtml(i.id, i.name)).join("");
+      return `
+        <li class="client-history-item">
+          <div class="order-item-thumbs">${thumbs}</div>
+          <div class="client-history-text">
+            <span>${date} · ${o.id}</span>
+            <span>${items} — ${money(o.total)}</span>
+          </div>
+        </li>
+      `;
     }).join("");
     return `
       <div class="order-card">

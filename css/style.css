@@ -19,7 +19,11 @@
 
 *{box-sizing:border-box;margin:0;padding:0;}
 [hidden]{display:none!important;}
-html{scroll-behavior:smooth;}
+/* Escala global de tipografia: como todo o site usa rem, subir a base
+   do html eleva todo texto proporcionalmente (~12.5%) sem precisar
+   reescrever cada font-size individualmente — textos ~12px passam a
+   ~14px, textos ~14px passam a ~16px, títulos crescem no mesmo ritmo. */
+html{scroll-behavior:smooth;font-size:112.5%;}
 body{
   background:var(--paper);
   color:var(--ink);
@@ -866,6 +870,20 @@ body.admin-open{overflow:hidden;}
 }
 .order-block p{font-size:.8rem;line-height:1.5;}
 .order-items{list-style:none;font-size:.8rem;line-height:1.6;}
+.order-item-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+.order-item-thumb{
+  width:50px;height:50px;object-fit:cover;border-radius:8px;
+  border:1.5px solid var(--ink);flex-shrink:0;
+  transition:transform .15s ease,border-color .15s ease;
+}
+.order-item-thumb:hover{transform:scale(1.12);border-color:var(--accent);z-index:1;}
+.order-item-thumb--empty{background:var(--grey-light);}
+.client-history-item{
+  display:flex;align-items:center;gap:10px;
+  list-style:none;padding:6px 0;
+}
+.client-history-item .order-item-thumbs{margin-bottom:0;flex-wrap:nowrap;}
+.client-history-text{display:flex;flex-direction:column;gap:2px;font-size:.8rem;line-height:1.4;}
 .order-totals p{font-size:.8rem;}
 .order-total-final{font-family:var(--font-pixel);font-size:.78rem;margin-top:4px;}
 .order-actions{
