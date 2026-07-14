@@ -158,30 +158,30 @@ function renderGrid() {
   const emptyState = document.getElementById("empty-state");
   const list = getFilteredProducts();
   const showProducts = isProductView();
+  const isSearching = !!state.search.trim();
 
   grid.innerHTML = "";
   emptyState.hidden = !showProducts || list.length !== 0;
-  emptyState.textContent = "Nenhuma peça encontrada. Tente outro filtro ou busca.";
+  emptyState.textContent = isSearching
+    ? "Nenhuma peça encontrada. Tente outro filtro ou busca."
+    : "Nenhuma peça disponível nesta categoria no momento. Volte em breve!";
 
   list.forEach((p, idx) => {
-    const isEmpty = !!p.empty;
-    const img = p.image || (isEmpty ? "" : placeholderImage(p.category, idx));
+    const img = p.image || placeholderImage(p.category, idx);
     const card = document.createElement("div");
-    card.className = "product-card" + (isEmpty ? " product-card--empty" : "");
+    card.className = "product-card";
     card.innerHTML = `
-      <div class="product-thumb${isEmpty ? " product-thumb--empty" : ""}" data-id="${p.id}">
+      <div class="product-thumb" data-id="${p.id}">
         ${p.tag ? `<span class="product-badge">${p.tag === "novo" ? "Novo" : "Promo"}</span>` : ""}
-        ${isEmpty
-          ? `<span class="thumb-empty-label">ADICIONE<br>FOTO</span>`
-          : `<img src="${img}" alt="${p.name}" loading="lazy">`}
+        <img src="${img}" alt="${p.name}" loading="lazy">
       </div>
       <div class="product-info">
         <span class="product-cat">${labelCategory(p.category)}</span>
-        <p class="product-name" data-id="${p.id}">${isEmpty ? `Espaço ${String(p.slot).padStart(2, "0")}` : p.name}</p>
-        <span class="product-meta">${isEmpty ? "Adicione tamanho e descrição" : `Tam. ${p.size} · ${p.condition}`}</span>
+        <p class="product-name" data-id="${p.id}">${p.name}</p>
+        <span class="product-meta">Tam. ${p.size} · ${p.condition}</span>
         <div class="product-price-row">
-          <span class="product-price">${isEmpty ? "—" : money(p.price)}</span>
-          <button class="add-btn" data-id="${p.id}" aria-label="Adicionar ao carrinho" ${isEmpty ? "disabled" : ""}>+</button>
+          <span class="product-price">${money(p.price)}</span>
+          <button class="add-btn" data-id="${p.id}" aria-label="Adicionar ao carrinho">+</button>
         </div>
       </div>
     `;
@@ -191,7 +191,7 @@ function renderGrid() {
   grid.querySelectorAll(".product-thumb, .product-name").forEach(el => {
     el.addEventListener("click", () => openModal(el.dataset.id));
   });
-  grid.querySelectorAll(".add-btn:not(:disabled)").forEach(el => {
+  grid.querySelectorAll(".add-btn").forEach(el => {
     el.addEventListener("click", () => {
       addToCart(el.dataset.id, 1);
       showToast("Adicionado ao carrinho");
@@ -461,21 +461,6 @@ function openModal(id) {
   const p = PRODUCTS.find(pr => pr.id === id);
   if (!p) return;
   const modal = document.getElementById("product-modal");
-
-  if (p.empty) {
-    modal.innerHTML = `
-      <div class="modal-image modal-image--empty"><span>ADICIONE<br>FOTO</span></div>
-      <div class="modal-body">
-        <button class="modal-close" aria-label="Fechar">&times;</button>
-        <span class="modal-cat">${labelCategory(p.category)}</span>
-        <h3 class="modal-name">Espaço ${String(p.slot).padStart(2, "0")}</h3>
-        <p class="modal-desc">Este espaço ainda não tem peça cadastrada. Edite <code>js/products.js</code> (id <code>${p.id}</code>) para adicionar foto, tamanho, preço e descrição.</p>
-      </div>
-    `;
-    modal.querySelector(".modal-close").addEventListener("click", closeModal);
-    document.getElementById("modal-overlay").classList.add("open");
-    return;
-  }
 
   const idx = PRODUCTS.indexOf(p);
   const gallery = Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
