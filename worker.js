@@ -80,7 +80,8 @@ async function handleCreatePayment(request, env) {
     if (!res.ok) {
       const detail = await res.text();
       console.error("InfinitePay create-link falhou:", res.status, detail);
-      return jsonResponse({ error: "Não foi possível gerar o link de pagamento." }, 502);
+      // DEBUG TEMPORÁRIO — remover "debug" da resposta antes de divulgar o checkout.
+      return jsonResponse({ error: "Não foi possível gerar o link de pagamento.", debug: { status: res.status, detail } }, 502);
     }
 
     const data = await res.json();
