@@ -39,7 +39,12 @@ let adminOrders = [];
 
 async function loadOrders() {
   if (supabaseEnabled()) {
-    const { data, error } = await sb.from("orders").select("*").order("created_at", { ascending: false });
+    let { data, error } = await sb.from("orders").select("*").eq("archived", false).order("created_at", { ascending: false });
+    if (error && error.message && error.message.includes("archived")) {
+      /* Coluna "archived" ainda não existe (Passo 13 do SUPABASE.md não
+         rodado) — carrega tudo sem filtrar, em vez de quebrar a aba. */
+      ({ data, error } = await sb.from("orders").select("*").order("created_at", { ascending: false }));
+    }
     if (error) {
       console.error("Supabase select:", error);
       showToast("Erro ao carregar os pedidos");
@@ -140,7 +145,12 @@ function orderCardHtml(order) {
     <div class="order-card">
       <div class="order-card-head">
         <span class="order-id">${order.id}</span>
-        <span class="order-status order-status--${order.status}" ${payStatus === "cancelado" ? "hidden" : ""}>${STATUS_LABELS[order.status] || order.status}</span>
+        <div class="order-card-head-right">
+          <span class="order-status order-status--${order.status}" ${payStatus === "cancelado" ? "hidden" : ""}>${STATUS_LABELS[order.status] || order.status}</span>
+          <button type="button" class="order-remove-btn" data-order="${order.id}" title="Remover Pedido" aria-label="Remover Pedido">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
       </div>
       <span class="order-date">${date}</span>
 
@@ -246,7 +256,37 @@ document.getElementById("admin-tabs").addEventListener("click", e => {
   });
 });
 
+/* Arquiva (soft delete) o pedido: some do painel, mas o registro
+   continua no banco para não perder histórico de faturamento. */
+async function archiveOrder(orderId, cardEl) {
+  if (!confirm("Tem certeza que deseja remover este pedido do painel de monitoramento?")) return;
+
+  if (supabaseEnabled()) {
+    const { error } = await sb.from("orders").update({ archived: true }).eq("id", orderId);
+    if (error) {
+      console.error("Arquivar pedido:", error);
+      showToast(describeSupabaseFormError(error, { table: "orders", step: "Passo 13" }));
+      return;
+    }
+  } else {
+    saveOrders(getOrders().filter(o => o.id !== orderId));
+  }
+
+  showToast("Pedido removido do painel");
+  adminOrders = adminOrders.filter(o => o.id !== orderId);
+  if (cardEl) {
+    cardEl.classList.add("is-removing");
+    setTimeout(() => cardEl.remove(), 250);
+  }
+}
+
 document.getElementById("admin-orders").addEventListener("click", e => {
+  const removeBtn = e.target.closest(".order-remove-btn");
+  if (removeBtn) {
+    archiveOrder(removeBtn.dataset.order, removeBtn.closest(".order-card"));
+    return;
+  }
+
   const btn = e.target.closest("button[data-order]");
   if (!btn) return;
   triggerStatusNotification(btn.dataset.order, btn.dataset.status);

@@ -419,6 +419,22 @@ create policy "dono pode atualizar descontos do carrinho"
 > cliente). Os dois modos suportados (automático por valor gasto, ou
 > por cupom) cobrem a maior parte do uso real de um cupom de desconto.
 
+## Passo 13 — Remover pedido do painel (arquivamento)
+
+O botão de lixeira no card de pedido (aba "Monitoramento de Pagamento
+e de Informações") usa **arquivamento** (soft delete), não apaga o
+pedido de verdade — some da tela do painel, mas o registro continua no
+banco para não perder histórico de faturamento.
+
+No **SQL Editor**, cole e rode:
+
+```sql
+alter table public.orders add column if not exists archived boolean not null default false;
+```
+
+Nenhuma política de RLS nova é necessária — a política de UPDATE do
+Passo 2 (`dono pode atualizar pedidos`) já cobre a coluna `archived`.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

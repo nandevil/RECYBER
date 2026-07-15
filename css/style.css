@@ -877,14 +877,23 @@ body.admin-open{overflow:hidden;}
   border:2px solid var(--ink);border-radius:12px;padding:18px;
   display:flex;flex-direction:column;gap:12px;
   background:var(--paper-alt);
+  transition:opacity .25s ease,transform .25s ease;
 }
+.order-card.is-removing{opacity:0;transform:translateX(12px);}
 .order-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.order-card-head-right{display:flex;align-items:center;gap:8px;}
 .order-id{font-family:var(--font-pixel);font-size:.72rem;}
 .order-date{font-size:.7rem;color:var(--grey);}
 .order-status{
   font-size:.62rem;text-transform:uppercase;letter-spacing:.5px;
   padding:4px 10px;border-radius:20px;border:1.5px solid var(--ink);
 }
+.order-remove-btn{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--grey);cursor:pointer;transition:color .15s ease,background .15s ease;
+}
+.order-remove-btn:hover{color:#c0392b;background:#fbeae8;}
 .order-status--em-preparacao{background:#fff6da;border-color:#c9a227;}
 .order-status--enviado{background:#e2f3e6;border-color:var(--accent);}
 /* Cliente + Endereço lado a lado com Pagamento — vira 2 colunas quando
