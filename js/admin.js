@@ -171,7 +171,7 @@ function orderCardHtml(order) {
         <ul class="order-items">${itemsHtml}</ul>
       </div>
 
-      <div class="order-actions">
+      <div class="order-actions" ${payStatus === "cancelado" ? "hidden" : ""}>
         <button type="button" class="pill pill-sm" data-order="${order.id}" data-status="em-preparacao">Notificar Início de Preparação</button>
         <button type="button" class="pill pill-sm" data-order="${order.id}" data-status="enviado">Notificar Envio do Pedido</button>
       </div>
@@ -222,57 +222,6 @@ function exportLeadsCsv() {
 }
 
 /* =====================================================
-   ABA: CLIENTES (agregado por e-mail)
-===================================================== */
-function renderClients(orders) {
-  const byEmail = new Map();
-  orders.forEach(o => {
-    const key = o.customer.email.toLowerCase();
-    if (!byEmail.has(key)) {
-      byEmail.set(key, { nome: o.customer.nome, email: o.customer.email, telefone: o.customer.telefone, orders: [] });
-    }
-    byEmail.get(key).orders.push(o);
-  });
-
-  const html = [...byEmail.values()].map(c => {
-    const total = c.orders.reduce((s, o) => s + o.total, 0);
-    const history = c.orders.map(o => {
-      const date = new Date(o.createdAt).toLocaleDateString("pt-BR");
-      const items = o.items.map(i => `${i.qty}x ${i.name}`).join(", ");
-      const thumbs = o.items.map(i => productThumbHtml(i.id, i.name)).join("");
-      return `
-        <li class="client-history-item">
-          <div class="order-item-thumbs">${thumbs}</div>
-          <div class="client-history-text">
-            <span>${date} · ${o.id}</span>
-            <span>${items} — ${money(o.total)}</span>
-          </div>
-        </li>
-      `;
-    }).join("");
-    return `
-      <div class="order-card">
-        <div class="order-card-head">
-          <span class="order-id">${c.nome}</span>
-          <span class="order-status">${c.orders.length} compra${c.orders.length === 1 ? "" : "s"}</span>
-        </div>
-        <div class="order-block">
-          <p>${c.email} · ${c.telefone}</p>
-          <p class="order-total-final">Total gasto: ${money(total)}</p>
-        </div>
-        <div class="order-block">
-          <h4>Histórico de compras</h4>
-          <ul class="order-items">${history}</ul>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  document.getElementById("admin-clients").innerHTML = html;
-  document.getElementById("admin-clients-empty").hidden = orders.length !== 0;
-}
-
-/* =====================================================
    RENDER GERAL + ABAS
 ===================================================== */
 async function renderAdmin() {
@@ -282,14 +231,13 @@ async function renderAdmin() {
   document.getElementById("admin-orders").innerHTML = orders.map(orderCardHtml).join("");
   document.getElementById("admin-empty").hidden = orders.length !== 0;
   renderLeads(orders);
-  renderClients(orders);
 }
 
 document.getElementById("admin-tabs").addEventListener("click", e => {
   const pill = e.target.closest("[data-tab]");
   if (!pill) return;
   document.querySelectorAll("#admin-tabs .pill").forEach(p => p.classList.toggle("active", p === pill));
-  ["leads", "pedidos", "clientes", "cadastro", "feedbacks", "textos", "promo"].forEach(tab => {
+  ["leads", "pedidos", "cadastro", "feedbacks", "textos", "promo"].forEach(tab => {
     document.getElementById(`admin-tab-${tab}`).hidden = tab !== pill.dataset.tab;
   });
 });
@@ -303,6 +251,13 @@ document.getElementById("admin-orders").addEventListener("change", e => {
   const sel = e.target.closest(".pay-status-select");
   if (!sel) return;
   const newStatus = sel.value;
+
+  /* Esconde/mostra os botões de logística na hora, sem esperar o
+     update assíncrono terminar (evita notificar por engano um pedido
+     que acabou de ser cancelado, e reaparece se o status voltar). */
+  const actions = sel.closest(".order-card")?.querySelector(".order-actions");
+  if (actions) actions.hidden = newStatus === "cancelado";
+
   /* Abre as notificações ANTES do update assíncrono — se esperarmos a
      resposta do Supabase primeiro, alguns navegadores tratam o
      window.open() como fora do gesto do usuário e bloqueiam o popup. */
