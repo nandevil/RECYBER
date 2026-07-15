@@ -73,10 +73,7 @@ async function handleCreatePayment(request, env) {
 
     const res = await fetch("https://api.checkout.infinitepay.io/links", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${env.INFINITEPAY_API_KEY}`
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
@@ -100,14 +97,8 @@ async function handleCreatePayment(request, env) {
 /* Recebe o aviso de pagamento da InfinitePay, CONFIRMA a transação
    direto com a API deles (não confia cegamente no corpo do webhook —
    qualquer um poderia forjar essa chamada) e só então marca o pedido
-   como "pago" no Supabase.
-
-   ATENÇÃO: o campo exato que indica "pagamento confirmado" na resposta
-   de /payment_check não estava disponível na documentação consultada
-   no momento da implementação. Antes de ativar em produção, dispare um
-   pagamento de teste, confira o `console.log` de PAYMENT_CHECK_RESPONSE
-   nos logs do Worker (wrangler tail) e ajuste a condição `confirmed`
-   abaixo para o campo/valor reais que a InfinitePay devolver. */
+   como "pago" no Supabase. Resposta esperada de /payment_check:
+   { success: true, paid: true, amount, paid_amount, installments, ... } */
 async function handleInfinitePayWebhook(request, env) {
   try {
     const payload = await request.json();
@@ -118,10 +109,7 @@ async function handleInfinitePayWebhook(request, env) {
 
     const checkRes = await fetch("https://api.checkout.infinitepay.io/payment_check", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${env.INFINITEPAY_API_KEY}`
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ handle: env.INFINITEPAY_HANDLE, order_nsu, transaction_nsu, slug })
     });
     const checkData = await checkRes.json().catch(() => null);

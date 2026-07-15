@@ -314,9 +314,12 @@ seu fluxo.
 
 ### 10.1 — Configurar os segredos no Cloudflare
 
-Esses três valores **nunca** devem ir para o código público (por isso
-são "secrets", não variáveis normais). No terminal, dentro da pasta do
-projeto (precisa ter o Node.js instalado):
+Esses dois valores **nunca** devem ir para o código público (por isso
+são "secrets", não variáveis normais). Segundo a documentação oficial
+da InfinitePay (docs.infinitepay.io), o Checkout Integrado não exige
+nenhuma API key — só a sua InfiniteTag (que já está em `wrangler.toml`,
+sem o símbolo `$`). No terminal, dentro da pasta do projeto (precisa
+ter o Node.js instalado):
 
 ```sh
 npx wrangler secret put SUPABASE_URL
@@ -327,31 +330,27 @@ npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 # ATENÇÃO: essa chave ignora todas as políticas RLS. Só é segura aqui
 # porque vive exclusivamente no ambiente do Worker (servidor), nunca
 # chega ao navegador do cliente.
-
-npx wrangler secret put INFINITEPAY_API_KEY
-# cole a "API Key" da sua conta InfinitePay (app/painel deles, seção
-# de Desenvolvedores/API/Integrações).
 ```
 
 Se preferir sem terminal: no painel do Cloudflare, abra o Worker
 `recyber` → **Settings → Variables and Secrets → Add** → marque como
-**Secret** (não "Text") para os três valores acima.
+**Secret** (não "Text") para os dois valores acima.
 
-### 10.2 — Verificar a resposta da InfinitePay antes de ativar
+### 10.2 — Testar antes de divulgar
 
 O `worker.js` já confirma cada pagamento chamando o endpoint oficial
 `/payment_check` da InfinitePay antes de marcar o pedido como pago
-(evita que alguém finja uma notificação de pagamento aprovado). Mas o
-campo exato da resposta que indica "confirmado" pode variar — antes de
-divulgar o checkout para clientes de verdade:
+(evita que alguém finja uma notificação de pagamento aprovado), usando
+o formato de resposta documentado (`success`/`paid`). Ainda assim,
+antes de divulgar o checkout para clientes de verdade:
 
 1. Faça uma compra de teste (Pix de valor baixo, por exemplo).
 2. No painel do Cloudflare, veja os logs do Worker em tempo real:
    `npx wrangler tail` (ou pela aba **Logs** do dashboard).
-3. Procure a linha `PAYMENT_CHECK_RESPONSE` e confira o campo real que
-   indica sucesso.
-4. Se não for `success`/`paid`/`status:"paid"` (o que o código já
-   verifica), ajuste a condição `confirmed` em `worker.js` para bater
+3. Confirme que o pedido correspondente muda para "pago" no painel
+   (`#admin-dashboard` → Monitoramento de Pagamentos).
+4. Se não mudar, confira a linha `PAYMENT_CHECK_RESPONSE` nos logs e
+   ajuste a condição `confirmed` em `worker.js` para bater
    com a resposta real, faça commit e envie.
 
 ## Segurança — como fica
