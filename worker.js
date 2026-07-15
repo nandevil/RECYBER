@@ -73,7 +73,10 @@ async function handleCreatePayment(request, env) {
 
     const res = await fetch("https://api.checkout.infinitepay.io/links", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.INFINITEPAY_API_KEY}`
+      },
       body: JSON.stringify(payload)
     });
 
@@ -115,7 +118,10 @@ async function handleInfinitePayWebhook(request, env) {
 
     const checkRes = await fetch("https://api.checkout.infinitepay.io/payment_check", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.INFINITEPAY_API_KEY}`
+      },
       body: JSON.stringify({ handle: env.INFINITEPAY_HANDLE, order_nsu, transaction_nsu, slug })
     });
     const checkData = await checkRes.json().catch(() => null);
