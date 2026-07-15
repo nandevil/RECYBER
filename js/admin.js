@@ -63,9 +63,9 @@ const PAYMENT_STATUS_LABELS = { pendente: "Pendente", pago: "Pago", cancelado: "
 
 function statusMessage(order, status) {
   if (status === "em-preparacao") {
-    return `Olá ${order.customer.nome}! Seu pedido ${order.id} no ${CONFIG.storeName} está em preparação. Assim que for enviado, você recebe o código de rastreio por aqui. 💚`;
+    return `Alerta de Garimpo: seu pedido já entrou no nosso laboratório de regeneração! 🧪✨\n\nOlá, ${order.customer.nome}! Nossos circuitos detectaram sua escolha sustentável (pedido ${order.id}) e já estamos separando, higienizando e embalando suas peças com todo o carinho que o planeta merece. Assim que for enviado, você recebe o código de rastreio por aqui. Em breve ela ganha uma nova história com você! 💚`;
   }
-  return `Olá ${order.customer.nome}! Seu pedido ${order.id} no ${CONFIG.storeName} foi enviado! Em breve você recebe o código de rastreio para acompanhar a entrega. 📦`;
+  return `Caixinha Re.cyber liberada para o espaço! 🛸📦\n\nBoas notícias, ${order.customer.nome}! Seu garimpo (pedido ${order.id}) foi oficialmente postado e está a caminho da sua casa. O código de rastreamento chega em seguida por aqui para você acompanhar a viagem das suas novas peças. Prepare o guarda-roupa! ✨`;
 }
 
 function cancellationMessage(order) {
@@ -877,6 +877,115 @@ document.getElementById("admin-promo-products").addEventListener("change", async
    TEMA CLARO/ESCURO DO PAINEL
 ===================================================== */
 const ADMIN_THEME_KEY = "recyber_admin_theme";
+
+/* =====================================================
+   ADMINISTRAR ATUALIZAÇÕES — aviso em massa (e-mail) para clientes
+   que aceitaram receber novidades no checkout (marketing_opt_in).
+   Sem serviço de e-mail transacional configurado, o disparo usa
+   mailto: com todos os inscritos em BCC — abre o seu próprio Hotmail/
+   Outlook (ou app de e-mail padrão) já logado, com o texto pronto;
+   você confirma o envio. Funciona com a conta real, sem senha/API,
+   mas tem limite prático de tamanho do link para listas muito longas.
+===================================================== */
+let selectedUpdatePhoto = null;
+
+function subscribedEmails() {
+  const emails = new Set();
+  adminOrders.forEach(o => {
+    if (o.marketingOptIn && o.customer.email) emails.add(o.customer.email.trim());
+  });
+  return [...emails];
+}
+
+function renderUpdatePhotoPreview() {
+  const wrap = document.getElementById("upd-foto-preview");
+  wrap.innerHTML = !selectedUpdatePhoto ? "" : `
+    <div class="pf-image-thumb">
+      <img src="${URL.createObjectURL(selectedUpdatePhoto)}" alt="${selectedUpdatePhoto.name}">
+      <button type="button" class="pf-image-remove" id="upd-foto-remove" aria-label="Remover foto">&times;</button>
+    </div>
+  `;
+}
+
+function openUpdatesModal() {
+  document.getElementById("admin-updates-form").reset();
+  selectedUpdatePhoto = null;
+  renderUpdatePhotoPreview();
+  const count = subscribedEmails().length;
+  document.getElementById("admin-updates-count").textContent =
+    count === 0 ? "Nenhum inscrito para receber avisos ainda." : `${count} inscrito${count === 1 ? "" : "s"} ${count === 1 ? "vai" : "vão"} receber esse aviso.`;
+  document.getElementById("admin-updates-unavailable").hidden = true;
+  document.getElementById("admin-updates-overlay").classList.add("open");
+}
+function closeUpdatesModal() {
+  document.getElementById("admin-updates-overlay").classList.remove("open");
+}
+document.getElementById("admin-updates-open").addEventListener("click", openUpdatesModal);
+document.getElementById("admin-updates-close").addEventListener("click", closeUpdatesModal);
+document.getElementById("admin-updates-overlay").addEventListener("click", e => {
+  if (e.target.id === "admin-updates-overlay") closeUpdatesModal();
+});
+
+document.getElementById("upd-foto").addEventListener("change", e => {
+  selectedUpdatePhoto = e.target.files[0] || null;
+  e.target.value = "";
+  renderUpdatePhotoPreview();
+});
+document.getElementById("upd-foto-preview").addEventListener("click", e => {
+  if (!e.target.closest("#upd-foto-remove")) return;
+  selectedUpdatePhoto = null;
+  renderUpdatePhotoPreview();
+});
+
+document.getElementById("admin-updates-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const unavailable = document.getElementById("admin-updates-unavailable");
+  const submitBtn = document.getElementById("admin-updates-submit");
+  unavailable.hidden = true;
+
+  const emails = subscribedEmails();
+  if (emails.length === 0) {
+    unavailable.hidden = false;
+    unavailable.textContent = "Nenhum cliente inscrito para receber avisos ainda.";
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Preparando...";
+  try {
+    let photoUrl = "";
+    if (selectedUpdatePhoto) {
+      if (!supabaseEnabled()) throw new Error("Configure o Supabase para subir a foto spoiler (veja SUPABASE.md).");
+      const { data: sessionData } = await sb.auth.getSession();
+      if (!sessionData.session) throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
+
+      const path = `spoiler-${Date.now()}-${selectedUpdatePhoto.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
+      const { error: uploadError } = await sb.storage.from("spoilers").upload(path, selectedUpdatePhoto);
+      if (uploadError) throw uploadError;
+      photoUrl = sb.storage.from("spoilers").getPublicUrl(path).data.publicUrl;
+    }
+
+    const dia = document.getElementById("upd-dia").value.trim();
+    const horario = document.getElementById("upd-horario").value.trim();
+    const link = document.getElementById("upd-link").value.trim();
+
+    let body = `Nova atualização da Re.Cyber! ⚡\n\nFique de olho para não perder os melhores garimpos sustentáveis que acabaram de cair no nosso catálogo.\n\n📅 Dia: ${dia}\n⏰ Horário: ${horario}\n\n🔗 Acesse e garimpe antes de todo mundo: ${link}`;
+    if (photoUrl) body += `\n\n📸 Prévia: ${photoUrl}`;
+
+    const mailto = `mailto:?bcc=${encodeURIComponent(emails.join(","))}&subject=${encodeURIComponent("Re.cyber — Nova atualização chegando! ⚡")}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+
+    showToast("Abrindo seu e-mail para disparar o aviso");
+    closeUpdatesModal();
+  } catch (err) {
+    console.error("Administrar atualizações:", err);
+    unavailable.hidden = false;
+    unavailable.textContent = err.message || "Erro ao preparar o aviso.";
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Disparar Alerta";
+  }
+});
 
 function applyAdminTheme(theme) {
   document.getElementById("admin-panel").dataset.theme = theme;

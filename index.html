@@ -417,6 +417,7 @@
     <h1 class="admin-title">Painel de Controle</h1>
     <div class="admin-header-actions">
       <span class="admin-count" id="admin-count">0 pedidos</span>
+      <button class="pill pill-sm" id="admin-updates-open" type="button">&#9881;&#65039; Administrar Atualizações</button>
       <button class="admin-theme-toggle" id="admin-theme-toggle" type="button" aria-label="Alternar tema claro/escuro">&#9788;</button>
       <button class="back-to-categories" id="admin-logout">Sair</button>
       <button class="back-to-categories" id="admin-close">&larr; Voltar à loja</button>
@@ -628,6 +629,41 @@
       <p class="empty-state" id="admin-promo-products-empty" hidden>Nenhuma peça cadastrada ainda.</p>
     </div>
   </section>
+</div>
+
+<!-- MODAL: ADMINISTRAR ATUALIZAÇÕES (avisos em massa para inscritos) -->
+<div class="modal-overlay" id="admin-updates-overlay">
+  <div class="admin-updates-modal" role="dialog" aria-modal="true" aria-label="Administrar Atualizações">
+    <button class="modal-close" id="admin-updates-close" aria-label="Fechar">&times;</button>
+    <h2 class="admin-leads-title">Administrar Atualizações</h2>
+    <h3 class="admin-leads-subtitle">Manda um aviso por e-mail (BCC) para todo mundo que aceitou receber novidades no checkout</h3>
+
+    <p class="admin-login-error" id="admin-updates-unavailable" hidden></p>
+
+    <form class="checkout-form" id="admin-updates-form">
+      <div class="checkout-grid">
+        <label class="field">
+          <span>Dia</span>
+          <input type="text" id="upd-dia" placeholder="Ex: Sábado, 20/07" required>
+        </label>
+        <label class="field">
+          <span>Horário</span>
+          <input type="text" id="upd-horario" placeholder="Ex: 19h" required>
+        </label>
+        <label class="field field-wide">
+          <span>Link do site</span>
+          <input type="url" id="upd-link" placeholder="https://recyber.anandalage18.workers.dev/#categoria-..." required>
+        </label>
+      </div>
+      <label class="field field-wide">
+        <span>Foto spoiler <em>(opcional — vai como link no e-mail)</em></span>
+        <input type="file" id="upd-foto" accept="image/*">
+      </label>
+      <div class="pf-image-previews" id="upd-foto-preview"></div>
+      <p class="admin-updates-count" id="admin-updates-count"></p>
+      <button type="submit" class="pill admin-upload-submit" id="admin-updates-submit">Disparar Alerta</button>
+    </form>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>

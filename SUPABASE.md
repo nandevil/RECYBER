@@ -353,6 +353,27 @@ antes de divulgar o checkout para clientes de verdade:
    ajuste a condição `confirmed` em `worker.js` para bater
    com a resposta real, faça commit e envie.
 
+## Passo 11 — Fotos das "Atualizações" (bucket "spoilers")
+
+Permite subir a foto spoiler no modal "Administrar Atualizações" do
+painel (aba de pedidos → botão "⚙️ Administrar Atualizações"). O e-mail
+de aviso em massa não incorpora a imagem diretamente (é montado com um
+link `mailto:`, que não suporta anexos/HTML) — a foto entra como um
+link clicável no corpo do e-mail.
+
+Crie o bucket: menu **Storage → New bucket** → nome `spoilers` →
+marque **Public bucket** → Create bucket. Depois, no **SQL Editor**:
+
+```sql
+create policy "leitura publica das fotos de atualizacoes"
+  on storage.objects for select to anon, authenticated
+  using (bucket_id = 'spoilers');
+
+create policy "dono pode enviar fotos de atualizacoes"
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'spoilers');
+```
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.
