@@ -43,9 +43,37 @@ function resetCheckoutForm() {
   shippingCalculated = false;
 }
 
+/* Preenchimento automático — sem login/conta: guarda os dados do
+   cliente no localStorage do próprio aparelho após uma compra, e
+   preenche de novo na próxima visita NESTE MESMO dispositivo. Não
+   sincroniza entre aparelhos diferentes (isso exigiria contas de
+   cliente de verdade via Supabase Auth, com todo o trabalho de
+   segurança que isso implica — fora do escopo aqui). */
+const CUSTOMER_PROFILE_KEY = "recyber_customer_profile";
+
+function saveCustomerProfile(customer) {
+  localStorage.setItem(CUSTOMER_PROFILE_KEY, JSON.stringify(customer));
+}
+
+function fillSavedCustomerData() {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(CUSTOMER_PROFILE_KEY) || "null"); } catch { saved = null; }
+  if (!saved) return;
+  const fields = {
+    "ck-cep": saved.cep, "ck-nome": saved.nome, "ck-email": saved.email, "ck-cpf": saved.cpf,
+    "ck-telefone": saved.telefone, "ck-logradouro": saved.logradouro, "ck-numero": saved.numero,
+    "ck-bairro": saved.bairro, "ck-complemento": saved.complemento
+  };
+  Object.entries(fields).forEach(([id, value]) => {
+    if (value) document.getElementById(id).value = value;
+  });
+  maybeCalculateShipping();
+}
+
 function openCheckout() {
   renderCheckoutSummary();
   resetCheckoutForm();
+  fillSavedCustomerData();
   document.getElementById("checkout-overlay").classList.add("open");
 }
 function closeCheckout() {
@@ -202,6 +230,7 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
   submitBtn.textContent = "Finalizar Compra";
   if (!ok) return;
 
+  saveCustomerProfile(order.customer);
   state.cart = [];
   saveCart();
   appliedCoupon = "";
