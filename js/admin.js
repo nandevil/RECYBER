@@ -140,7 +140,7 @@ function orderCardHtml(order) {
     <div class="order-card">
       <div class="order-card-head">
         <span class="order-id">${order.id}</span>
-        <span class="order-status order-status--${order.status}">${STATUS_LABELS[order.status] || order.status}</span>
+        <span class="order-status order-status--${order.status}" ${payStatus === "cancelado" ? "hidden" : ""}>${STATUS_LABELS[order.status] || order.status}</span>
       </div>
       <span class="order-date">${date}</span>
 
@@ -256,11 +256,15 @@ document.getElementById("admin-orders").addEventListener("change", e => {
   if (!sel) return;
   const newStatus = sel.value;
 
-  /* Esconde/mostra os botões de logística na hora, sem esperar o
-     update assíncrono terminar (evita notificar por engano um pedido
-     que acabou de ser cancelado, e reaparece se o status voltar). */
-  const actions = sel.closest(".order-card")?.querySelector(".order-actions");
+  /* Esconde/mostra os botões de logística e a etiqueta de status
+     (ENVIADO/EM PREPARAÇÃO) na hora, sem esperar o update assíncrono
+     terminar (evita notificar por engano um pedido que acabou de ser
+     cancelado, e ambos reaparecem se o status voltar). */
+  const card = sel.closest(".order-card");
+  const actions = card?.querySelector(".order-actions");
+  const statusBadge = card?.querySelector(".order-status");
   if (actions) actions.hidden = newStatus === "cancelado";
+  if (statusBadge) statusBadge.hidden = newStatus === "cancelado";
 
   /* Abre as notificações ANTES do update assíncrono — se esperarmos a
      resposta do Supabase primeiro, alguns navegadores tratam o
