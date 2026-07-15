@@ -9,4 +9,4 @@ binding = "ASSETS"
 
 # Não é segredo — é só o @ público da sua conta InfinitePay.
 [vars]
-INFINITEPAY_HANDLE = "recyber"
+INFINITEPAY_HANDLE = "$recyber"
