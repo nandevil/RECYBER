@@ -55,6 +55,12 @@ async function loadOrders() {
   return getOrders().slice().reverse();
 }
 
+/* Evita mostrar "undefined" quando um pedido antigo/de teste não tem
+   algum campo do cliente preenchido. */
+function safe(value, fallback = "Não informado") {
+  return value === undefined || value === null || value === "" ? fallback : value;
+}
+
 /* =====================================================
    STATUS
 ===================================================== */
@@ -81,8 +87,12 @@ function cancellationMessage(order) {
    administrador confirma o envio em cada app; este site não tem um
    serviço de e-mail transacional configurado para envio 100% automático. */
 function notifyCustomerBothChannels(order, subject, text) {
-  const phone = order.customer.telefone.replace(/\D/g, "");
-  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+  const phone = (order.customer.telefone || "").replace(/\D/g, "");
+  if (!phone) {
+    showToast("Esse pedido não tem WhatsApp cadastrado — abrindo só o e-mail.");
+  } else {
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+  }
   window.open(`mailto:${order.customer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`, "_blank");
 }
 
@@ -157,13 +167,13 @@ function orderCardHtml(order) {
       <div class="order-card-grid">
         <div class="order-block order-block--panel">
           <h4>Cliente</h4>
-          <p>${order.customer.nome}</p>
-          <p>${order.customer.email} · ${order.customer.telefone}</p>
-          <p>CPF: ${order.customer.cpf}</p>
+          <p>${safe(order.customer.nome)}</p>
+          <p>${safe(order.customer.email)} · ${safe(order.customer.telefone)}</p>
+          <p>CPF: ${safe(order.customer.cpf)}</p>
           <div class="order-block-divider"></div>
           <h4>Endereço</h4>
-          <p>${order.customer.logradouro}, ${order.customer.numero}${order.customer.complemento ? ` — ${order.customer.complemento}` : ""}</p>
-          <p>${order.customer.bairro} · CEP ${order.customer.cep}</p>
+          <p>${safe(order.customer.logradouro)}, ${safe(order.customer.numero, "-")}${order.customer.complemento ? ` — ${order.customer.complemento}` : ""}</p>
+          <p>${safe(order.customer.bairro)} · CEP ${safe(order.customer.cep)}</p>
         </div>
 
         <div class="order-block order-block--panel order-block--payment">
