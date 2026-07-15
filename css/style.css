@@ -848,9 +848,10 @@ body.admin-open{overflow:hidden;}
 .admin-count{font-size:.78rem;color:var(--grey);}
 .admin-orders{
   max-width:var(--maxw);margin:0 auto;
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px;
 }
 .order-card{
+  container-type:inline-size;
   border:2px solid var(--ink);border-radius:12px;padding:18px;
   display:flex;flex-direction:column;gap:12px;
   background:var(--paper-alt);
@@ -864,6 +865,20 @@ body.admin-open{overflow:hidden;}
 }
 .order-status--em-preparacao{background:#fff6da;border-color:#c9a227;}
 .order-status--enviado{background:#e2f3e6;border-color:var(--accent);}
+/* Cliente + Endereço lado a lado com Pagamento — vira 2 colunas quando
+   o CARD (não a tela) tem espaço suficiente, então funciona igual
+   tanto num card sozinho no mobile quanto em vários lado a lado no
+   desktop. */
+.order-card-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+@container (min-width:480px){
+  .order-card-grid{grid-template-columns:1fr 1fr;}
+}
+.order-block--panel{
+  background:var(--paper);border:1.5px solid var(--grey-light);border-radius:8px;
+  padding:12px 14px;
+}
+.order-block--payment{display:flex;flex-direction:column;}
+.order-block-divider{border-top:1px solid var(--grey-light);margin:10px 0;}
 .order-block h4{
   font-family:var(--font-pixel);font-size:.62rem;
   text-transform:uppercase;letter-spacing:.5px;color:var(--grey);margin-bottom:4px;
@@ -884,14 +899,19 @@ body.admin-open{overflow:hidden;}
 }
 .client-history-item .order-item-thumbs{margin-bottom:0;flex-wrap:nowrap;}
 .client-history-text{display:flex;flex-direction:column;gap:2px;font-size:.8rem;line-height:1.4;}
-.order-totals p{font-size:.8rem;}
 .order-total-final{font-family:var(--font-pixel);font-size:.78rem;margin-top:4px;}
+.order-payment-status-label{
+  display:flex;flex-direction:column;gap:6px;margin-top:auto;padding-top:10px;
+}
+.order-payment-status-label span{
+  font-family:var(--font-pixel);font-size:.6rem;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--grey);
+}
 .order-actions{
   border-top:1.5px solid var(--grey-light);padding-top:12px;
-  display:flex;flex-direction:column;gap:8px;
+  display:flex;flex-wrap:wrap;gap:8px;
 }
-.order-action-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.72rem;}
-.order-action-group span{color:var(--grey);min-width:96px;}
+.order-actions .pill-sm{flex:1 1 auto;text-align:center;}
 .pill-sm{padding:5px 12px;font-size:.68rem;}
 
 /* ---- LOGIN DO ADMIN ---- */

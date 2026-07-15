@@ -68,6 +68,19 @@ function statusMessage(order, status) {
   return `Olá ${order.customer.nome}! Seu pedido ${order.id} no ${CONFIG.storeName} foi enviado! Em breve você recebe o código de rastreio para acompanhar a entrega. 📦`;
 }
 
+function cancellationMessage(order) {
+  return `Olá ${order.customer.nome}! Seu pedido ${order.id} no ${CONFIG.storeName} foi cancelado. Se já tiver feito o pagamento ou tiver alguma dúvida, é só responder por aqui que a gente resolve. 🙏`;
+}
+
+/* WhatsApp (wa.me) e e-mail (mailto) abrem com o texto já pronto — o
+   administrador confirma o envio em cada app; este site não tem um
+   serviço de e-mail transacional configurado para envio 100% automático. */
+function notifyCustomerBothChannels(order, subject, text) {
+  const phone = order.customer.telefone.replace(/\D/g, "");
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+  window.open(`mailto:${order.customer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`, "_blank");
+}
+
 async function updateOrder(orderId, patch) {
   if (supabaseEnabled()) {
     const row = {};
@@ -87,18 +100,13 @@ async function updateOrder(orderId, patch) {
   renderAdmin();
 }
 
-function triggerNotification(orderId, status, channel) {
+/* Botão único: abre WhatsApp + e-mail juntos com a mesma mensagem. */
+function triggerStatusNotification(orderId, status) {
   const order = adminOrders.find(o => o.id === orderId);
   if (!order) return;
   const text = statusMessage(order, status);
-
-  if (channel === "whatsapp") {
-    const phone = order.customer.telefone.replace(/\D/g, "");
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
-  } else {
-    const subject = encodeURIComponent(`${CONFIG.storeName} — Atualização do pedido ${order.id}`);
-    window.open(`mailto:${order.customer.email}?subject=${subject}&body=${encodeURIComponent(text)}`, "_blank");
-  }
+  const subject = `${CONFIG.storeName} — Atualização do pedido ${order.id}`;
+  notifyCustomerBothChannels(order, subject, text);
   updateOrder(orderId, { status });
 }
 
@@ -132,48 +140,40 @@ function orderCardHtml(order) {
       </div>
       <span class="order-date">${date}</span>
 
-      <div class="order-block">
-        <h4>Cliente</h4>
-        <p>${order.customer.nome}</p>
-        <p>${order.customer.email} · ${order.customer.telefone}</p>
-        <p>CPF: ${order.customer.cpf}</p>
+      <div class="order-card-grid">
+        <div class="order-block order-block--panel">
+          <h4>Cliente</h4>
+          <p>${order.customer.nome}</p>
+          <p>${order.customer.email} · ${order.customer.telefone}</p>
+          <p>CPF: ${order.customer.cpf}</p>
+          <div class="order-block-divider"></div>
+          <h4>Endereço</h4>
+          <p>${order.customer.logradouro}, ${order.customer.numero}${order.customer.complemento ? ` — ${order.customer.complemento}` : ""}</p>
+          <p>${order.customer.bairro} · CEP ${order.customer.cep}</p>
+        </div>
+
+        <div class="order-block order-block--panel order-block--payment">
+          <h4>Pagamento</h4>
+          <p>${paymentLabel}</p>
+          <p>Subtotal: ${money(order.subtotal)}</p>
+          <p>Frete: ${money(order.shipping)}</p>
+          <p class="order-total-final">Total: ${money(order.total)}</p>
+          <label class="order-payment-status-label">
+            <span>Status do pagamento</span>
+            <select class="sort-select pay-status-select pay-status--${payStatus}" data-order="${order.id}">${payOptions}</select>
+          </label>
+        </div>
       </div>
 
-      <div class="order-block">
-        <h4>Endereço</h4>
-        <p>${order.customer.logradouro}, ${order.customer.numero}${order.customer.complemento ? ` — ${order.customer.complemento}` : ""}</p>
-        <p>${order.customer.bairro} · CEP ${order.customer.cep}</p>
-      </div>
-
-      <div class="order-block">
+      <div class="order-block order-block--panel">
         <h4>Peças (${order.items.reduce((n, i) => n + i.qty, 0)})</h4>
         <div class="order-item-thumbs">${thumbsHtml}</div>
         <ul class="order-items">${itemsHtml}</ul>
       </div>
 
-      <div class="order-block order-totals">
-        <p>Subtotal: ${money(order.subtotal)}</p>
-        <p>Frete: ${money(order.shipping)}</p>
-        <p class="order-total-final">Total: ${money(order.total)}</p>
-        <p>Pagamento: ${paymentLabel}</p>
-      </div>
-
-      <div class="order-block order-payment-status">
-        <h4>Status do pagamento</h4>
-        <select class="sort-select pay-status-select pay-status--${payStatus}" data-order="${order.id}">${payOptions}</select>
-      </div>
-
       <div class="order-actions">
-        <div class="order-action-group">
-          <span>Em preparação</span>
-          <button type="button" class="pill pill-sm" data-order="${order.id}" data-status="em-preparacao" data-channel="whatsapp">WhatsApp</button>
-          <button type="button" class="pill pill-sm" data-order="${order.id}" data-status="em-preparacao" data-channel="email">E-mail</button>
-        </div>
-        <div class="order-action-group">
-          <span>Enviado</span>
-          <button type="button" class="pill pill-sm" data-order="${order.id}" data-status="enviado" data-channel="whatsapp">WhatsApp</button>
-          <button type="button" class="pill pill-sm" data-order="${order.id}" data-status="enviado" data-channel="email">E-mail</button>
-        </div>
+        <button type="button" class="pill pill-sm" data-order="${order.id}" data-status="em-preparacao">Notificar Início de Preparação</button>
+        <button type="button" class="pill pill-sm" data-order="${order.id}" data-status="enviado">Notificar Envio do Pedido</button>
       </div>
     </div>
   `;
@@ -297,12 +297,24 @@ document.getElementById("admin-tabs").addEventListener("click", e => {
 document.getElementById("admin-orders").addEventListener("click", e => {
   const btn = e.target.closest("button[data-order]");
   if (!btn) return;
-  triggerNotification(btn.dataset.order, btn.dataset.status, btn.dataset.channel);
+  triggerStatusNotification(btn.dataset.order, btn.dataset.status);
 });
 document.getElementById("admin-orders").addEventListener("change", e => {
   const sel = e.target.closest(".pay-status-select");
   if (!sel) return;
-  updateOrder(sel.dataset.order, { paymentStatus: sel.value });
+  const newStatus = sel.value;
+  /* Abre as notificações ANTES do update assíncrono — se esperarmos a
+     resposta do Supabase primeiro, alguns navegadores tratam o
+     window.open() como fora do gesto do usuário e bloqueiam o popup. */
+  if (newStatus === "cancelado") {
+    const order = adminOrders.find(o => o.id === sel.dataset.order);
+    if (order) {
+      const text = cancellationMessage(order);
+      const subject = `${CONFIG.storeName} — Pedido ${order.id} cancelado`;
+      notifyCustomerBothChannels(order, subject, text);
+    }
+  }
+  updateOrder(sel.dataset.order, { paymentStatus: newStatus });
 });
 
 document.getElementById("admin-export-csv").addEventListener("click", exportLeadsCsv);
