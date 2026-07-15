@@ -332,48 +332,6 @@ document.getElementById("search-close").addEventListener("click", () => {
   document.getElementById("search-bar").classList.remove("open");
 });
 
-/* menu mobile — gaveta lateral (main-nav) */
-function openMobileNav() {
-  document.getElementById("main-nav").classList.add("open");
-  document.getElementById("overlay").classList.add("open");
-}
-function closeMobileNav() {
-  document.getElementById("main-nav").classList.remove("open");
-  document.getElementById("overlay").classList.remove("open");
-}
-document.getElementById("menu-toggle").addEventListener("click", openMobileNav);
-document.getElementById("main-nav-close").addEventListener("click", closeMobileNav);
-
-/* HOME — fecha o menu, vai para o topo e rola suavemente até lá. */
-document.getElementById("main-nav-home").addEventListener("click", e => {
-  e.preventDefault();
-  closeMobileNav();
-  window.location.hash = "#top";
-  window.scrollTo({ top: 0, behavior: "smooth" });
-});
-
-/* DISPONÍVEIS — fecha o menu e leva ao catálogo (a mudança de hash já
-   dispara a renderização das peças reais via setFilter/hashToFilter). */
-document.getElementById("main-nav-disponiveis").addEventListener("click", e => {
-  e.preventDefault();
-  closeMobileNav();
-  window.location.hash = "#catalogo";
-  document.getElementById("catalogo").scrollIntoView({ behavior: "smooth" });
-});
-
-/* CONTATO — fecha o menu e rola suavemente até o rodapé/contato. */
-document.getElementById("main-nav-contato").addEventListener("click", e => {
-  e.preventDefault();
-  closeMobileNav();
-  document.getElementById("contato").scrollIntoView({ behavior: "smooth" });
-});
-
-/* INFORMAÇÕES — fecha o menu e abre o modal central (mesmo do desktop). */
-document.getElementById("main-nav-info").addEventListener("click", () => {
-  closeMobileNav();
-  openInfo();
-});
-
 /* =====================================================
    CARRINHO
 ===================================================== */
