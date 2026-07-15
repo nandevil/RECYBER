@@ -874,11 +874,6 @@ document.getElementById("admin-promo-products").addEventListener("change", async
 });
 
 /* =====================================================
-   TEMA CLARO/ESCURO DO PAINEL
-===================================================== */
-const ADMIN_THEME_KEY = "recyber_admin_theme";
-
-/* =====================================================
    ADMINISTRAR ATUALIZAÇÕES — aviso em massa (e-mail) para clientes
    que aceitaram receber novidades no checkout (marketing_opt_in).
    Sem serviço de e-mail transacional configurado, o disparo usa
@@ -986,21 +981,6 @@ document.getElementById("admin-updates-form").addEventListener("submit", async e
     submitBtn.textContent = "Disparar Alerta";
   }
 });
-
-function applyAdminTheme(theme) {
-  document.getElementById("admin-panel").dataset.theme = theme;
-  document.getElementById("admin-theme-toggle").innerHTML = theme === "dark" ? "&#9789;" : "&#9788;";
-}
-
-(function setupAdminThemeToggle() {
-  const saved = localStorage.getItem(ADMIN_THEME_KEY) || "light";
-  applyAdminTheme(saved);
-  document.getElementById("admin-theme-toggle").addEventListener("click", () => {
-    const next = document.getElementById("admin-panel").dataset.theme === "dark" ? "light" : "dark";
-    localStorage.setItem(ADMIN_THEME_KEY, next);
-    applyAdminTheme(next);
-  });
-})();
 
 /* "Porta secreta": 3 cliques seguidos em "SINCE 2021" abrem #admin-login. */
 (function setupSecretAdminTrigger() {

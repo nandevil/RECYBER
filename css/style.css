@@ -1058,29 +1058,6 @@ body.admin-open{overflow:hidden;}
   flex-shrink:0;
 }
 
-/* ===================== ADMIN — TEMA ESCURO ===================== */
-.admin-theme-toggle{
-  width:36px;height:36px;border-radius:50%;
-  border:2px solid var(--ink);background:var(--paper);color:var(--ink);
-  font-size:1rem;cursor:pointer;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-}
-.admin-theme-toggle:hover{background:var(--ink);color:var(--paper);}
-
-.admin-panel[data-theme="dark"]{
-  --ink:#f2f2f0;
-  --paper:#0e0e0e;
-  --paper-alt:#161616;
-  --grey:#9a9a96;
-  --grey-light:#2c2c2a;
-}
-.admin-panel[data-theme="dark"] .admin-theme-toggle:hover{background:var(--ink);color:#0e0e0e;}
-.admin-panel[data-theme="dark"] .promo-toggle-field,
-.admin-panel[data-theme="dark"] #admin-tab-promo .admin-upload{
-  box-shadow:0 0 0 1px var(--ink),0 0 18px rgba(242,242,240,.08);
-}
-.admin-panel[data-theme="dark"] .lead-status--inscrito{background:#173322;}
-
 /* ===================== ADMIN — RESPONSIVIDADE ===================== */
 
 /* Tablet: 768px–1024px */
