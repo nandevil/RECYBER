@@ -104,3 +104,17 @@ function rowToSettings(r) {
     tiktokVideoUrl: r.tiktok_video_url || ""
   };
 }
+
+/* Desconto no carrinho + frete grátis (tabela public.cart_discounts, linha única id=1) */
+function rowToCartDiscount(r) {
+  return {
+    active: !!r.discount_enabled,
+    type: r.discount_type === "fixed" ? "fixed" : "percent",
+    value: Number(r.discount_value) || 0,
+    minCart: Number(r.discount_min_cart) || 0,
+    requiresCoupon: !!r.discount_requires_coupon,
+    couponCode: (r.discount_coupon_code || "").trim().toUpperCase(),
+    freeShippingActive: !!r.free_shipping_enabled,
+    freeShippingMinCart: Number(r.free_shipping_min_cart) || 0
+  };
+}

@@ -374,6 +374,51 @@ create policy "dono pode enviar fotos de atualizacoes"
   with check (bucket_id = 'spoilers');
 ```
 
+## Passo 12 — Desconto no carrinho e Frete Grátis
+
+Adiciona a aba "Promoção e Desconto" (antes só "Promoções") duas novas
+regras, separadas da campanha por peça do Passo 9:
+
+- **Desconto no carrinho**: valor fixo (R$) ou percentual, liberado
+  automaticamente a partir de um valor mínimo gasto, ou exigindo um
+  cupom (um código único, não um sistema de vários cupons).
+- **Frete grátis**: a partir de um valor mínimo de carrinho.
+
+No **SQL Editor**, cole e rode:
+
+```sql
+create table public.cart_discounts (
+  id int primary key default 1,
+  discount_enabled boolean not null default false,
+  discount_type text not null default 'percent', -- 'percent' ou 'fixed'
+  discount_value numeric not null default 0,
+  discount_min_cart numeric not null default 0,
+  discount_requires_coupon boolean not null default false,
+  discount_coupon_code text not null default '',
+  free_shipping_enabled boolean not null default false,
+  free_shipping_min_cart numeric not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.cart_discounts (id) values (1) on conflict (id) do nothing;
+
+alter table public.cart_discounts enable row level security;
+alter table public.cart_discounts force row level security;
+
+-- Qualquer visitante pode LER as regras (o carrinho calcula no navegador)
+create policy "qualquer um pode ler descontos do carrinho"
+  on public.cart_discounts for select to anon, authenticated using (true);
+
+-- Só você, logado, pode ATUALIZAR as regras
+create policy "dono pode atualizar descontos do carrinho"
+  on public.cart_discounts for update to authenticated using (true) with check (true);
+```
+
+> Não cobre "primeira compra" como gatilho — exigiria rastrear
+> clientes recorrentes, o que o site não faz hoje (não há login de
+> cliente). Os dois modos suportados (automático por valor gasto, ou
+> por cupom) cobrem a maior parte do uso real de um cupom de desconto.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

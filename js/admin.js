@@ -329,6 +329,7 @@ function showAdminPanel() {
   setupFeedbackForm();
   setupSettingsForm();
   setupPromoForm();
+  setupCartDiscountForm();
   document.getElementById("admin-login").hidden = true;
   document.getElementById("admin-panel").hidden = false;
   document.body.classList.add("admin-open");
@@ -871,6 +872,116 @@ document.getElementById("admin-promo-products").addEventListener("change", async
     if (typeof syncCatalog === "function") syncCatalog();
   }
   toggle.disabled = false;
+});
+
+/* =====================================================
+   DESCONTO NO CARRINHO + FRETE GRÁTIS (aba "Promoção e Desconto")
+   Duas telas, uma tabela só (public.cart_discounts, linha única id=1).
+===================================================== */
+async function setupCartDiscountForm() {
+  const unavailable = document.getElementById("cart-discount-form-unavailable");
+  const discountSubmit = document.getElementById("cart-discount-form-submit");
+  const shippingSubmit = document.getElementById("free-shipping-form-submit");
+
+  if (!supabaseEnabled()) {
+    unavailable.hidden = false;
+    unavailable.textContent = "Edição indisponível: configure o Supabase (veja SUPABASE.md).";
+    discountSubmit.disabled = true;
+    shippingSubmit.disabled = true;
+    return;
+  }
+  unavailable.hidden = true;
+  discountSubmit.disabled = false;
+  shippingSubmit.disabled = false;
+
+  const { data, error } = await sb.from("cart_discounts").select("*").eq("id", 1).maybeSingle();
+  if (error) {
+    unavailable.hidden = false;
+    unavailable.textContent = describeSupabaseFormError(error, { table: "cart_discounts", step: "Passo 12" });
+    discountSubmit.disabled = true;
+    shippingSubmit.disabled = true;
+    return;
+  }
+  if (!data) return;
+
+  const settings = rowToCartDiscount(data);
+  document.getElementById("cd-active").checked = settings.active;
+  document.getElementById("cd-type").value = settings.type;
+  document.getElementById("cd-value").value = settings.value;
+  document.getElementById("cd-min-cart").value = settings.minCart;
+  document.getElementById("cd-requires-coupon").checked = settings.requiresCoupon;
+  document.getElementById("cd-coupon-code").value = settings.couponCode;
+  document.getElementById("fs-active").checked = settings.freeShippingActive;
+  document.getElementById("fs-min-cart").value = settings.freeShippingMinCart;
+}
+
+document.getElementById("cart-discount-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!supabaseEnabled()) return;
+
+  const submitBtn = document.getElementById("cart-discount-form-submit");
+  const unavailable = document.getElementById("cart-discount-form-unavailable");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Salvando...";
+  unavailable.hidden = true;
+
+  try {
+    const { data: sessionData } = await sb.auth.getSession();
+    if (!sessionData.session) throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
+
+    const { error } = await sb.from("cart_discounts").update({
+      discount_enabled: document.getElementById("cd-active").checked,
+      discount_type: document.getElementById("cd-type").value,
+      discount_value: Number(document.getElementById("cd-value").value) || 0,
+      discount_min_cart: Number(document.getElementById("cd-min-cart").value) || 0,
+      discount_requires_coupon: document.getElementById("cd-requires-coupon").checked,
+      discount_coupon_code: document.getElementById("cd-coupon-code").value.trim(),
+      updated_at: new Date().toISOString()
+    }).eq("id", 1);
+    if (error) throw error;
+
+    showToast("Desconto salvo com sucesso");
+    if (typeof syncCartDiscountSettings === "function") syncCartDiscountSettings();
+  } catch (err) {
+    console.error("Desconto no carrinho:", err);
+    unavailable.hidden = false;
+    unavailable.textContent = describeSupabaseFormError(err, { table: "cart_discounts", step: "Passo 12" });
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Salvar Desconto";
+  }
+});
+
+document.getElementById("free-shipping-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!supabaseEnabled()) return;
+
+  const submitBtn = document.getElementById("free-shipping-form-submit");
+  const unavailable = document.getElementById("cart-discount-form-unavailable");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Salvando...";
+
+  try {
+    const { data: sessionData } = await sb.auth.getSession();
+    if (!sessionData.session) throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
+
+    const { error } = await sb.from("cart_discounts").update({
+      free_shipping_enabled: document.getElementById("fs-active").checked,
+      free_shipping_min_cart: Number(document.getElementById("fs-min-cart").value) || 0,
+      updated_at: new Date().toISOString()
+    }).eq("id", 1);
+    if (error) throw error;
+
+    showToast("Frete grátis salvo com sucesso");
+    if (typeof syncCartDiscountSettings === "function") syncCartDiscountSettings();
+  } catch (err) {
+    console.error("Frete grátis:", err);
+    unavailable.hidden = false;
+    unavailable.textContent = describeSupabaseFormError(err, { table: "cart_discounts", step: "Passo 12" });
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Salvar Frete Grátis";
+  }
 });
 
 /* =====================================================

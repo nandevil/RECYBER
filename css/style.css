@@ -677,6 +677,23 @@ body.promo-mode-active .cat-card--promo{
 .remove-btn{font-size:.65rem;text-decoration:underline;color:var(--danger);}
 .cart-footer{border-top:2px solid var(--ink);padding:18px 24px;}
 .cart-subtotal{display:flex;justify-content:space-between;font-family:var(--font-pixel);font-size:.8rem;margin-bottom:14px;}
+.cart-discount-row{color:var(--accent-dark);}
+.cart-discount-banner{
+  background:#e2f8c0;border:1.5px solid var(--accent);border-radius:8px;
+  padding:10px 12px;font-size:.76rem;font-weight:700;line-height:1.4;
+  margin-bottom:14px;text-align:center;
+}
+.cart-free-shipping-note{
+  font-size:.72rem;color:var(--accent-dark);font-weight:700;
+  margin-bottom:10px;text-align:center;
+}
+.cart-coupon{display:flex;gap:8px;margin-bottom:14px;}
+.cart-coupon input{
+  flex:1;border:1.5px solid var(--ink);border-radius:var(--radius);
+  padding:8px 10px;font-family:var(--font-mono);font-size:.8rem;
+  text-transform:uppercase;
+}
+.cart-coupon .pill-sm{flex-shrink:0;}
 
 /* ===================== MODAL ===================== */
 .modal-overlay{

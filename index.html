@@ -238,6 +238,16 @@
   <div class="cart-items" id="cart-items"></div>
   <p class="cart-empty" id="cart-empty">Seu carrinho está vazio.</p>
   <div class="cart-footer">
+    <p class="cart-free-shipping-note" id="cart-free-shipping-note" hidden></p>
+    <div class="cart-coupon" id="cart-coupon" hidden>
+      <input type="text" id="cart-coupon-input" placeholder="Código do cupom">
+      <button type="button" class="pill pill-sm" id="cart-coupon-apply">Aplicar</button>
+    </div>
+    <p class="cart-discount-banner" id="cart-discount-banner" hidden>👉 Você ganhou um desconto! Ao finalizar compra o seu desconto aparecerá no carrinho</p>
+    <div class="cart-subtotal cart-discount-row" id="cart-discount-row" hidden>
+      <span>Desconto</span>
+      <span id="cart-discount-amount">-R$ 0,00</span>
+    </div>
     <div class="cart-subtotal">
       <span>Subtotal</span>
       <span id="cart-subtotal">R$ 0,00</span>
@@ -350,6 +360,7 @@
 
       <div class="checkout-totals" id="checkout-totals" hidden>
         <div class="checkout-total-row"><span>Subtotal</span><span id="ck-subtotal">R$ 0,00</span></div>
+        <div class="checkout-total-row" id="ck-discount-row" hidden><span>Desconto</span><span id="ck-discount">-R$ 0,00</span></div>
         <div class="checkout-total-row"><span>Frete</span><span id="ck-frete">Calculando...</span></div>
         <div class="checkout-total-row checkout-total-row--final"><span>Total</span><span id="ck-total">R$ 0,00</span></div>
       </div>
@@ -428,7 +439,7 @@
     <button class="pill" data-tab="cadastro">&#128247; Cadastro de Peça</button>
     <button class="pill" data-tab="feedbacks">&#128172; Feedbacks</button>
     <button class="pill" data-tab="textos">&#128221; Textos do Modal</button>
-    <button class="pill" data-tab="promo">&#127991; Promoções</button>
+    <button class="pill" data-tab="promo">&#127991; Promoção e Desconto</button>
     <button class="pill" id="admin-updates-open" type="button">&#9881;&#65039; Administrar Atualizações</button>
   </div>
 
@@ -626,6 +637,61 @@
       <p class="admin-leads-subtitle admin-promo-products-hint">Ative nas peças que devem entrar na campanha acima</p>
       <div class="admin-promo-products" id="admin-promo-products"></div>
       <p class="empty-state" id="admin-promo-products-empty" hidden>Nenhuma peça cadastrada ainda.</p>
+
+      <h2 class="admin-leads-title admin-feedbacks-list-title">Desconto no Carrinho</h2>
+      <h3 class="admin-leads-subtitle">Desconto automático por valor gasto, ou por cupom único. Não cobre múltiplos cupons nem "primeira compra".</h3>
+
+      <p class="admin-login-error" id="cart-discount-form-unavailable" hidden>
+        Edição indisponível: configure a tabela "cart_discounts" no Supabase (veja SUPABASE.md, Passo 12).
+      </p>
+
+      <form class="checkout-form" id="cart-discount-form">
+        <label class="field field-wide promo-toggle-field">
+          <span>Desconto no carrinho ativo</span>
+          <input type="checkbox" id="cd-active" class="promo-switch">
+        </label>
+        <div class="checkout-grid">
+          <label class="field">
+            <span>Tipo de desconto</span>
+            <select id="cd-type">
+              <option value="percent">Porcentagem (%)</option>
+              <option value="fixed">Valor fixo (R$)</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Valor do desconto</span>
+            <input type="number" id="cd-value" min="0" step="0.01" value="0">
+          </label>
+          <label class="field field-wide">
+            <span>Valor mínimo do carrinho para liberar</span>
+            <input type="number" id="cd-min-cart" min="0" step="0.01" value="0">
+          </label>
+        </div>
+        <label class="field field-wide promo-toggle-field">
+          <span>Exigir cupom (em vez de automático por valor)</span>
+          <input type="checkbox" id="cd-requires-coupon" class="promo-switch">
+        </label>
+        <label class="field field-wide">
+          <span>Código do cupom <em>(só usado se "Exigir cupom" estiver ligado)</em></span>
+          <input type="text" id="cd-coupon-code" placeholder="Ex: GARIMPO10">
+        </label>
+        <button type="submit" class="pill admin-upload-submit" id="cart-discount-form-submit">Salvar Desconto</button>
+      </form>
+
+      <h2 class="admin-leads-title admin-feedbacks-list-title">Frete Grátis</h2>
+      <h3 class="admin-leads-subtitle">Zera o frete automaticamente a partir de um valor mínimo de carrinho</h3>
+
+      <form class="checkout-form" id="free-shipping-form">
+        <label class="field field-wide promo-toggle-field">
+          <span>Frete grátis ativo</span>
+          <input type="checkbox" id="fs-active" class="promo-switch">
+        </label>
+        <label class="field field-wide">
+          <span>Valor mínimo do carrinho para frete grátis</span>
+          <input type="number" id="fs-min-cart" min="0" step="0.01" value="0">
+        </label>
+        <button type="submit" class="pill admin-upload-submit" id="free-shipping-form-submit">Salvar Frete Grátis</button>
+      </form>
     </div>
   </section>
 </div>
@@ -669,6 +735,7 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/products.js"></script>
 <script src="js/promo-sync.js"></script>
+<script src="js/cart-discount-sync.js"></script>
 <script src="js/app.js"></script>
 <script src="js/checkout.js"></script>
 <script src="js/admin.js"></script>

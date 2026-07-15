@@ -420,7 +420,39 @@ function updateCartUI() {
     });
   });
 
-  document.getElementById("cart-subtotal").textContent = money(cartTotal());
+  const subtotal = cartTotal();
+  const discount = typeof cartDiscountAmount === "function" ? cartDiscountAmount() : 0;
+  document.getElementById("cart-subtotal").textContent = money(subtotal - discount);
+
+  const discountRow = document.getElementById("cart-discount-row");
+  const discountBanner = document.getElementById("cart-discount-banner");
+  const couponBox = document.getElementById("cart-coupon");
+  const shippingNote = document.getElementById("cart-free-shipping-note");
+
+  if (typeof cartDiscountState !== "undefined" && state.cart.length > 0) {
+    const eligible = typeof isCartDiscountEligible === "function" && isCartDiscountEligible();
+    discountRow.hidden = !eligible;
+    if (eligible) document.getElementById("cart-discount-amount").textContent = `-${money(discount)}`;
+    discountBanner.hidden = !eligible;
+
+    couponBox.hidden = !(cartDiscountState.active && cartDiscountState.requiresCoupon && !eligible);
+
+    const freeShipping = typeof isFreeShippingEligible === "function" && isFreeShippingEligible();
+    if (freeShipping) {
+      shippingNote.hidden = false;
+      shippingNote.textContent = "🚚 Frete grátis aplicado neste pedido!";
+    } else if (cartDiscountState.freeShippingActive && cartDiscountState.freeShippingMinCart > subtotal) {
+      shippingNote.hidden = false;
+      shippingNote.textContent = `🚚 Faltam ${money(cartDiscountState.freeShippingMinCart - subtotal)} para o frete grátis!`;
+    } else {
+      shippingNote.hidden = true;
+    }
+  } else {
+    discountRow.hidden = true;
+    discountBanner.hidden = true;
+    couponBox.hidden = true;
+    shippingNote.hidden = true;
+  }
 }
 
 function openCart() {
@@ -433,10 +465,18 @@ function closeCart() {
 }
 document.getElementById("cart-toggle").addEventListener("click", openCart);
 document.getElementById("cart-close").addEventListener("click", closeCart);
+
+document.getElementById("cart-coupon-apply").addEventListener("click", () => {
+  const input = document.getElementById("cart-coupon-input");
+  applyCoupon(input.value);
+  if (!isCartDiscountEligible()) showToast("Cupom inválido ou valor mínimo não atingido");
+});
+document.getElementById("cart-coupon-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); document.getElementById("cart-coupon-apply").click(); }
+});
 document.getElementById("overlay").addEventListener("click", () => {
   closeCart();
   closeModal();
-  closeMobileNav();
 });
 
 /* =====================================================

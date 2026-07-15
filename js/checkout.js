@@ -12,8 +12,10 @@ function saveOrders(orders) {
   localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
 }
 
-/* Regra de frete — não exibida ao cliente, só o valor final. */
+/* Regra de frete — não exibida ao cliente, só o valor final. Frete
+   grátis (configurado no painel) sobrepõe o cálculo normal. */
 function calcShipping(subtotal) {
+  if (typeof isFreeShippingEligible === "function" && isFreeShippingEligible()) return 0;
   return subtotal < 169 ? 18 : 10;
 }
 
@@ -92,10 +94,13 @@ function maybeCalculateShipping() {
   shippingCalculated = false;
   setTimeout(() => {
     const subtotal = cartTotal();
+    const discount = typeof cartDiscountAmount === "function" ? cartDiscountAmount() : 0;
     const shipping = calcShipping(subtotal);
     document.getElementById("ck-subtotal").textContent = money(subtotal);
+    document.getElementById("ck-discount-row").hidden = discount <= 0;
+    if (discount > 0) document.getElementById("ck-discount").textContent = `-${money(discount)}`;
     document.getElementById("ck-frete").textContent = money(shipping);
-    document.getElementById("ck-total").textContent = money(subtotal + shipping);
+    document.getElementById("ck-total").textContent = money(subtotal - discount + shipping);
     shippingCalculated = true;
   }, 500);
 }
@@ -159,6 +164,7 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
   }
 
   const subtotal = cartTotal();
+  const discount = typeof cartDiscountAmount === "function" ? cartDiscountAmount() : 0;
   const shipping = calcShipping(subtotal);
 
   const order = {
@@ -170,7 +176,7 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
     }).filter(Boolean),
     subtotal,
     shipping,
-    total: subtotal + shipping,
+    total: subtotal - discount + shipping,
     customer: {
       cep: document.getElementById("ck-cep").value.trim(),
       nome: document.getElementById("ck-nome").value.trim(),
@@ -198,6 +204,7 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
 
   state.cart = [];
   saveCart();
+  appliedCoupon = "";
 
   closeCheckout();
   document.getElementById("success-overlay").classList.add("open");
