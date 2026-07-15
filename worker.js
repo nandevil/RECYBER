@@ -73,7 +73,11 @@ async function handleCreatePayment(request, env) {
 
     const res = await fetch("https://api.checkout.infinitepay.io/links", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "User-Agent": "Mozilla/5.0 (compatible; RecyberCheckout/1.0; +https://recyber.anandalage18.workers.dev)"
+      },
       body: JSON.stringify(payload)
     });
 
