@@ -166,7 +166,7 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
     createdAt: new Date().toISOString(),
     items: state.cart.map(item => {
       const p = PRODUCTS.find(pr => pr.id === item.id);
-      return p ? { id: p.id, name: p.name, size: p.size, qty: item.qty, price: effectivePrice(p) } : null;
+      return p ? { id: p.id, name: p.name, size: p.size, qty: item.qty, price: effectivePrice(p), image: p.image || "" } : null;
     }).filter(Boolean),
     subtotal,
     shipping,

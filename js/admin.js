@@ -113,18 +113,22 @@ function triggerStatusNotification(orderId, status) {
 /* =====================================================
    ABA: PEDIDOS / PAGAMENTOS
 ===================================================== */
-/* Miniatura da peça — busca a foto no catálogo público (PRODUCTS,
-   compartilhado via js/catalog-sync.js) pelo id salvo no pedido. */
-function productThumbHtml(itemId, itemName) {
-  const p = typeof PRODUCTS !== "undefined" ? PRODUCTS.find(pr => pr.id === itemId) : null;
-  const img = p && p.image;
+/* Miniatura da peça. Prioriza a foto salva no próprio pedido (item.image
+   — a peça como ela era no momento da compra). Pedidos antigos, salvos
+   antes dessa mudança, não têm esse campo: nesse caso cai para o
+   catálogo público em memória (PRODUCTS, via js/catalog-sync.js) pelo
+   id, que falha graciosamente se a peça foi editada/removida depois
+   ou se o catálogo ainda não carregou. */
+function productThumbHtml(item) {
+  const fallback = typeof PRODUCTS !== "undefined" ? PRODUCTS.find(pr => pr.id === item.id) : null;
+  const img = item.image || (fallback && fallback.image);
   if (!img) return `<span class="order-item-thumb order-item-thumb--empty" aria-hidden="true"></span>`;
-  return `<img class="order-item-thumb" src="${img}" alt="${itemName}" loading="lazy">`;
+  return `<img class="order-item-thumb" src="${img}" alt="${item.name}" loading="lazy" onerror="this.outerHTML='&lt;span class=&quot;order-item-thumb order-item-thumb--empty&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;'">`;
 }
 
 function orderCardHtml(order) {
   const date = new Date(order.createdAt).toLocaleString("pt-BR");
-  const thumbsHtml = order.items.map(i => productThumbHtml(i.id, i.name)).join("");
+  const thumbsHtml = order.items.map(i => productThumbHtml(i)).join("");
   const itemsHtml = order.items.map(i => `<li>${i.qty}x ${i.name} (Tam. ${i.size}) — ${money(i.price * i.qty)}</li>`).join("");
   const paymentLabel = order.payment === "pix" ? "Pix" : "Cartão de Crédito";
   const payStatus = order.paymentStatus || "pendente";
