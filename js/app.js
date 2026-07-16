@@ -233,8 +233,12 @@ function renderCategoryCards() {
   if (!wrap) return;
   const promoCount = PRODUCTS.filter(p => p.isPromo).length;
   const showPromo = isPromoWindowOpen() && promoCount > 0;
-  /* Modo Promo ativo: funil de vendas — some com as demais categorias e
-     deixa só "Promoções" visível, para focar o cliente na campanha. */
+  /* Modo Promo ativo E com peças marcadas: funil de vendas — some com
+     as demais categorias e deixa só "Promoções" visível. Sem nenhuma
+     peça marcada, mostra o grid normal mesmo com o tema escuro ligado
+     (classe abaixo controla o CSS que centraliza o card único — sem
+     ela, o grid normal de categorias não deve virar flex). */
+  wrap.classList.toggle("category-cards--promo-only", showPromo);
   const list = showPromo
     ? [{ id: "promocoes", label: "Promoções" }]
     : [{ id: "todos", label: "Todos" }, ...CATEGORIES];

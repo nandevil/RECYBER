@@ -356,12 +356,15 @@ body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
 @media (prefers-reduced-motion:reduce){
   body.promo-mode-active .cat-card--promo{animation:none;}
 }
-/* No Modo Promo só existe esse card na grade — centraliza em vez de
-   ficar colado à esquerda com espaço vazio ao lado. */
-body.promo-mode-active .category-cards{
+/* Só quando o card "Promoções" é o ÚNICO da grade (classe controlada
+   via JS em renderCategoryCards) — centraliza em vez de ficar colado
+   à esquerda com espaço vazio ao lado. Sem peça nenhuma marcada com
+   "Modo Promo", o grid normal de categorias continua em grid mesmo
+   com o tema escuro ligado. */
+.category-cards--promo-only{
   display:flex;justify-content:center;
 }
-body.promo-mode-active .cat-card--promo{
+.category-cards--promo-only .cat-card--promo{
   flex:0 1 340px;
 }
 
