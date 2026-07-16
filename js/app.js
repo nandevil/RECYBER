@@ -437,7 +437,18 @@ function updateCartUI() {
   const couponBox = document.getElementById("cart-coupon");
   const shippingNote = document.getElementById("cart-free-shipping-note");
 
-  if (typeof cartDiscountState !== "undefined" && state.cart.length > 0) {
+  /* Carrinho vazio (ou subtotal zerado) precisa ser a primeira
+     checagem — some com toda a seção de frete/desconto pra não mostrar
+     mensagem nenhuma sem itens de verdade no carrinho. */
+  if (state.cart.length === 0 || subtotal <= 0) {
+    discountRow.hidden = true;
+    discountBanner.hidden = true;
+    couponBox.hidden = true;
+    shippingNote.hidden = true;
+    return;
+  }
+
+  if (typeof cartDiscountState !== "undefined") {
     const eligible = typeof isCartDiscountEligible === "function" && isCartDiscountEligible();
     discountRow.hidden = !eligible;
     if (eligible) document.getElementById("cart-discount-amount").textContent = `-${money(discount)}`;
@@ -456,11 +467,11 @@ function updateCartUI() {
       const remaining = SHIPPING_THRESHOLD - subtotal;
       const progress = Math.min(100, Math.round((subtotal / SHIPPING_THRESHOLD) * 100));
       shippingNote.hidden = false;
-      shippingNote.innerHTML = `🚚 Faltam ${money(remaining)} para o frete cair para ${money(SHIPPING_LOW)}!
+      shippingNote.innerHTML = `🚚 O frete atual é ${money(SHIPPING_HIGH)}. Adicione mais ${money(remaining)} para o seu frete cair para ${money(SHIPPING_LOW)}!
         <span class="cart-shipping-progress"><span class="cart-shipping-progress-bar" style="width:${progress}%"></span></span>`;
     } else {
       shippingNote.hidden = false;
-      shippingNote.innerHTML = `🚚 Parabéns! Você garantiu o frete reduzido de ${money(SHIPPING_LOW)}!`;
+      shippingNote.innerHTML = `🎉 Parabéns! Você atingiu o valor necessário e seu frete caiu para ${money(SHIPPING_LOW)}!`;
     }
   } else {
     discountRow.hidden = true;
