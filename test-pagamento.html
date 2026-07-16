@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Teste interno — InfinitePay</title>
+<style>
+  body{font-family:monospace;background:#0e0e0e;color:#eee;padding:24px;max-width:640px;margin:0 auto;}
+  h1{font-size:1rem;margin-bottom:4px;}
+  p{color:#8a8a86;font-size:.85rem;line-height:1.5;}
+  button{
+    background:#2f8f4e;color:#fff;border:none;border-radius:6px;
+    padding:12px 20px;font-family:monospace;font-size:.85rem;cursor:pointer;margin:16px 0;
+  }
+  button:disabled{opacity:.5;cursor:not-allowed;}
+  pre{
+    background:#1a1a1a;border:1px solid #333;border-radius:6px;
+    padding:14px;white-space:pre-wrap;word-break:break-all;font-size:.75rem;
+  }
+  .ok{color:#2f8f4e;}
+  .err{color:#e05555;}
+</style>
+</head>
+<body>
+  <h1>Teste interno — checkout InfinitePay</h1>
+  <p>
+    Página não divulgada, sem link em nenhum lugar do site — só pra
+    testar se o /api/create-payment está funcionando (histórico de
+    erro 429/1015). Cada clique dispara um pedido de teste (valor
+    R$0,10, não afeta pedidos reais nem o painel).
+  </p>
+  <button id="run">Testar create-payment</button>
+  <div id="result"></div>
+
+  <script>
+    let counter = 0;
+    document.getElementById("run").addEventListener("click", async () => {
+      const btn = document.getElementById("run");
+      const resultEl = document.getElementById("result");
+      btn.disabled = true;
+      btn.textContent = "Testando...";
+      counter += 1;
+
+      const order = {
+        id: `teste-diag-${Date.now()}-${counter}`,
+        items: [{ qty: 1, price: 0.10, name: "Teste diagnostico", size: "U" }],
+        shipping: 0,
+        customer: { nome: "Teste Diagnostico", email: "teste@recyber.com.br", telefone: "21999999999" }
+      };
+
+      const startedAt = new Date().toISOString();
+      try {
+        const res = await fetch("/api/create-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order })
+        });
+        const data = await res.json().catch(() => ({}));
+        const block = document.createElement("pre");
+        block.className = res.ok ? "ok" : "err";
+        block.textContent = `[${startedAt}]\nstatus: ${res.status}\n${JSON.stringify(data, null, 2)}`;
+        resultEl.prepend(block);
+      } catch (err) {
+        const block = document.createElement("pre");
+        block.className = "err";
+        block.textContent = `[${startedAt}]\nerro de rede: ${err.message}`;
+        resultEl.prepend(block);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Testar create-payment";
+      }
+    });
+  </script>
+</body>
+</html>
