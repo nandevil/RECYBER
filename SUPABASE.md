@@ -463,9 +463,9 @@ npx wrangler secret put RESEND_API_KEY
 
 Permite configurar assunto, corpo e imagem de cada e-mail de
 notificação (Em preparação / Enviado / Cancelado) pela aba "Textos do
-Modal" do painel, em vez de ficarem fixos no código. O WhatsApp
-continua com o texto fixo — só o e-mail é editável (é o único canal
-que suporta imagem).
+Modal" do painel, em vez de ficarem fixos no código. (O texto do
+WhatsApp também virou editável — veja o Passo 16 logo abaixo, que
+adiciona as colunas que faltam nesta mesma tabela.)
 
 Reaproveita o bucket `spoilers` já criado no Passo 11 — não precisa
 criar um bucket novo. No **SQL Editor**, cole e rode:
@@ -505,6 +505,28 @@ create policy "dono pode atualizar templates de email"
 >
 > Use `{{nome}}` e `{{pedido}}` em qualquer lugar do texto — são
 > trocados pelo nome do cliente e o código do pedido na hora do envio.
+
+## Passo 16 — Editar também o texto do WhatsApp pelo painel
+
+Adiciona 3 colunas na mesma tabela `email_templates` (uma por status)
+para o texto do WhatsApp virar editável na aba "Texto WhatsApp e
+E-mail", junto com o e-mail. Se já rodou o Passo 15, só rode isto (não
+precisa recriar a tabela). No **SQL Editor**, cole e rode:
+
+```sql
+alter table public.email_templates
+  add column if not exists prep_whatsapp text not null default $$Alerta de Garimpo: seu pedido já entrou no nosso laboratório de regeneração! 🧪✨
+
+Olá, {{nome}}! Nossos circuitos detectaram sua escolha sustentável (pedido {{pedido}}) e já estamos separando, higienizando e embalando suas peças com todo o carinho que o planeta merece. Assim que for enviado, você recebe o código de rastreio por aqui. Em breve ela ganha uma nova história com você! 💚$$,
+  add column if not exists shipped_whatsapp text not null default $$Caixinha Re.cyber liberada para o espaço! 🛸📦
+
+Boas notícias, {{nome}}! Seu garimpo (pedido {{pedido}}) foi oficialmente postado e está a caminho da sua casa. O código de rastreamento chega em seguida por aqui para você acompanhar a viagem das suas novas peças. Prepare o guarda-roupa! ✨$$,
+  add column if not exists cancelled_whatsapp text not null default $$Olá {{nome}}! Seu pedido {{pedido}} no Re.cyber foi cancelado. Se já tiver feito o pagamento ou tiver alguma dúvida, é só responder por aqui que a gente resolve. 🙏$$;
+```
+
+> Mesma regra do e-mail: deixar em branco no painel usa o texto
+> criativo padrão automaticamente. `{{nome}}` e `{{pedido}}` funcionam
+> igual no WhatsApp.
 
 ## Segurança — como fica
 

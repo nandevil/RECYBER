@@ -80,7 +80,7 @@ async function handleCreatePayment(request, env) {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        "User-Agent": "Mozilla/5.0 (compatible; RecyberCheckout/1.0; +https://recyber.anandalage18.workers.dev)"
+        "User-Agent": "Mozilla/5.0 (compatible; RecyberCheckout/1.0; +https://recyber.com.br)"
       },
       body: JSON.stringify(payload)
     });

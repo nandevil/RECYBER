@@ -72,36 +72,28 @@ const STATUS_LABELS = {
 const PAYMENT_STATUS = ["pendente", "pago", "cancelado"];
 const PAYMENT_STATUS_LABELS = { pendente: "Pendente", pago: "Pago", cancelado: "Cancelado" };
 
-function statusMessage(order, status) {
-  if (status === "em-preparacao") {
-    return `Alerta de Garimpo: seu pedido já entrou no nosso laboratório de regeneração! 🧪✨\n\nOlá, ${order.customer.nome}! Nossos circuitos detectaram sua escolha sustentável (pedido ${order.id}) e já estamos separando, higienizando e embalando suas peças com todo o carinho que o planeta merece. Assim que for enviado, você recebe o código de rastreio por aqui. Em breve ela ganha uma nova história com você! 💚`;
-  }
-  return `Caixinha Re.cyber liberada para o espaço! 🛸📦\n\nBoas notícias, ${order.customer.nome}! Seu garimpo (pedido ${order.id}) foi oficialmente postado e está a caminho da sua casa. O código de rastreamento chega em seguida por aqui para você acompanhar a viagem das suas novas peças. Prepare o guarda-roupa! ✨`;
-}
-
-function cancellationMessage(order) {
-  return `Olá ${order.customer.nome}! Seu pedido ${order.id} no ${CONFIG.storeName} foi cancelado. Se já tiver feito o pagamento ou tiver alguma dúvida, é só responder por aqui que a gente resolve. 🙏`;
-}
-
 /* =====================================================
-   MENSAGENS DE E-MAIL (configuráveis pelo painel, aba "Textos do
-   Modal") — separado do texto do WhatsApp acima, que continua fixo.
-   Cada status usa um prefixo de coluna na tabela email_templates:
+   MENSAGENS DE WHATSAPP + E-MAIL (configuráveis pelo painel, aba
+   "Texto WhatsApp e E-mail") — uma tela só pros dois canais. Cada
+   status usa um prefixo de coluna na tabela email_templates:
    em-preparacao -> prep_, enviado -> shipped_, cancelado -> cancelled_
 ===================================================== */
 const EMAIL_STATUS_PREFIX = { "em-preparacao": "prep", enviado: "shipped", cancelado: "cancelled" };
-const DEFAULT_EMAIL_TEMPLATES = {
+const DEFAULT_MESSAGE_TEMPLATES = {
   "em-preparacao": {
+    whatsapp: "Alerta de Garimpo: seu pedido já entrou no nosso laboratório de regeneração! 🧪✨\n\nOlá, {{nome}}! Nossos circuitos detectaram sua escolha sustentável (pedido {{pedido}}) e já estamos separando, higienizando e embalando suas peças com todo o carinho que o planeta merece. Assim que for enviado, você recebe o código de rastreio por aqui. Em breve ela ganha uma nova história com você! 💚",
     subject: "Re.cyber — Seu pedido está em preparação!",
     body: "Alerta de Garimpo: seu pedido já entrou no nosso laboratório de regeneração! 🧪✨\n\nOlá, {{nome}}! Nossos circuitos detectaram sua escolha sustentável (pedido {{pedido}}) e já estamos separando, higienizando e embalando suas peças com todo o carinho que o planeta merece. Assim que for enviado, você recebe o código de rastreio por aqui. Em breve ela ganha uma nova história com você! 💚",
     imageUrl: ""
   },
   enviado: {
+    whatsapp: "Caixinha Re.cyber liberada para o espaço! 🛸📦\n\nBoas notícias, {{nome}}! Seu garimpo (pedido {{pedido}}) foi oficialmente postado e está a caminho da sua casa. O código de rastreamento chega em seguida por aqui para você acompanhar a viagem das suas novas peças. Prepare o guarda-roupa! ✨",
     subject: "Re.cyber — Seu pedido foi enviado!",
     body: "Caixinha Re.cyber liberada para o espaço! 🛸📦\n\nBoas notícias, {{nome}}! Seu garimpo (pedido {{pedido}}) foi oficialmente postado e está a caminho da sua casa. O código de rastreamento chega em seguida por aqui para você acompanhar a viagem das suas novas peças. Prepare o guarda-roupa! ✨",
     imageUrl: ""
   },
   cancelado: {
+    whatsapp: "Olá {{nome}}! Seu pedido {{pedido}} no Re.cyber foi cancelado. Se já tiver feito o pagamento ou tiver alguma dúvida, é só responder por aqui que a gente resolve. 🙏",
     subject: "Re.cyber — Pedido cancelado",
     body: "Olá {{nome}}! Seu pedido {{pedido}} no Re.cyber foi cancelado. Se já tiver feito o pagamento ou tiver alguma dúvida, é só responder por aqui que a gente resolve. 🙏",
     imageUrl: ""
@@ -113,28 +105,28 @@ async function fetchEmailTemplates() {
   if (!supabaseEnabled()) return null;
   const { data, error } = await sb.from("email_templates").select("*").eq("id", 1).maybeSingle();
   if (error || !data) {
-    if (error) console.warn("Templates de e-mail indisponíveis:", error.message);
+    if (error) console.warn("Templates de mensagens indisponíveis:", error.message);
     return null;
   }
   return data;
 }
 
-function getEmailTemplate(status) {
+function getMessageTemplate(status) {
   const prefix = EMAIL_STATUS_PREFIX[status];
   const row = emailTemplatesCache;
-  const defaults = DEFAULT_EMAIL_TEMPLATES[status];
+  const defaults = DEFAULT_MESSAGE_TEMPLATES[status];
   if (!row || !prefix) return defaults;
-  /* Cada campo cai pro padrão criativo individualmente — deixar só o
-     corpo em branco no painel não perde o assunto configurado, e
-     vice-versa. */
+  /* Cada campo cai pro padrão criativo individualmente — deixar um
+     campo em branco no painel não perde os outros já configurados. */
   return {
+    whatsapp: row[`${prefix}_whatsapp`] || defaults.whatsapp,
     subject: row[`${prefix}_subject`] || defaults.subject,
     body: row[`${prefix}_body`] || defaults.body,
     imageUrl: row[`${prefix}_image_url`] || ""
   };
 }
 
-function fillEmailTemplate(text, order) {
+function fillTemplate(text, order) {
   return text.replace(/\{\{nome\}\}/g, order.customer.nome).replace(/\{\{pedido\}\}/g, order.id);
 }
 
@@ -176,21 +168,22 @@ async function sendOrderEmail(order, subject, text, imageUrl) {
   }
 }
 
-/* WhatsApp (wa.me, texto fixo) abre com o texto já pronto — o
-   administrador confirma o envio no app. O e-mail usa o template
-   configurável (assunto + corpo + imagem) da aba "Textos do Modal",
-   enviado de verdade via Resend (Passo 14 do SUPABASE.md). */
+/* WhatsApp (wa.me) abre com o texto configurável já pronto — o
+   administrador confirma o envio no app (não dá pra automatizar o
+   clique de enviar sem a API paga do WhatsApp Business). O e-mail usa
+   o mesmo template (assunto + corpo + imagem), enviado de verdade via
+   Resend (Passo 14 do SUPABASE.md). Os dois ficam configuráveis juntos
+   na aba "Texto WhatsApp e E-mail" (Passo 15/16 do SUPABASE.md). */
 function notifyCustomerBothChannels(order, status) {
-  const whatsappText = status === "cancelado" ? cancellationMessage(order) : statusMessage(order, status);
+  const tpl = getMessageTemplate(status);
   const phone = (order.customer.telefone || "").replace(/\D/g, "");
   if (!phone) {
     showToast("Esse pedido não tem WhatsApp cadastrado — enviando só o e-mail.");
   } else {
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(whatsappText)}`, "_blank");
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(fillTemplate(tpl.whatsapp, order))}`, "_blank");
   }
 
-  const tpl = getEmailTemplate(status);
-  sendOrderEmail(order, fillEmailTemplate(tpl.subject, order), fillEmailTemplate(tpl.body, order), tpl.imageUrl);
+  sendOrderEmail(order, fillTemplate(tpl.subject, order), fillTemplate(tpl.body, order), tpl.imageUrl);
 }
 
 async function updateOrder(orderId, patch) {
@@ -887,10 +880,11 @@ document.getElementById("settings-form").addEventListener("submit", async e => {
 });
 
 /* =====================================================
-   MENSAGENS DE E-MAIL (aba "Textos do Modal")
-   Salva assunto/corpo/imagem de cada status na tabela pública
-   email_templates (linha única, id=1) — lida por getEmailTemplate()
-   no momento de disparar a notificação de um pedido.
+   TEXTO WHATSAPP E E-MAIL (aba "Textos do Modal")
+   Salva WhatsApp + assunto/corpo/imagem de e-mail de cada status na
+   tabela pública email_templates (linha única, id=1) — lida por
+   getMessageTemplate() no momento de disparar a notificação de um
+   pedido.
 ===================================================== */
 const EMAIL_TEMPLATE_KEYS = ["prep", "shipped", "cancelled"];
 const EMAIL_PREFIX_TO_STATUS = { prep: "em-preparacao", shipped: "enviado", cancelled: "cancelado" };
@@ -933,7 +927,8 @@ async function setupEmailTemplatesForm() {
 
   emailTemplatesCache = await fetchEmailTemplates();
   EMAIL_TEMPLATE_KEYS.forEach(key => {
-    const tpl = getEmailTemplate(EMAIL_PREFIX_TO_STATUS[key]);
+    const tpl = getMessageTemplate(EMAIL_PREFIX_TO_STATUS[key]);
+    document.getElementById(`et-${key}-whatsapp`).value = tpl.whatsapp;
     document.getElementById(`et-${key}-subject`).value = tpl.subject;
     document.getElementById(`et-${key}-body`).value = tpl.body;
   });
@@ -955,6 +950,7 @@ document.getElementById("email-templates-form").addEventListener("submit", async
 
     const payload = { updated_at: new Date().toISOString() };
     for (const key of EMAIL_TEMPLATE_KEYS) {
+      payload[`${key}_whatsapp`] = document.getElementById(`et-${key}-whatsapp`).value.trim();
       payload[`${key}_subject`] = document.getElementById(`et-${key}-subject`).value.trim();
       payload[`${key}_body`] = document.getElementById(`et-${key}-body`).value.trim();
 
