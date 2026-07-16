@@ -9,6 +9,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+
+<!-- PWA — instalável na tela inicial (celular ou desktop) -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="icon" href="/img/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/img/icon.svg">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Re.cyber">
 </head>
 <body>
 
@@ -873,5 +883,12 @@
 <script src="js/feedback-sync.js"></script>
 <script src="js/settings-sync.js"></script>
 <script src="js/newsletter.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(err => console.warn("Service worker:", err));
+    });
+  }
+</script>
 </body>
 </html>
