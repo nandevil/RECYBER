@@ -693,6 +693,14 @@ body.promo-mode-active .cat-card--promo{
   font-size:.72rem;color:var(--accent-dark);font-weight:700;
   margin-bottom:10px;text-align:center;
 }
+.cart-shipping-progress{
+  display:block;height:6px;border-radius:999px;
+  background:var(--grey-light);overflow:hidden;margin-top:6px;
+}
+.cart-shipping-progress-bar{
+  display:block;height:100%;border-radius:999px;
+  background:var(--accent);transition:width .3s ease;
+}
 .cart-coupon{display:flex;gap:8px;margin-bottom:14px;}
 .cart-coupon input{
   flex:1;border:1.5px solid var(--ink);border-radius:var(--radius);
@@ -805,6 +813,15 @@ body.promo-mode-active .cat-card--promo{
 }
 .field{display:flex;flex-direction:column;gap:6px;font-size:.76rem;}
 .field-wide{grid-column:1 / -1;}
+.ck-cep-input-wrap{position:relative;display:block;}
+.ck-cep-input-wrap input{padding-right:34px;}
+.ck-cep-spinner{
+  position:absolute;top:50%;right:12px;width:14px;height:14px;
+  margin-top:-7px;border-radius:50%;
+  border:2px solid var(--grey-light);border-top-color:var(--accent);
+  animation:ckCepSpin .6s linear infinite;
+}
+@keyframes ckCepSpin{ to{transform:rotate(360deg);} }
 .field span{text-transform:uppercase;letter-spacing:.5px;color:var(--grey);font-size:.68rem;}
 .field span em{font-style:normal;text-transform:none;letter-spacing:0;}
 .field input,.field select,.field textarea{

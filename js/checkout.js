@@ -16,7 +16,7 @@ function saveOrders(orders) {
    grátis (configurado no painel) sobrepõe o cálculo normal. */
 function calcShipping(subtotal) {
   if (typeof isFreeShippingEligible === "function" && isFreeShippingEligible()) return 0;
-  return subtotal < 169 ? 18 : 10;
+  return subtotal < SHIPPING_THRESHOLD ? SHIPPING_HIGH : SHIPPING_LOW;
 }
 
 let checkoutPayment = null;
@@ -61,7 +61,7 @@ function fillSavedCustomerData() {
   const fields = {
     "ck-cep": saved.cep, "ck-nome": saved.nome, "ck-email": saved.email, "ck-cpf": saved.cpf,
     "ck-telefone": saved.telefone, "ck-logradouro": saved.logradouro, "ck-numero": saved.numero,
-    "ck-bairro": saved.bairro, "ck-complemento": saved.complemento
+    "ck-bairro": saved.bairro, "ck-cidade": saved.cidade, "ck-uf": saved.uf, "ck-complemento": saved.complemento
   };
   Object.entries(fields).forEach(([id, value]) => {
     if (value) document.getElementById(id).value = value;
@@ -84,12 +84,40 @@ document.getElementById("checkout-overlay").addEventListener("click", e => {
   if (e.target.id === "checkout-overlay") closeCheckout();
 });
 
-/* Máscaras simples de CEP e CPF */
+/* Máscara de CEP + autopreenchimento de endereço via ViaCEP. Só busca
+   quando os 8 dígitos estiverem completos; número e complemento
+   continuam manuais (a API não sabe disso). */
+async function lookupCep(cep) {
+  const spinner = document.getElementById("ck-cep-spinner");
+  spinner.hidden = false;
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const data = await res.json();
+    if (data.erro) {
+      showToast("CEP não encontrado — preencha o endereço manualmente.");
+      return;
+    }
+    document.getElementById("ck-logradouro").value = data.logradouro || "";
+    document.getElementById("ck-bairro").value = data.bairro || "";
+    document.getElementById("ck-cidade").value = data.localidade || "";
+    document.getElementById("ck-uf").value = data.uf || "";
+    document.getElementById("ck-numero").focus();
+  } catch (err) {
+    console.error("Busca de CEP:", err);
+    showToast("Não foi possível buscar o CEP — preencha o endereço manualmente.");
+  } finally {
+    spinner.hidden = true;
+    maybeCalculateShipping();
+  }
+}
+
 document.getElementById("ck-cep").addEventListener("input", e => {
   let v = e.target.value.replace(/\D/g, "").slice(0, 8);
+  const digits = v;
   if (v.length > 5) v = `${v.slice(0, 5)}-${v.slice(5)}`;
   e.target.value = v;
   maybeCalculateShipping();
+  if (digits.length === 8) lookupCep(digits);
 });
 document.getElementById("ck-cpf").addEventListener("input", e => {
   let v = e.target.value.replace(/\D/g, "").slice(0, 11);
@@ -101,7 +129,7 @@ document.getElementById("ck-cpf").addEventListener("input", e => {
 
 const SHIPPING_REQUIRED_IDS = [
   "ck-cep", "ck-nome", "ck-email", "ck-cpf", "ck-telefone",
-  "ck-logradouro", "ck-numero", "ck-bairro"
+  "ck-logradouro", "ck-numero", "ck-bairro", "ck-cidade", "ck-uf"
 ];
 
 function shippingFieldsFilled() {
@@ -216,6 +244,8 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
       logradouro: document.getElementById("ck-logradouro").value.trim(),
       numero: document.getElementById("ck-numero").value.trim(),
       bairro: document.getElementById("ck-bairro").value.trim(),
+      cidade: document.getElementById("ck-cidade").value.trim(),
+      uf: document.getElementById("ck-uf").value.trim().toUpperCase(),
       complemento: document.getElementById("ck-complemento").value.trim()
     },
     marketingOptIn: document.getElementById("ck-marketing").checked,

@@ -316,9 +316,12 @@
       <h3 class="checkout-subtitle">Dados de envio</h3>
       <p class="checkout-payment-note">Seus dados ficam salvos neste aparelho para preencher sozinhos na próxima compra.</p>
       <div class="checkout-grid">
-        <label class="field">
+        <label class="field ck-cep-field">
           <span>CEP</span>
-          <input type="text" id="ck-cep" inputmode="numeric" maxlength="9" placeholder="00000-000" required>
+          <span class="ck-cep-input-wrap">
+            <input type="text" id="ck-cep" inputmode="numeric" maxlength="9" placeholder="00000-000" required>
+            <span class="ck-cep-spinner" id="ck-cep-spinner" hidden></span>
+          </span>
         </label>
         <label class="field field-wide">
           <span>Nome completo</span>
@@ -347,6 +350,14 @@
         <label class="field">
           <span>Bairro</span>
           <input type="text" id="ck-bairro" required>
+        </label>
+        <label class="field">
+          <span>Cidade</span>
+          <input type="text" id="ck-cidade" required>
+        </label>
+        <label class="field">
+          <span>Estado</span>
+          <input type="text" id="ck-uf" maxlength="2" required>
         </label>
         <label class="field field-wide">
           <span>Complemento <em>(opcional)</em></span>

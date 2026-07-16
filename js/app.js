@@ -8,6 +8,12 @@ const CONFIG = {
   storeName: "Re.cyber"
 };
 
+/* Frete padrão (sem campanha de frete grátis ativa) — usado aqui pro
+   incentivo no carrinho e em js/checkout.js pro cálculo real. */
+const SHIPPING_THRESHOLD = 170;
+const SHIPPING_HIGH = 18;
+const SHIPPING_LOW = 10;
+
 /* =====================================================
    PLACEHOLDER DE IMAGEM (SVG inline, sem dependência externa)
 ===================================================== */
@@ -440,12 +446,19 @@ function updateCartUI() {
     const freeShipping = typeof isFreeShippingEligible === "function" && isFreeShippingEligible();
     if (freeShipping) {
       shippingNote.hidden = false;
-      shippingNote.textContent = "🚚 Frete grátis aplicado neste pedido!";
+      shippingNote.innerHTML = "🚚 Frete grátis aplicado neste pedido!";
     } else if (cartDiscountState.freeShippingActive && cartDiscountState.freeShippingMinCart > subtotal) {
       shippingNote.hidden = false;
-      shippingNote.textContent = `🚚 Faltam ${money(cartDiscountState.freeShippingMinCart - subtotal)} para o frete grátis!`;
+      shippingNote.innerHTML = `🚚 Faltam ${money(cartDiscountState.freeShippingMinCart - subtotal)} para o frete grátis!`;
+    } else if (subtotal < SHIPPING_THRESHOLD) {
+      const remaining = SHIPPING_THRESHOLD - subtotal;
+      const progress = Math.min(100, Math.round((subtotal / SHIPPING_THRESHOLD) * 100));
+      shippingNote.hidden = false;
+      shippingNote.innerHTML = `🚚 Faltam ${money(remaining)} para o frete cair para ${money(SHIPPING_LOW)}!
+        <span class="cart-shipping-progress"><span class="cart-shipping-progress-bar" style="width:${progress}%"></span></span>`;
     } else {
-      shippingNote.hidden = true;
+      shippingNote.hidden = false;
+      shippingNote.innerHTML = `🚚 Parabéns! Você garantiu o frete reduzido de ${money(SHIPPING_LOW)}!`;
     }
   } else {
     discountRow.hidden = true;
