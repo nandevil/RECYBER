@@ -9,8 +9,10 @@ const CONFIG = {
 };
 
 /* Frete padrão (sem campanha de frete grátis ativa) — usado aqui pro
-   incentivo no carrinho e em js/checkout.js pro cálculo real. */
-const SHIPPING_THRESHOLD = 170;
+   incentivo no carrinho e em js/checkout.js pro cálculo real. Abaixo
+   de SHIPPING_THRESHOLD cobra SHIPPING_HIGH; a partir daí (inclusive),
+   SHIPPING_LOW — só mudar os números aqui pra ajustar a regra. */
+const SHIPPING_THRESHOLD = 169;
 const SHIPPING_HIGH = 18;
 const SHIPPING_LOW = 10;
 
