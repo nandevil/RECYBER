@@ -599,6 +599,62 @@
         </div>
         <button type="submit" class="pill admin-upload-submit" id="settings-form-submit">Salvar Textos</button>
       </form>
+
+      <h2 class="admin-leads-title admin-feedbacks-list-title">Mensagens de E-mail (Notificações de Pedido)</h2>
+      <h3 class="admin-leads-subtitle">Assunto, texto e imagem de cada e-mail enviado pelos botões de notificação. Use {{nome}} e {{pedido}} no texto — são trocados pelos dados reais na hora do envio. O WhatsApp continua com o texto fixo.</h3>
+
+      <p class="admin-login-error" id="email-templates-form-unavailable" hidden>
+        Edição indisponível: configure a tabela "email_templates" no Supabase (veja SUPABASE.md, Passo 15).
+      </p>
+
+      <form class="checkout-form" id="email-templates-form">
+        <h4 class="email-template-block-title">Em preparação</h4>
+        <label class="field field-wide">
+          <span>Assunto</span>
+          <input type="text" id="et-prep-subject">
+        </label>
+        <label class="field field-wide">
+          <span>Corpo do e-mail</span>
+          <textarea id="et-prep-body" rows="5"></textarea>
+        </label>
+        <label class="field field-wide">
+          <span>Imagem <em>(opcional)</em></span>
+          <input type="file" id="et-prep-image" accept="image/*">
+        </label>
+        <div class="pf-image-previews" id="et-prep-image-preview"></div>
+
+        <h4 class="email-template-block-title">Enviado</h4>
+        <label class="field field-wide">
+          <span>Assunto</span>
+          <input type="text" id="et-shipped-subject">
+        </label>
+        <label class="field field-wide">
+          <span>Corpo do e-mail</span>
+          <textarea id="et-shipped-body" rows="5"></textarea>
+        </label>
+        <label class="field field-wide">
+          <span>Imagem <em>(opcional)</em></span>
+          <input type="file" id="et-shipped-image" accept="image/*">
+        </label>
+        <div class="pf-image-previews" id="et-shipped-image-preview"></div>
+
+        <h4 class="email-template-block-title">Cancelado</h4>
+        <label class="field field-wide">
+          <span>Assunto</span>
+          <input type="text" id="et-cancelled-subject">
+        </label>
+        <label class="field field-wide">
+          <span>Corpo do e-mail</span>
+          <textarea id="et-cancelled-body" rows="5"></textarea>
+        </label>
+        <label class="field field-wide">
+          <span>Imagem <em>(opcional)</em></span>
+          <input type="file" id="et-cancelled-image" accept="image/*">
+        </label>
+        <div class="pf-image-previews" id="et-cancelled-image-preview"></div>
+
+        <button type="submit" class="pill admin-upload-submit" id="email-templates-form-submit">Salvar Mensagens de E-mail</button>
+      </form>
     </div>
   </section>
 

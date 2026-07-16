@@ -504,6 +504,12 @@ body.promo-mode-active .cat-card--promo{
 
 /* ===================== ADMIN — LISTA DE FEEDBACKS ATIVOS ===================== */
 .admin-feedbacks-list-title{margin-top:32px;}
+.email-template-block-title{
+  font-family:var(--font-pixel);font-size:.68rem;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--accent-dark);
+  margin-top:10px;padding-top:16px;border-top:1.5px solid var(--grey-light);
+}
+.email-template-block-title:first-of-type{border-top:none;padding-top:0;}
 .admin-feedbacks-list{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
 .admin-feedback-item{
   border:2px solid var(--ink);border-radius:10px;

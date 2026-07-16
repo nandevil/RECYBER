@@ -83,13 +83,72 @@ function cancellationMessage(order) {
   return `Olá ${order.customer.nome}! Seu pedido ${order.id} no ${CONFIG.storeName} foi cancelado. Se já tiver feito o pagamento ou tiver alguma dúvida, é só responder por aqui que a gente resolve. 🙏`;
 }
 
+/* =====================================================
+   MENSAGENS DE E-MAIL (configuráveis pelo painel, aba "Textos do
+   Modal") — separado do texto do WhatsApp acima, que continua fixo.
+   Cada status usa um prefixo de coluna na tabela email_templates:
+   em-preparacao -> prep_, enviado -> shipped_, cancelado -> cancelled_
+===================================================== */
+const EMAIL_STATUS_PREFIX = { "em-preparacao": "prep", enviado: "shipped", cancelado: "cancelled" };
+const DEFAULT_EMAIL_TEMPLATES = {
+  "em-preparacao": {
+    subject: "Re.cyber — Seu pedido está em preparação!",
+    body: "Alerta de Garimpo: seu pedido já entrou no nosso laboratório de regeneração! 🧪✨\n\nOlá, {{nome}}! Nossos circuitos detectaram sua escolha sustentável (pedido {{pedido}}) e já estamos separando, higienizando e embalando suas peças com todo o carinho que o planeta merece. Assim que for enviado, você recebe o código de rastreio por aqui. Em breve ela ganha uma nova história com você! 💚",
+    imageUrl: ""
+  },
+  enviado: {
+    subject: "Re.cyber — Seu pedido foi enviado!",
+    body: "Caixinha Re.cyber liberada para o espaço! 🛸📦\n\nBoas notícias, {{nome}}! Seu garimpo (pedido {{pedido}}) foi oficialmente postado e está a caminho da sua casa. O código de rastreamento chega em seguida por aqui para você acompanhar a viagem das suas novas peças. Prepare o guarda-roupa! ✨",
+    imageUrl: ""
+  },
+  cancelado: {
+    subject: "Re.cyber — Pedido cancelado",
+    body: "Olá {{nome}}! Seu pedido {{pedido}} no Re.cyber foi cancelado. Se já tiver feito o pagamento ou tiver alguma dúvida, é só responder por aqui que a gente resolve. 🙏",
+    imageUrl: ""
+  }
+};
+let emailTemplatesCache = null;
+
+async function fetchEmailTemplates() {
+  if (!supabaseEnabled()) return null;
+  const { data, error } = await sb.from("email_templates").select("*").eq("id", 1).maybeSingle();
+  if (error || !data) {
+    if (error) console.warn("Templates de e-mail indisponíveis:", error.message);
+    return null;
+  }
+  return data;
+}
+
+function getEmailTemplate(status) {
+  const prefix = EMAIL_STATUS_PREFIX[status];
+  const row = emailTemplatesCache;
+  const defaults = DEFAULT_EMAIL_TEMPLATES[status];
+  if (!row || !prefix) return defaults;
+  /* Cada campo cai pro padrão criativo individualmente — deixar só o
+     corpo em branco no painel não perde o assunto configurado, e
+     vice-versa. */
+  return {
+    subject: row[`${prefix}_subject`] || defaults.subject,
+    body: row[`${prefix}_body`] || defaults.body,
+    imageUrl: row[`${prefix}_image_url`] || ""
+  };
+}
+
+function fillEmailTemplate(text, order) {
+  return text.replace(/\{\{nome\}\}/g, order.customer.nome).replace(/\{\{pedido\}\}/g, order.id);
+}
+
 /* Template de e-mail minimalista preto e branco, no estilo do site. */
-function buildEmailHtml(title, bodyText) {
+function buildEmailHtml(title, bodyText, imageUrl) {
   const paragraphs = bodyText.split("\n").filter(Boolean).map(p => `<p style="margin:0 0 14px;">${p}</p>`).join("");
+  const imageHtml = imageUrl
+    ? `<img src="${imageUrl}" alt="" style="width:100%;border-radius:8px;border:1.5px solid #161616;margin-bottom:20px;display:block;">`
+    : "";
   return `
     <div style="background:#0e0e0e;padding:32px 16px;font-family:'Courier New',monospace;">
       <div style="max-width:480px;margin:0 auto;background:#ffffff;border:2px solid #161616;border-radius:10px;padding:28px;">
         <p style="font-family:monospace;font-weight:bold;font-size:15px;letter-spacing:1px;margin:0 0 20px;">RE<span style="color:#2f8f4e;">.</span>CYBER</p>
+        ${imageHtml}
         <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">${title}</h1>
         <div style="font-size:14px;line-height:1.6;color:#161616;">${paragraphs}</div>
         <hr style="border:none;border-top:1px solid #dededd;margin:24px 0 16px;">
@@ -101,13 +160,13 @@ function buildEmailHtml(title, bodyText) {
 /* Envia o e-mail de verdade via Resend (rota /api/send-email do
    worker.js). Se falhar (secret não configurado, Resend fora do ar,
    etc.), avisa no toast em vez de travar o resto da notificação. */
-async function sendOrderEmail(order, subject, text) {
+async function sendOrderEmail(order, subject, text, imageUrl) {
   if (!order.customer.email) return;
   try {
     const res = await fetch("/api/send-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ to: order.customer.email, subject, html: buildEmailHtml(subject, text) })
+      body: JSON.stringify({ to: order.customer.email, subject, html: buildEmailHtml(subject, text, imageUrl) })
     });
     if (!res.ok) throw new Error(`status ${res.status}`);
     showToast("E-mail de notificação enviado com sucesso!");
@@ -117,17 +176,21 @@ async function sendOrderEmail(order, subject, text) {
   }
 }
 
-/* WhatsApp (wa.me) abre com o texto já pronto — o administrador
-   confirma o envio no app; o e-mail agora é enviado de verdade via
-   Resend (Passo 14 do SUPABASE.md). */
-function notifyCustomerBothChannels(order, subject, text) {
+/* WhatsApp (wa.me, texto fixo) abre com o texto já pronto — o
+   administrador confirma o envio no app. O e-mail usa o template
+   configurável (assunto + corpo + imagem) da aba "Textos do Modal",
+   enviado de verdade via Resend (Passo 14 do SUPABASE.md). */
+function notifyCustomerBothChannels(order, status) {
+  const whatsappText = status === "cancelado" ? cancellationMessage(order) : statusMessage(order, status);
   const phone = (order.customer.telefone || "").replace(/\D/g, "");
   if (!phone) {
     showToast("Esse pedido não tem WhatsApp cadastrado — enviando só o e-mail.");
   } else {
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(whatsappText)}`, "_blank");
   }
-  sendOrderEmail(order, subject, text);
+
+  const tpl = getEmailTemplate(status);
+  sendOrderEmail(order, fillEmailTemplate(tpl.subject, order), fillEmailTemplate(tpl.body, order), tpl.imageUrl);
 }
 
 async function updateOrder(orderId, patch) {
@@ -153,9 +216,7 @@ async function updateOrder(orderId, patch) {
 function triggerStatusNotification(orderId, status) {
   const order = adminOrders.find(o => o.id === orderId);
   if (!order) return;
-  const text = statusMessage(order, status);
-  const subject = `${CONFIG.storeName} — Atualização do pedido ${order.id}`;
-  notifyCustomerBothChannels(order, subject, text);
+  notifyCustomerBothChannels(order, status);
   updateOrder(orderId, { status });
 }
 
@@ -355,11 +416,7 @@ document.getElementById("admin-orders").addEventListener("change", e => {
      window.open() como fora do gesto do usuário e bloqueiam o popup. */
   if (newStatus === "cancelado") {
     const order = adminOrders.find(o => o.id === sel.dataset.order);
-    if (order) {
-      const text = cancellationMessage(order);
-      const subject = `${CONFIG.storeName} — Pedido ${order.id} cancelado`;
-      notifyCustomerBothChannels(order, subject, text);
-    }
+    if (order) notifyCustomerBothChannels(order, "cancelado");
   }
   updateOrder(sel.dataset.order, { paymentStatus: newStatus });
 });
@@ -416,6 +473,7 @@ function showAdminPanel() {
   setupProductForm();
   setupFeedbackForm();
   setupSettingsForm();
+  setupEmailTemplatesForm();
   setupPromoForm();
   setupCartDiscountForm();
   document.getElementById("admin-login").hidden = true;
@@ -825,6 +883,106 @@ document.getElementById("settings-form").addEventListener("submit", async e => {
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = "Salvar Textos";
+  }
+});
+
+/* =====================================================
+   MENSAGENS DE E-MAIL (aba "Textos do Modal")
+   Salva assunto/corpo/imagem de cada status na tabela pública
+   email_templates (linha única, id=1) — lida por getEmailTemplate()
+   no momento de disparar a notificação de um pedido.
+===================================================== */
+const EMAIL_TEMPLATE_KEYS = ["prep", "shipped", "cancelled"];
+const EMAIL_PREFIX_TO_STATUS = { prep: "em-preparacao", shipped: "enviado", cancelled: "cancelado" };
+let selectedEmailTemplateImages = { prep: null, shipped: null, cancelled: null };
+
+function renderEmailTemplateImagePreview(key) {
+  const wrap = document.getElementById(`et-${key}-image-preview`);
+  const file = selectedEmailTemplateImages[key];
+  wrap.innerHTML = !file ? "" : `
+    <div class="pf-image-thumb">
+      <img src="${URL.createObjectURL(file)}" alt="${file.name}">
+      <button type="button" class="pf-image-remove" data-key="${key}" aria-label="Remover foto">&times;</button>
+    </div>
+  `;
+}
+EMAIL_TEMPLATE_KEYS.forEach(key => {
+  document.getElementById(`et-${key}-image`).addEventListener("change", e => {
+    selectedEmailTemplateImages[key] = e.target.files[0] || null;
+    e.target.value = "";
+    renderEmailTemplateImagePreview(key);
+  });
+  document.getElementById(`et-${key}-image-preview`).addEventListener("click", e => {
+    if (!e.target.closest(".pf-image-remove")) return;
+    selectedEmailTemplateImages[key] = null;
+    renderEmailTemplateImagePreview(key);
+  });
+});
+
+async function setupEmailTemplatesForm() {
+  const unavailable = document.getElementById("email-templates-form-unavailable");
+  const submitBtn = document.getElementById("email-templates-form-submit");
+  if (!supabaseEnabled()) {
+    unavailable.hidden = false;
+    unavailable.textContent = "Edição indisponível: configure o Supabase (veja SUPABASE.md).";
+    submitBtn.disabled = true;
+    return;
+  }
+  unavailable.hidden = true;
+  submitBtn.disabled = false;
+
+  emailTemplatesCache = await fetchEmailTemplates();
+  EMAIL_TEMPLATE_KEYS.forEach(key => {
+    const tpl = getEmailTemplate(EMAIL_PREFIX_TO_STATUS[key]);
+    document.getElementById(`et-${key}-subject`).value = tpl.subject;
+    document.getElementById(`et-${key}-body`).value = tpl.body;
+  });
+}
+
+document.getElementById("email-templates-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!supabaseEnabled()) return;
+
+  const submitBtn = document.getElementById("email-templates-form-submit");
+  const unavailable = document.getElementById("email-templates-form-unavailable");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Salvando...";
+  unavailable.hidden = true;
+
+  try {
+    const { data: sessionData } = await sb.auth.getSession();
+    if (!sessionData.session) throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
+
+    const payload = { updated_at: new Date().toISOString() };
+    for (const key of EMAIL_TEMPLATE_KEYS) {
+      payload[`${key}_subject`] = document.getElementById(`et-${key}-subject`).value.trim();
+      payload[`${key}_body`] = document.getElementById(`et-${key}-body`).value.trim();
+
+      const file = selectedEmailTemplateImages[key];
+      if (file) {
+        const path = `email-${key}-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
+        const { error: uploadError } = await sb.storage.from("spoilers").upload(path, file);
+        if (uploadError) { uploadError.step = "upload"; throw uploadError; }
+        payload[`${key}_image_url`] = sb.storage.from("spoilers").getPublicUrl(path).data.publicUrl;
+      }
+    }
+
+    const { error } = await sb.from("email_templates").update(payload).eq("id", 1);
+    if (error) { error.step = "insert"; throw error; }
+
+    showToast("Mensagens de e-mail salvas com sucesso");
+    emailTemplatesCache = await fetchEmailTemplates();
+    EMAIL_TEMPLATE_KEYS.forEach(key => {
+      selectedEmailTemplateImages[key] = null;
+      renderEmailTemplateImagePreview(key);
+    });
+  } catch (err) {
+    console.error("Mensagens de e-mail:", err);
+    unavailable.hidden = false;
+    unavailable.textContent = describeSupabaseFormError(err, { table: "email_templates", step: "Passo 15" });
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Salvar Mensagens de E-mail";
   }
 });
 

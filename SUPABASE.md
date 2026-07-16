@@ -459,6 +459,53 @@ npx wrangler secret put RESEND_API_KEY
 > domínio verificado no Resend (não pode ser um Gmail/Hotmail
 > qualquer).
 
+## Passo 15 — Editar as mensagens de e-mail pelo painel
+
+Permite configurar assunto, corpo e imagem de cada e-mail de
+notificação (Em preparação / Enviado / Cancelado) pela aba "Textos do
+Modal" do painel, em vez de ficarem fixos no código. O WhatsApp
+continua com o texto fixo — só o e-mail é editável (é o único canal
+que suporta imagem).
+
+Reaproveita o bucket `spoilers` já criado no Passo 11 — não precisa
+criar um bucket novo. No **SQL Editor**, cole e rode:
+
+```sql
+create table public.email_templates (
+  id int primary key default 1,
+  prep_subject text not null default 'Re.cyber — Seu pedido está em preparação!',
+  prep_body text not null default '',
+  prep_image_url text not null default '',
+  shipped_subject text not null default 'Re.cyber — Seu pedido foi enviado!',
+  shipped_body text not null default '',
+  shipped_image_url text not null default '',
+  cancelled_subject text not null default 'Re.cyber — Pedido cancelado',
+  cancelled_body text not null default '',
+  cancelled_image_url text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+insert into public.email_templates (id) values (1) on conflict (id) do nothing;
+
+alter table public.email_templates enable row level security;
+alter table public.email_templates force row level security;
+
+-- Diferente de site_settings: aqui NÃO precisa ser público — só o
+-- painel (autenticado) lê e escreve, o site público nunca usa isso.
+create policy "dono pode ler templates de email"
+  on public.email_templates for select to authenticated using (true);
+
+create policy "dono pode atualizar templates de email"
+  on public.email_templates for update to authenticated using (true) with check (true);
+```
+
+> Se deixar o campo "Corpo do e-mail" em branco no painel, o sistema
+> usa o texto criativo padrão automaticamente (definido em
+> `js/admin.js`) — não precisa preencher tudo de uma vez.
+>
+> Use `{{nome}}` e `{{pedido}}` em qualquer lugar do texto — são
+> trocados pelo nome do cliente e o código do pedido na hora do envio.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.
