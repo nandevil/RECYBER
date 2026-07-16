@@ -168,16 +168,23 @@
   </div>
 </section>
 
-<!-- NEWSLETTER — captura de e-mail pública (js/newsletter.js) -->
+<!-- NEWSLETTER — captura de e-mail pública (js/newsletter.js). Visual
+     muda sozinho conforme o Modo Promo (js/app.js -> renderNewsletterLayout):
+     preto/centralizado durante a campanha, com imagem lateral fora dela. -->
 <section class="newsletter-section" id="newsletter">
-  <div class="container newsletter-inner">
-    <h2 class="newsletter-title">FIQUE POR DENTRO DO RE.CYBER</h2>
-    <p class="newsletter-subtitle">Inscreva seu e-mail para receber alertas em primeira mão sobre novos drops, ativações do Modo Promo, descontos de frete grátis, eventos e atualizações exclusivas da nossa curadoria.</p>
-    <form class="newsletter-form" id="newsletter-form" novalidate>
-      <input type="email" id="newsletter-email" class="newsletter-input" placeholder="Seu melhor e-mail..." required>
-      <button type="submit" class="btn btn-primary newsletter-submit" id="newsletter-submit">Fazer Parte</button>
-    </form>
-    <p class="newsletter-message" id="newsletter-message" hidden></p>
+  <div class="container newsletter-inner" id="newsletter-inner">
+    <div class="newsletter-image" id="newsletter-image">
+      <img src="img/newsletter-photo.jpg" alt="Curadoria Re.cyber" onerror="this.parentElement.classList.add('newsletter-image--empty')">
+    </div>
+    <div class="newsletter-text">
+      <h2 class="newsletter-title">FIQUE POR DENTRO DA RE.CYBER</h2>
+      <p class="newsletter-subtitle">Coloque seu e-mail e receba em primeira mão sobre drops, promoções, descontos de frete grátis e muito mais!</p>
+      <form class="newsletter-form" id="newsletter-form" novalidate>
+        <input type="email" id="newsletter-email" class="newsletter-input" placeholder="Seu melhor e-mail..." required>
+        <button type="submit" class="btn btn-primary newsletter-submit" id="newsletter-submit">Fazer Parte</button>
+      </form>
+      <p class="newsletter-message" id="newsletter-message" hidden></p>
+    </div>
   </div>
 </section>
 

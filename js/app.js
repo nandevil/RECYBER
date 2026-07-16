@@ -225,6 +225,17 @@ function labelCategory(cat) {
   return found ? found.label : cat;
 }
 
+/* Seção "Fique por dentro da Re.cyber" (newsletter) — durante o Modo
+   Promo vira um bloco preto centralizado (sem imagem); fora dele,
+   layout padrão do site com imagem lateral. As cores em si já
+   invertem sozinhas via body.promo-mode-active — aqui só troca a
+   estrutura. */
+function renderNewsletterLayout() {
+  const section = document.getElementById("newsletter");
+  if (!section) return;
+  section.classList.toggle("newsletter-section--promo", isPromoWindowOpen());
+}
+
 /* =====================================================
    CARDS DE CATEGORIA
 ===================================================== */
