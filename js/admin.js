@@ -1229,11 +1229,12 @@ document.getElementById("free-shipping-form").addEventListener("submit", async e
 /* =====================================================
    ADMINISTRAR ATUALIZAÇÕES — aviso em massa (e-mail) para clientes
    que aceitaram receber novidades no checkout (marketing_opt_in).
-   Sem serviço de e-mail transacional configurado, o disparo usa
-   mailto: com todos os inscritos em BCC — abre o seu próprio Hotmail/
-   Outlook (ou app de e-mail padrão) já logado, com o texto pronto;
-   você confirma o envio. Funciona com a conta real, sem senha/API,
-   mas tem limite prático de tamanho do link para listas muito longas.
+   Dispara de verdade, um a um, via /api/send-email (Resend) — sem
+   abrir nenhum app de e-mail nem exigir confirmação manual. O
+   WhatsApp em massa NÃO dá pra automatizar: os links wa.me exigem um
+   clique de "enviar" por contato (não existe API gratuita pra isso —
+   só a API paga do WhatsApp Business), então esse botão cobre só
+   e-mail mesmo.
 ===================================================== */
 let selectedUpdatePhoto = null;
 
@@ -1317,18 +1318,32 @@ document.getElementById("admin-updates-form").addEventListener("submit", async e
     const horario = document.getElementById("upd-horario").value.trim();
     const link = document.getElementById("upd-link").value.trim();
 
-    let body = `Nova atualização da Re.Cyber! ⚡\n\nFique de olho para não perder os melhores garimpos sustentáveis que acabaram de cair no nosso catálogo.\n\n📅 Dia: ${dia}\n⏰ Horário: ${horario}\n\n🔗 Acesse e garimpe antes de todo mundo: ${link}`;
-    if (photoUrl) body += `\n\n📸 Prévia: ${photoUrl}`;
+    const subject = "Re.cyber — Nova atualização chegando! ⚡";
+    let body = `Fique de olho para não perder os melhores garimpos sustentáveis que acabaram de cair no nosso catálogo.\n\n📅 Dia: ${dia}\n⏰ Horário: ${horario}\n\n🔗 Acesse e garimpe antes de todo mundo: ${link}`;
+    if (photoUrl) body += `\n\n📸 Prévia da atualização em anexo.`;
+    const html = buildEmailHtml(subject, body, photoUrl);
 
-    const mailto = `mailto:?bcc=${encodeURIComponent(emails.join(","))}&subject=${encodeURIComponent("Re.cyber — Nova atualização chegando! ⚡")}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
+    let sent = 0;
+    for (const to of emails) {
+      submitBtn.textContent = `Enviando ${sent + 1}/${emails.length}...`;
+      try {
+        const res = await fetch("/api/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ to, subject, html })
+        });
+        if (res.ok) sent += 1;
+      } catch (err) {
+        console.error("Envio de atualização para", to, err);
+      }
+    }
 
-    showToast("Abrindo seu e-mail para disparar o aviso");
+    showToast(`Aviso enviado para ${sent} de ${emails.length} inscrito${emails.length === 1 ? "" : "s"}.`);
     closeUpdatesModal();
   } catch (err) {
     console.error("Administrar atualizações:", err);
     unavailable.hidden = false;
-    unavailable.textContent = err.message || "Erro ao preparar o aviso.";
+    unavailable.textContent = err.message || "Erro ao disparar o aviso.";
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = "Disparar Alerta";
