@@ -435,6 +435,30 @@ alter table public.orders add column if not exists archived boolean not null def
 Nenhuma política de RLS nova é necessária — a política de UPDATE do
 Passo 2 (`dono pode atualizar pedidos`) já cobre a coluna `archived`.
 
+## Passo 14 — E-mail automático de notificação (Resend)
+
+Ativa o envio de verdade (não mais `mailto:`) para os botões
+"Notificar Início de Preparação" e "Notificar Envio do Pedido" na aba
+de pedidos, e para o cancelamento automático — via `worker.js`, rota
+`/api/send-email`.
+
+Pré-requisitos (feitos fora do código, no painel do Resend e da
+Cloudflare): domínio `recyber.com.br` verificado no Resend, e uma API
+Key gerada com permissão de envio.
+
+No terminal, ou pelo painel do Cloudflare (Worker `recyber` →
+**Settings → Variables and Secrets → Add**, tipo **Secret**):
+
+```sh
+npx wrangler secret put RESEND_API_KEY
+# cole a API Key do Resend (começa com re_...)
+```
+
+> O remetente está fixo em `Re.cyber <atendimento@recyber.com.br>` no
+> `worker.js` — se preferir outro endereço, precisa ser um e-mail do
+> domínio verificado no Resend (não pode ser um Gmail/Hotmail
+> qualquer).
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

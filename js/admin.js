@@ -83,17 +83,51 @@ function cancellationMessage(order) {
   return `Olá ${order.customer.nome}! Seu pedido ${order.id} no ${CONFIG.storeName} foi cancelado. Se já tiver feito o pagamento ou tiver alguma dúvida, é só responder por aqui que a gente resolve. 🙏`;
 }
 
-/* WhatsApp (wa.me) e e-mail (mailto) abrem com o texto já pronto — o
-   administrador confirma o envio em cada app; este site não tem um
-   serviço de e-mail transacional configurado para envio 100% automático. */
+/* Template de e-mail minimalista preto e branco, no estilo do site. */
+function buildEmailHtml(title, bodyText) {
+  const paragraphs = bodyText.split("\n").filter(Boolean).map(p => `<p style="margin:0 0 14px;">${p}</p>`).join("");
+  return `
+    <div style="background:#0e0e0e;padding:32px 16px;font-family:'Courier New',monospace;">
+      <div style="max-width:480px;margin:0 auto;background:#ffffff;border:2px solid #161616;border-radius:10px;padding:28px;">
+        <p style="font-family:monospace;font-weight:bold;font-size:15px;letter-spacing:1px;margin:0 0 20px;">RE<span style="color:#2f8f4e;">.</span>CYBER</p>
+        <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">${title}</h1>
+        <div style="font-size:14px;line-height:1.6;color:#161616;">${paragraphs}</div>
+        <hr style="border:none;border-top:1px solid #dededd;margin:24px 0 16px;">
+        <p style="font-size:11px;color:#8a8a86;margin:0;">Re.cyber — Slow Fashion Brechó · recyber.com.br</p>
+      </div>
+    </div>`;
+}
+
+/* Envia o e-mail de verdade via Resend (rota /api/send-email do
+   worker.js). Se falhar (secret não configurado, Resend fora do ar,
+   etc.), avisa no toast em vez de travar o resto da notificação. */
+async function sendOrderEmail(order, subject, text) {
+  if (!order.customer.email) return;
+  try {
+    const res = await fetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to: order.customer.email, subject, html: buildEmailHtml(subject, text) })
+    });
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    showToast("E-mail de notificação enviado com sucesso!");
+  } catch (err) {
+    console.error("Envio de e-mail:", err);
+    showToast("Não foi possível enviar o e-mail automaticamente.");
+  }
+}
+
+/* WhatsApp (wa.me) abre com o texto já pronto — o administrador
+   confirma o envio no app; o e-mail agora é enviado de verdade via
+   Resend (Passo 14 do SUPABASE.md). */
 function notifyCustomerBothChannels(order, subject, text) {
   const phone = (order.customer.telefone || "").replace(/\D/g, "");
   if (!phone) {
-    showToast("Esse pedido não tem WhatsApp cadastrado — abrindo só o e-mail.");
+    showToast("Esse pedido não tem WhatsApp cadastrado — enviando só o e-mail.");
   } else {
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
   }
-  window.open(`mailto:${order.customer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`, "_blank");
+  sendOrderEmail(order, subject, text);
 }
 
 async function updateOrder(orderId, patch) {

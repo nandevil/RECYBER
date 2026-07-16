@@ -12,6 +12,7 @@
    - SUPABASE_URL
    - SUPABASE_SERVICE_ROLE_KEY  (nunca exponha isso no front-end)
    - INFINITEPAY_HANDLE  (sua InfiniteTag, ex: "recyber")
+   - RESEND_API_KEY  (Resend, para /api/send-email — Passo 14 do SUPABASE.md)
 ===================================================== */
 
 export default {
@@ -23,6 +24,9 @@ export default {
     }
     if (url.pathname === "/api/webhook/infinitepay" && request.method === "POST") {
       return handleInfinitePayWebhook(request, env);
+    }
+    if (url.pathname === "/api/send-email" && request.method === "POST") {
+      return handleSendEmail(request, env);
     }
 
     return env.ASSETS.fetch(request);
@@ -147,5 +151,43 @@ async function handleInfinitePayWebhook(request, env) {
   } catch (err) {
     console.error("webhook infinitepay:", err);
     return jsonResponse({ success: false }, 500);
+  }
+}
+
+/* Envia um e-mail transacional via Resend (REST direto, sem SDK — não
+   temos build step no projeto). Documentação: POST /emails com
+   Authorization: Bearer <API key>, corpo { from, to, subject, html }. */
+async function handleSendEmail(request, env) {
+  try {
+    const { to, subject, html } = await request.json();
+    if (!to || !subject || !html) {
+      return jsonResponse({ error: "Faltam campos obrigatórios (to, subject, html)." }, 400);
+    }
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.RESEND_API_KEY}`
+      },
+      body: JSON.stringify({
+        from: "Re.cyber <atendimento@recyber.com.br>",
+        to: [to],
+        subject,
+        html
+      })
+    });
+
+    if (!res.ok) {
+      const detail = await res.text();
+      console.error("Resend falhou:", res.status, detail);
+      return jsonResponse({ error: "Não foi possível enviar o e-mail." }, 502);
+    }
+
+    const data = await res.json();
+    return jsonResponse({ id: data.id });
+  } catch (err) {
+    console.error("send-email:", err);
+    return jsonResponse({ error: "Erro interno ao enviar o e-mail." }, 500);
   }
 }
