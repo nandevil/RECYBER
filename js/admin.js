@@ -298,37 +298,109 @@ function orderCardHtml(order) {
 }
 
 /* =====================================================
-   ABA: LEADS + EXPORTAÇÃO CSV
+   ABA: CONTROLE DE MARKETING — lista unificada (clientes com
+   marketing autorizado no checkout + inscritos ativos da newsletter,
+   SUPABASE.md Passo 18/19), sem duplicar quem está nas duas listas
+   (dedup por e-mail em minúsculas) + EXPORTAÇÃO CSV.
 ===================================================== */
-function renderLeads(orders) {
-  const rows = orders.map(o => `
+let adminNewsletterSubscribers = [];
+
+async function loadNewsletterSubscribers() {
+  if (!supabaseEnabled()) return [];
+  const { data, error } = await sb.from("newsletter_subscribers").select("*").eq("active", true);
+  if (error) {
+    console.warn("Newsletter (painel):", error.message);
+    return [];
+  }
+  return data;
+}
+
+/* Une as duas fontes por e-mail (minúsculo) — quem está nas duas
+   ganha origem "Cliente + Newsletter" e aparece uma vez só. */
+function buildUnifiedLeadList(orders, subscribers) {
+  const map = new Map();
+  orders.forEach(o => {
+    if (!o.marketingOptIn || !o.customer.email) return;
+    const key = o.customer.email.trim().toLowerCase();
+    const existing = map.get(key);
+    map.set(key, {
+      email: o.customer.email.trim(),
+      telefone: o.customer.telefone || (existing ? existing.telefone : ""),
+      origins: new Set([...(existing ? existing.origins : []), "Cliente"]),
+      newsletterId: existing ? existing.newsletterId : null
+    });
+  });
+  subscribers.forEach(s => {
+    if (!s.email) return;
+    const key = s.email.trim().toLowerCase();
+    const existing = map.get(key);
+    map.set(key, {
+      email: s.email.trim(),
+      telefone: existing ? existing.telefone : "",
+      origins: new Set([...(existing ? existing.origins : []), "Newsletter"]),
+      newsletterId: s.id
+    });
+  });
+  return [...map.values()];
+}
+
+async function renderLeads(orders) {
+  adminNewsletterSubscribers = await loadNewsletterSubscribers();
+  const unified = buildUnifiedLeadList(orders, adminNewsletterSubscribers);
+
+  document.getElementById("admin-metric-newsletter").textContent = adminNewsletterSubscribers.length;
+  document.getElementById("admin-metric-clientes").textContent =
+    orders.filter(o => o.marketingOptIn && o.customer.email).length;
+  document.getElementById("admin-metric-unificada").textContent = unified.length;
+
+  const rows = unified.map(lead => `
     <tr>
-      <td data-label="E-mail">${o.customer.email}</td>
-      <td data-label="WhatsApp">${o.customer.telefone}</td>
-      <td data-label="Origem">Checkout — Finalizado</td>
-      <td data-label="Status de Marketing"><span class="lead-status lead-status--${o.marketingOptIn ? "inscrito" : "nao"}">${o.marketingOptIn ? "Inscrito" : "Não inscrito"}</span></td>
+      <td data-label="E-mail">${lead.email}</td>
+      <td data-label="WhatsApp">${lead.telefone || "—"}</td>
+      <td data-label="Origem">${[...lead.origins].join(" + ")}</td>
+      <td data-label="Status de Marketing"><span class="lead-status lead-status--inscrito">Inscrito</span></td>
+      <td data-label="Ação">${lead.newsletterId
+        ? `<button type="button" class="lead-remove-btn" data-newsletter-id="${lead.newsletterId}">Remover</button>`
+        : "—"}</td>
     </tr>
   `).join("");
   document.getElementById("admin-leads-body").innerHTML = rows;
-  document.getElementById("admin-leads-empty").hidden = orders.length !== 0;
-  document.querySelector(".admin-leads-table-wrap").hidden = orders.length === 0;
+  document.getElementById("admin-leads-empty").hidden = unified.length !== 0;
+  document.querySelector(".admin-leads-table-wrap").hidden = unified.length === 0;
 }
 
+document.getElementById("admin-leads-body").addEventListener("click", async e => {
+  const btn = e.target.closest(".lead-remove-btn");
+  if (!btn || !supabaseEnabled()) return;
+  btn.disabled = true;
+  btn.textContent = "Removendo...";
+  const { error } = await sb.from("newsletter_subscribers")
+    .update({ active: false })
+    .eq("id", btn.dataset.newsletterId);
+  if (error) {
+    console.error("Remover inscrito:", error);
+    showToast("Erro ao remover da lista");
+    btn.disabled = false;
+    btn.textContent = "Remover";
+    return;
+  }
+  showToast("Removido da lista de marketing");
+  renderLeads(adminOrders);
+});
+
 function exportLeadsCsv() {
-  const orders = adminOrders;
-  if (orders.length === 0) {
+  const unified = buildUnifiedLeadList(adminOrders, adminNewsletterSubscribers);
+  if (unified.length === 0) {
     showToast("Nenhum lead para exportar");
     return;
   }
   const esc = v => `"${String(v).replace(/"/g, '""')}"`;
   const lines = [
-    ["Nome", "E-mail", "WhatsApp", "Origem", "Status de Marketing"].join(","),
-    ...orders.map(o => [
-      esc(o.customer.nome),
-      esc(o.customer.email),
-      esc(o.customer.telefone),
-      esc("Checkout - Finalizado"),
-      esc(o.marketingOptIn ? "Inscrito" : "Nao inscrito")
+    ["E-mail", "WhatsApp", "Origem"].join(","),
+    ...unified.map(lead => [
+      esc(lead.email),
+      esc(lead.telefone || ""),
+      esc([...lead.origins].join(" + "))
     ].join(","))
   ];
   const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
@@ -348,7 +420,7 @@ async function renderAdmin() {
   document.getElementById("admin-count").textContent = `${orders.length} pedido${orders.length === 1 ? "" : "s"}`;
   document.getElementById("admin-orders").innerHTML = orders.map(orderCardHtml).join("");
   document.getElementById("admin-empty").hidden = orders.length !== 0;
-  renderLeads(orders);
+  await renderLeads(orders);
 }
 
 document.getElementById("admin-tabs").addEventListener("click", e => {

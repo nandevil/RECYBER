@@ -1095,6 +1095,24 @@ body.admin-open{overflow:hidden;}
   font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;
   color:var(--grey);margin-bottom:14px;
 }
+.admin-leads-metrics{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;margin-bottom:20px;
+}
+.admin-leads-metric{
+  border:1.5px solid var(--ink);border-radius:10px;
+  padding:14px 16px;background:var(--paper-alt);
+  display:flex;flex-direction:column;gap:4px;
+}
+.admin-leads-metric-value{font-family:var(--font-pixel);font-size:1.3rem;}
+.admin-leads-metric-label{font-size:.68rem;color:var(--grey);text-transform:uppercase;letter-spacing:.3px;}
+.lead-remove-btn{
+  font-size:.66rem;text-transform:uppercase;letter-spacing:.3px;
+  border:1.5px solid var(--danger);color:var(--danger);background:transparent;
+  padding:4px 10px;border-radius:20px;transition:background .15s,color .15s;
+}
+.lead-remove-btn:hover{background:var(--danger);color:#fff;}
+.lead-remove-btn:disabled{opacity:.5;cursor:not-allowed;}
 .admin-leads-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:10px;}
 .admin-leads-table{
   width:100%;border-collapse:collapse;

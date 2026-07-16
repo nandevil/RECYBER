@@ -588,10 +588,26 @@ create policy "só o dono lê a lista"
 >
 > Pra usar essa lista num disparo futuro (ex: reaproveitando o botão
 > "Disparar aviso de modo promo" ou "Administrar Atualizações"), basta
-> ler `email` onde `active = true`. Ainda não existe um fluxo de
-> "cancelar inscrição" — quando for montar o envio em massa de
-> verdade, inclua um link de descadastro no rodapé do e-mail (evita
-> cair em spam) que faça `update ... set active = false`.
+> ler `email` onde `active = true`. O link de descadastro público (pra
+> incluir no rodapé dos e-mails de marketing) é uma etapa separada,
+> ainda não construída — veja o Passo 19 abaixo pra habilitar só o
+> "Remover" do painel por enquanto.
+
+## Passo 19 — Permitir remover inscrito da newsletter pelo painel
+
+O botão "Remover" na aba "Controle de Marketing" desativa o inscrito
+(`active = false`) em vez de apagar a linha — assim ele não aparece
+mais nos disparos, mas o histórico fica guardado. Isso exige uma
+política de **update**, que o Passo 18 ainda não tinha criado. No
+**SQL Editor**, cole e rode:
+
+```sql
+create policy "dono pode atualizar inscritos"
+  on public.newsletter_subscribers for update to authenticated using (true) with check (true);
+```
+
+> Isso só permite update pra quem está logado no painel (o dono) —
+> visitantes continuam só conseguindo inserir a própria inscrição.
 
 ## Segurança — como fica
 

@@ -481,14 +481,30 @@
       <div class="admin-leads-head">
         <div>
           <h2 class="admin-leads-title">Controle de Marketing</h2>
-          <h3 class="admin-leads-subtitle">Lista de e-mails capturados no checkout</h3>
+          <h3 class="admin-leads-subtitle">Clientes (checkout) + inscritos da newsletter, sem duplicar quem está nas duas listas</h3>
         </div>
         <button class="pill pill-sm" id="admin-export-csv">Exportar CSV</button>
       </div>
+
+      <div class="admin-leads-metrics" id="admin-leads-metrics">
+        <div class="admin-leads-metric">
+          <span class="admin-leads-metric-value" id="admin-metric-newsletter">0</span>
+          <span class="admin-leads-metric-label">Inscritos na newsletter</span>
+        </div>
+        <div class="admin-leads-metric">
+          <span class="admin-leads-metric-value" id="admin-metric-clientes">0</span>
+          <span class="admin-leads-metric-label">Clientes com marketing autorizado</span>
+        </div>
+        <div class="admin-leads-metric">
+          <span class="admin-leads-metric-value" id="admin-metric-unificada">0</span>
+          <span class="admin-leads-metric-label">Lista unificada (sem duplicar)</span>
+        </div>
+      </div>
+
       <div class="admin-leads-table-wrap">
         <table class="admin-leads-table">
           <thead>
-            <tr><th>E-mail</th><th>WhatsApp</th><th>Origem</th><th>Status de Marketing</th></tr>
+            <tr><th>E-mail</th><th>WhatsApp</th><th>Origem</th><th>Status de Marketing</th><th>Ação</th></tr>
           </thead>
           <tbody id="admin-leads-body"></tbody>
         </table>
