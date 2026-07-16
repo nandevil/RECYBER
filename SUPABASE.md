@@ -528,6 +528,34 @@ Boas notícias, {{nome}}! Seu garimpo (pedido {{pedido}}) foi oficialmente posta
 > criativo padrão automaticamente. `{{nome}}` e `{{pedido}}` funcionam
 > igual no WhatsApp.
 
+## Passo 17 — Aviso de "Modo Promo" (botões da aba "Promoções")
+
+Adiciona um 4º conjunto de colunas na tabela `email_templates` — igual
+aos Passos 15/16, mas para o aviso disparado pelos botões "⚡ Ativar
+Modo Promo" e "📣 Disparar aviso de modo promo". Também editável na
+aba "Textos do Modal" (bloco "Aviso de Promoção"). No **SQL Editor**,
+cole e rode:
+
+```sql
+alter table public.email_templates
+  add column if not exists promo_whatsapp text not null default $$Modo Promo ativado no Re.cyber! ⚡🟢
+
+Olá, {{nome}}! Nosso brechó entrou em modo promocional: peças selecionadas com desconto por tempo limitado. Corre porque cada peça é única e não volta! 💚$$,
+  add column if not exists promo_subject text not null default 'Re.cyber — Modo Promo ativado! ⚡',
+  add column if not exists promo_body text not null default $$Modo Promo ativado no Re.cyber! ⚡🟢
+
+Olá, {{nome}}! Nosso brechó entrou em modo promocional: peças selecionadas com desconto por tempo limitado. Corre porque cada peça é única e não volta! 💚$$,
+  add column if not exists promo_image_url text not null default '';
+```
+
+> O botão "⚡ Ativar Modo Promo" só liga a campanha (`promo_settings`,
+> Passo 9) — não dispara aviso nenhum sozinho. Quem dispara é o botão
+> separado "📣 Disparar aviso de modo promo": o e-mail vai automático
+> (via Resend) para todo cliente inscrito (`marketing_opt_in`); o
+> WhatsApp abre um link `wa.me` pronto por contato — você clica em
+> "Enviar" um a um, porque não existe envio automático em massa sem a
+> API paga do WhatsApp Business.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

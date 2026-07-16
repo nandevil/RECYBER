@@ -78,7 +78,7 @@ const PAYMENT_STATUS_LABELS = { pendente: "Pendente", pago: "Pago", cancelado: "
    status usa um prefixo de coluna na tabela email_templates:
    em-preparacao -> prep_, enviado -> shipped_, cancelado -> cancelled_
 ===================================================== */
-const EMAIL_STATUS_PREFIX = { "em-preparacao": "prep", enviado: "shipped", cancelado: "cancelled" };
+const EMAIL_STATUS_PREFIX = { "em-preparacao": "prep", enviado: "shipped", cancelado: "cancelled", promo: "promo" };
 const DEFAULT_MESSAGE_TEMPLATES = {
   "em-preparacao": {
     whatsapp: "Alerta de Garimpo: seu pedido já entrou no nosso laboratório de regeneração! 🧪✨\n\nOlá, {{nome}}! Nossos circuitos detectaram sua escolha sustentável (pedido {{pedido}}) e já estamos separando, higienizando e embalando suas peças com todo o carinho que o planeta merece. Assim que for enviado, você recebe o código de rastreio por aqui. Em breve ela ganha uma nova história com você! 💚",
@@ -96,6 +96,12 @@ const DEFAULT_MESSAGE_TEMPLATES = {
     whatsapp: "Olá {{nome}}! Seu pedido {{pedido}} no Re.cyber foi cancelado. Se já tiver feito o pagamento ou tiver alguma dúvida, é só responder por aqui que a gente resolve. 🙏",
     subject: "Re.cyber — Pedido cancelado",
     body: "Olá {{nome}}! Seu pedido {{pedido}} no Re.cyber foi cancelado. Se já tiver feito o pagamento ou tiver alguma dúvida, é só responder por aqui que a gente resolve. 🙏",
+    imageUrl: ""
+  },
+  promo: {
+    whatsapp: "Modo Promo ativado no Re.cyber! ⚡🟢\n\nOlá, {{nome}}! Nosso brechó entrou em modo promocional: peças selecionadas com desconto por tempo limitado. Corre porque cada peça é única e não volta! 💚",
+    subject: "Re.cyber — Modo Promo ativado! ⚡",
+    body: "Modo Promo ativado no Re.cyber! ⚡🟢\n\nOlá, {{nome}}! Nosso brechó entrou em modo promocional: peças selecionadas com desconto por tempo limitado. Corre porque cada peça é única e não volta! 💚",
     imageUrl: ""
   }
 };
@@ -886,9 +892,9 @@ document.getElementById("settings-form").addEventListener("submit", async e => {
    getMessageTemplate() no momento de disparar a notificação de um
    pedido.
 ===================================================== */
-const EMAIL_TEMPLATE_KEYS = ["prep", "shipped", "cancelled"];
-const EMAIL_PREFIX_TO_STATUS = { prep: "em-preparacao", shipped: "enviado", cancelled: "cancelado" };
-let selectedEmailTemplateImages = { prep: null, shipped: null, cancelled: null };
+const EMAIL_TEMPLATE_KEYS = ["prep", "shipped", "cancelled", "promo"];
+const EMAIL_PREFIX_TO_STATUS = { prep: "em-preparacao", shipped: "enviado", cancelled: "cancelado", promo: "promo" };
+let selectedEmailTemplateImages = { prep: null, shipped: null, cancelled: null, promo: null };
 
 function renderEmailTemplateImagePreview(key) {
   const wrap = document.getElementById(`et-${key}-image-preview`);
@@ -966,7 +972,7 @@ document.getElementById("email-templates-form").addEventListener("submit", async
     const { error } = await sb.from("email_templates").update(payload).eq("id", 1);
     if (error) { error.step = "insert"; throw error; }
 
-    showToast("Mensagens de e-mail salvas com sucesso");
+    showToast("Mensagens salvas com sucesso");
     emailTemplatesCache = await fetchEmailTemplates();
     EMAIL_TEMPLATE_KEYS.forEach(key => {
       selectedEmailTemplateImages[key] = null;
@@ -978,7 +984,7 @@ document.getElementById("email-templates-form").addEventListener("submit", async
     unavailable.textContent = describeSupabaseFormError(err, { table: "email_templates", step: "Passo 15" });
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = "Salvar Mensagens de E-mail";
+    submitBtn.textContent = "Salvar Mensagens";
   }
 });
 
@@ -1025,7 +1031,54 @@ async function setupPromoForm() {
     }
   }
   renderPromoProductsList();
+  refreshPromoQuickStatus();
 }
+
+/* Botão destacado "Ativar/Desativar Modo Promo" — atalho de um clique
+   que liga/desliga a campanha sem precisar abrir e salvar o form
+   inteiro (os campos de desconto/datas continuam os últimos salvos). */
+async function refreshPromoQuickStatus() {
+  const statusEl = document.getElementById("promo-quick-status");
+  const btn = document.getElementById("promo-quick-toggle");
+  if (!supabaseEnabled()) {
+    statusEl.textContent = "";
+    btn.disabled = true;
+    return;
+  }
+  btn.disabled = false;
+  const { data, error } = await sb.from("promo_settings").select("is_active").eq("id", 1).maybeSingle();
+  const active = !error && data ? !!data.is_active : false;
+  btn.textContent = active ? "⏸️ Desativar Modo Promo" : "⚡ Ativar Modo Promo";
+  statusEl.textContent = active ? "Modo Promo está ATIVO no site agora." : "Modo Promo está desativado no site.";
+}
+
+document.getElementById("promo-quick-toggle").addEventListener("click", async () => {
+  if (!supabaseEnabled()) return;
+  const btn = document.getElementById("promo-quick-toggle");
+  btn.disabled = true;
+  try {
+    const { data: sessionData } = await sb.auth.getSession();
+    if (!sessionData.session) throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
+
+    const { data, error: fetchError } = await sb.from("promo_settings").select("is_active").eq("id", 1).maybeSingle();
+    if (fetchError) throw fetchError;
+    const nextActive = !(data && data.is_active);
+
+    const { error } = await sb.from("promo_settings")
+      .update({ is_active: nextActive, updated_at: new Date().toISOString() })
+      .eq("id", 1);
+    if (error) throw error;
+
+    document.getElementById("promo-active").checked = nextActive;
+    showToast(nextActive ? "Modo Promo ativado!" : "Modo Promo desativado.");
+    if (typeof syncPromoState === "function") syncPromoState();
+  } catch (err) {
+    console.error("Ativar Modo Promo:", err);
+    showToast(err.message || "Erro ao ativar o Modo Promo.");
+  } finally {
+    await refreshPromoQuickStatus();
+  }
+});
 
 document.getElementById("promo-form").addEventListener("submit", async e => {
   e.preventDefault();
@@ -1055,6 +1108,7 @@ document.getElementById("promo-form").addEventListener("submit", async e => {
 
     showToast("Campanha salva com sucesso");
     if (typeof syncPromoState === "function") syncPromoState();
+    refreshPromoQuickStatus();
   } catch (err) {
     console.error("Campanha de desconto:", err);
     unavailable.hidden = false;
@@ -1114,6 +1168,102 @@ document.getElementById("admin-promo-products").addEventListener("change", async
     if (typeof syncCatalog === "function") syncCatalog();
   }
   toggle.disabled = false;
+});
+
+/* =====================================================
+   DISPARAR AVISO DE MODO PROMO — usa o template "promo" (aba "Textos
+   do Modal") pra avisar todo mundo inscrito. E-mail sai automático
+   via Resend, um a um. WhatsApp não tem envio em massa automático sem
+   a API paga: aqui é um clique por contato (abre o wa.me já pronto).
+===================================================== */
+function promoWhatsappContacts() {
+  const map = new Map();
+  adminOrders.forEach(o => {
+    const phone = (o.customer.telefone || "").replace(/\D/g, "");
+    if (o.marketingOptIn && phone) map.set(phone, o.customer.nome || "Cliente");
+  });
+  return [...map.entries()].map(([telefone, nome]) => ({ telefone, nome }));
+}
+
+function renderPromoDispatchWhatsappList() {
+  const list = document.getElementById("promo-dispatch-whatsapp-list");
+  const empty = document.getElementById("promo-dispatch-whatsapp-empty");
+  const contacts = promoWhatsappContacts();
+  empty.hidden = contacts.length !== 0;
+  list.innerHTML = contacts.map(c => `
+    <div class="promo-whatsapp-contact" data-phone="${c.telefone}">
+      <div>
+        <span class="promo-whatsapp-contact-name">${c.nome}</span>
+        <span class="promo-whatsapp-contact-phone">${c.telefone}</span>
+      </div>
+      <button type="button" class="pill pill-sm promo-whatsapp-send-btn" data-phone="${c.telefone}" data-nome="${c.nome.replace(/"/g, "&quot;")}">Enviar</button>
+    </div>
+  `).join("");
+}
+
+function openPromoDispatchModal() {
+  document.getElementById("promo-dispatch-unavailable").hidden = true;
+  const count = subscribedEmails().length;
+  document.getElementById("promo-dispatch-email-count").textContent =
+    count === 0 ? "Nenhum inscrito com e-mail." : `${count} inscrito${count === 1 ? "" : "s"} vão receber o e-mail.`;
+  const emailBtn = document.getElementById("promo-dispatch-email-btn");
+  emailBtn.disabled = false;
+  emailBtn.textContent = "Enviar e-mails agora";
+  renderPromoDispatchWhatsappList();
+  document.getElementById("promo-dispatch-overlay").classList.add("open");
+}
+function closePromoDispatchModal() {
+  document.getElementById("promo-dispatch-overlay").classList.remove("open");
+}
+document.getElementById("promo-dispatch-open").addEventListener("click", openPromoDispatchModal);
+document.getElementById("promo-dispatch-close").addEventListener("click", closePromoDispatchModal);
+document.getElementById("promo-dispatch-overlay").addEventListener("click", e => {
+  if (e.target.id === "promo-dispatch-overlay") closePromoDispatchModal();
+});
+
+document.getElementById("promo-dispatch-email-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("promo-dispatch-email-btn");
+  const unavailable = document.getElementById("promo-dispatch-unavailable");
+  unavailable.hidden = true;
+  const emails = subscribedEmails();
+  if (emails.length === 0) {
+    unavailable.hidden = false;
+    unavailable.textContent = "Nenhum cliente inscrito para receber o aviso ainda.";
+    return;
+  }
+
+  const tpl = getMessageTemplate("promo");
+  btn.disabled = true;
+  let sent = 0;
+  for (const to of emails) {
+    btn.textContent = `Enviando ${sent + 1}/${emails.length}...`;
+    const order = adminOrders.find(o => o.customer.email === to) || { customer: { nome: "" }, id: "" };
+    const subject = fillTemplate(tpl.subject, order);
+    const body = fillTemplate(tpl.body, order);
+    try {
+      const res = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to, subject, html: buildEmailHtml(subject, body, tpl.imageUrl) })
+      });
+      if (res.ok) sent += 1;
+    } catch (err) {
+      console.error("Envio de aviso de promo para", to, err);
+    }
+  }
+  showToast(`Aviso de promo enviado para ${sent} de ${emails.length} inscrito${emails.length === 1 ? "" : "s"}.`);
+  btn.disabled = false;
+  btn.textContent = "Enviar e-mails agora";
+});
+
+document.getElementById("promo-dispatch-whatsapp-list").addEventListener("click", e => {
+  const sendBtn = e.target.closest(".promo-whatsapp-send-btn");
+  if (!sendBtn) return;
+  const tpl = getMessageTemplate("promo");
+  const order = { customer: { nome: sendBtn.dataset.nome, telefone: sendBtn.dataset.phone }, id: "" };
+  window.open(`https://wa.me/${sendBtn.dataset.phone}?text=${encodeURIComponent(fillTemplate(tpl.whatsapp, order))}`, "_blank");
+  sendBtn.closest(".promo-whatsapp-contact").classList.add("sent");
+  sendBtn.textContent = "Enviado";
 });
 
 /* =====================================================

@@ -665,6 +665,25 @@
         </label>
         <div class="pf-image-previews" id="et-cancelled-image-preview"></div>
 
+        <h4 class="email-template-block-title">Aviso de Promoção</h4>
+        <label class="field field-wide">
+          <span>Texto do WhatsApp</span>
+          <textarea id="et-promo-whatsapp" rows="4"></textarea>
+        </label>
+        <label class="field field-wide">
+          <span>Assunto do e-mail</span>
+          <input type="text" id="et-promo-subject">
+        </label>
+        <label class="field field-wide">
+          <span>Corpo do e-mail</span>
+          <textarea id="et-promo-body" rows="5"></textarea>
+        </label>
+        <label class="field field-wide">
+          <span>Imagem do e-mail <em>(opcional)</em></span>
+          <input type="file" id="et-promo-image" accept="image/*">
+        </label>
+        <div class="pf-image-previews" id="et-promo-image-preview"></div>
+
         <button type="submit" class="pill admin-upload-submit" id="email-templates-form-submit">Salvar Mensagens</button>
       </form>
     </div>
@@ -675,6 +694,12 @@
     <div class="admin-upload">
       <h2 class="admin-leads-title">Campanha de Desconto Global</h2>
       <h3 class="admin-leads-subtitle">Vale só para as peças com "Modo Promo" ativado, dentro do período</h3>
+
+      <div class="admin-promo-quick-actions">
+        <button type="button" class="pill pill-accent" id="promo-quick-toggle">⚡ Ativar Modo Promo</button>
+        <button type="button" class="pill pill-accent" id="promo-dispatch-open">📣 Disparar aviso de modo promo</button>
+      </div>
+      <p class="admin-promo-quick-status" id="promo-quick-status"></p>
 
       <p class="admin-login-error" id="promo-form-unavailable" hidden>
         Edição indisponível: configure a tabela "promo_settings" no Supabase (veja SUPABASE.md, Passo 9).
@@ -770,7 +795,7 @@
   <div class="admin-updates-modal" role="dialog" aria-modal="true" aria-label="Administrar Atualizações">
     <button class="modal-close" id="admin-updates-close" aria-label="Fechar">&times;</button>
     <h2 class="admin-leads-title">Administrar Atualizações</h2>
-    <h3 class="admin-leads-subtitle">Manda um aviso por e-mail (BCC) para todo mundo que aceitou receber novidades no checkout</h3>
+    <h3 class="admin-leads-subtitle">Manda um aviso por e-mail, automaticamente, para todo mundo que aceitou receber novidades no checkout</h3>
 
     <p class="admin-login-error" id="admin-updates-unavailable" hidden></p>
 
@@ -797,6 +822,24 @@
       <p class="admin-updates-count" id="admin-updates-count"></p>
       <button type="submit" class="pill admin-upload-submit" id="admin-updates-submit">Disparar Alerta</button>
     </form>
+  </div>
+</div>
+
+<!-- MODAL: DISPARAR AVISO DE MODO PROMO -->
+<div class="modal-overlay" id="promo-dispatch-overlay">
+  <div class="admin-updates-modal" role="dialog" aria-modal="true" aria-label="Disparar aviso de modo promo">
+    <button class="modal-close" id="promo-dispatch-close" aria-label="Fechar">&times;</button>
+    <h2 class="admin-leads-title">Disparar aviso de modo promo</h2>
+    <h3 class="admin-leads-subtitle">O e-mail (configurado na aba "Textos do Modal") vai automaticamente para todos os inscritos. O WhatsApp não tem envio em massa automático: clique em "Enviar" ao lado de cada contato — abre o WhatsApp já com o texto pronto, você só confirma.</h3>
+
+    <p class="admin-login-error" id="promo-dispatch-unavailable" hidden></p>
+
+    <p class="admin-updates-count" id="promo-dispatch-email-count"></p>
+    <button type="button" class="pill admin-upload-submit" id="promo-dispatch-email-btn">Enviar e-mails agora</button>
+
+    <h3 class="admin-leads-subtitle admin-feedbacks-list-title">WhatsApp — um clique por contato</h3>
+    <div id="promo-dispatch-whatsapp-list"></div>
+    <p class="empty-state" id="promo-dispatch-whatsapp-empty" hidden>Nenhum contato com WhatsApp cadastrado e inscrito.</p>
   </div>
 </div>
 

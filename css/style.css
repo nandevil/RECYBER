@@ -860,6 +860,19 @@ body.promo-mode-active .cat-card--promo{
 }
 .admin-updates-count{font-size:.72rem;color:var(--grey);}
 
+.pill-accent{background:var(--accent);color:#fff;border-color:var(--accent);}
+.pill-accent:hover{background:var(--accent-dark,var(--ink));border-color:var(--ink);color:#fff;}
+.admin-promo-quick-actions{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px;}
+.admin-promo-quick-status{font-size:.72rem;color:var(--grey);margin-bottom:18px;}
+.promo-whatsapp-contact{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  border:1.5px solid var(--ink);border-radius:8px;padding:10px 14px;margin-bottom:8px;
+}
+.promo-whatsapp-contact-name{font-size:.78rem;}
+.promo-whatsapp-contact-phone{font-size:.68rem;color:var(--grey);display:block;}
+.promo-whatsapp-contact.sent{opacity:.5;}
+.promo-whatsapp-contact.sent .promo-whatsapp-send-btn{pointer-events:none;}
+
 /* ===================== PAINEL DE CONTROLE (ADMIN) ===================== */
 body.admin-open{overflow:hidden;}
 .admin-panel{
