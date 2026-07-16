@@ -48,6 +48,7 @@ async function syncPromoState() {
   applyPromoModeClass();
   if (typeof renderCategoryCards === "function") renderCategoryCards();
   if (typeof renderGrid === "function") renderGrid();
+  if (typeof renderPromoDestaque === "function") renderPromoDestaque();
 }
 
 syncPromoState();
@@ -55,4 +56,5 @@ setInterval(() => {
   applyPromoModeClass();
   if (typeof renderCategoryCards === "function") renderCategoryCards();
   if (typeof renderGrid === "function") renderGrid();
+  if (typeof renderPromoDestaque === "function") renderPromoDestaque();
 }, 60000);

@@ -23,6 +23,7 @@ async function syncCatalog() {
   PRODUCTS.push(...real);
   renderCategoryCards();
   renderGrid();
+  if (typeof renderPromoDestaque === "function") renderPromoDestaque();
 }
 
 syncCatalog();

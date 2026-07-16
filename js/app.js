@@ -166,6 +166,47 @@ function updateCatalogView() {
     : "Resultados da busca";
 }
 
+function buildProductCard(p, idx) {
+  const img = p.image || placeholderImage(p.category, idx);
+  const onPromo = isPromoWindowOpen() && p.isPromo;
+  const badgeHtml = onPromo
+    ? `<span class="product-badge product-badge--promo">-${promoState.discountPercent}%</span>`
+    : (p.tag ? `<span class="product-badge">${p.tag === "novo" ? "Novo" : "Promo"}</span>` : "");
+  const priceHtml = onPromo
+    ? `<span class="product-price product-price--promo"><s class="product-price-original">${money(p.price)}</s>${money(effectivePrice(p))}</span>`
+    : `<span class="product-price">${money(p.price)}</span>`;
+  const card = document.createElement("div");
+  card.className = "product-card";
+  card.innerHTML = `
+    <div class="product-thumb" data-id="${p.id}">
+      ${badgeHtml}
+      <img src="${img}" alt="${p.name}" loading="lazy">
+    </div>
+    <div class="product-info">
+      <span class="product-cat">${labelCategory(p.category)}</span>
+      <p class="product-name" data-id="${p.id}">${p.name}</p>
+      <span class="product-meta">Tam. ${p.size} · ${p.condition}</span>
+      <div class="product-price-row">
+        ${priceHtml}
+        <button class="add-btn" data-id="${p.id}" aria-label="Adicionar ao carrinho">+</button>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function wireProductGridEvents(grid) {
+  grid.querySelectorAll(".product-thumb, .product-name").forEach(el => {
+    el.addEventListener("click", () => openModal(el.dataset.id));
+  });
+  grid.querySelectorAll(".add-btn").forEach(el => {
+    el.addEventListener("click", () => {
+      addToCart(el.dataset.id, 1);
+      showToast("Adicionado ao carrinho");
+    });
+  });
+}
+
 function renderGrid() {
   const grid = document.getElementById("product-grid");
   const emptyState = document.getElementById("empty-state");
@@ -179,44 +220,29 @@ function renderGrid() {
     ? "Nenhuma peça encontrada. Tente outro filtro ou busca."
     : "Nenhuma peça disponível nesta categoria no momento. Volte em breve!";
 
-  list.forEach((p, idx) => {
-    const img = p.image || placeholderImage(p.category, idx);
-    const onPromo = isPromoWindowOpen() && p.isPromo;
-    const badgeHtml = onPromo
-      ? `<span class="product-badge product-badge--promo">-${promoState.discountPercent}%</span>`
-      : (p.tag ? `<span class="product-badge">${p.tag === "novo" ? "Novo" : "Promo"}</span>` : "");
-    const priceHtml = onPromo
-      ? `<span class="product-price product-price--promo"><s class="product-price-original">${money(p.price)}</s>${money(effectivePrice(p))}</span>`
-      : `<span class="product-price">${money(p.price)}</span>`;
-    const card = document.createElement("div");
-    card.className = "product-card";
-    card.innerHTML = `
-      <div class="product-thumb" data-id="${p.id}">
-        ${badgeHtml}
-        <img src="${img}" alt="${p.name}" loading="lazy">
-      </div>
-      <div class="product-info">
-        <span class="product-cat">${labelCategory(p.category)}</span>
-        <p class="product-name" data-id="${p.id}">${p.name}</p>
-        <span class="product-meta">Tam. ${p.size} · ${p.condition}</span>
-        <div class="product-price-row">
-          ${priceHtml}
-          <button class="add-btn" data-id="${p.id}" aria-label="Adicionar ao carrinho">+</button>
-        </div>
-      </div>
-    `;
-    grid.appendChild(card);
-  });
+  list.forEach((p, idx) => grid.appendChild(buildProductCard(p, idx)));
+  wireProductGridEvents(grid);
+}
 
-  grid.querySelectorAll(".product-thumb, .product-name").forEach(el => {
-    el.addEventListener("click", () => openModal(el.dataset.id));
-  });
-  grid.querySelectorAll(".add-btn").forEach(el => {
-    el.addEventListener("click", () => {
-      addToCart(el.dataset.id, 1);
-      showToast("Adicionado ao carrinho");
-    });
-  });
+/* Vitrine "⚡ Promoção Destacada" na home — só as peças com "Modo
+   Promo" ativado, só enquanto a campanha estiver rodando. Some por
+   completo (hidden) fora da janela da promoção ou sem peça marcada. */
+function renderPromoDestaque() {
+  const section = document.getElementById("promo-destaque");
+  const grid = document.getElementById("promo-destaque-grid");
+  if (!section || !grid) return;
+
+  const promoProducts = PRODUCTS.filter(p => p.isPromo);
+  const show = isPromoWindowOpen() && promoProducts.length > 0;
+  section.hidden = !show;
+  if (!show) {
+    grid.innerHTML = "";
+    return;
+  }
+
+  grid.innerHTML = "";
+  promoProducts.forEach((p, idx) => grid.appendChild(buildProductCard(p, idx)));
+  wireProductGridEvents(grid);
 }
 
 function labelCategory(cat) {

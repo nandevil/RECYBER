@@ -368,6 +368,17 @@ body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
   flex:0 1 340px;
 }
 
+/* Vitrine "⚡ Promoção Destacada" na home — visível só durante o Modo
+   Promo (js/app.js -> renderPromoDestaque), sempre dentro do tema
+   escuro (body.promo-mode-active), por isso usa as mesmas variáveis
+   de cor em vez de valores fixos. */
+.promo-destaque{padding:40px 0 8px;border-bottom:2px solid var(--ink);}
+.promo-destaque-title{
+  text-align:center;color:var(--ink);
+  text-shadow:0 0 14px rgba(255,255,255,.35);
+}
+.promo-destaque .product-grid{margin-bottom:8px;}
+
 /* ---- PRODUCT GRID ---- */
 .product-grid{
   display:grid;
