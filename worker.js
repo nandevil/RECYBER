@@ -53,9 +53,19 @@ async function handleCreatePayment(request, env) {
     const origin = new URL(request.url).origin;
     const centavos = v => Math.round(Number(v) * 100);
 
+    /* A InfinitePay rejeita item com preço <= 0 (não dá pra mandar o
+       desconto como uma linha negativa). Em vez disso, distribui o
+       desconto proporcionalmente entre os preços dos itens — o total
+       cobrado fica igual ao que o cliente já viu na tela do carrinho. */
+    const itemsSubtotal = order.items.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const discount = Number(order.discount) || 0;
+    const ratio = discount > 0 && itemsSubtotal > 0
+      ? Math.max(0.01, (itemsSubtotal - discount) / itemsSubtotal)
+      : 1;
+
     const items = order.items.map(i => ({
       quantity: i.qty,
-      price: centavos(i.price),
+      price: Math.max(1, centavos(i.price * ratio)),
       description: `${i.name} (Tam. ${i.size})`.slice(0, 120)
     }));
     if (order.shipping > 0) {
