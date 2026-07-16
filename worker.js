@@ -87,9 +87,15 @@ async function handleCreatePayment(request, env) {
 
     if (!res.ok) {
       const detail = await res.text();
-      console.error("InfinitePay create-link falhou:", res.status, detail);
+      // A Cloudflare não expõe o IP de saída do Worker (é dinâmico e
+      // compartilhado) — o cf-ray identifica essa requisição específica
+      // nos logs da própria Cloudflare/InfinitePay, que é o dado real
+      // que o suporte deles consegue rastrear em caso de bloqueio (429/1015).
+      const cfRay = res.headers.get("cf-ray") || "";
+      const respDate = res.headers.get("date") || "";
+      console.error("InfinitePay create-link falhou:", res.status, detail, "cf-ray:", cfRay, "date:", respDate);
       // DEBUG TEMPORÁRIO — remover "debug" da resposta antes de divulgar o checkout.
-      return jsonResponse({ error: "Não foi possível gerar o link de pagamento.", debug: { status: res.status, detail } }, 502);
+      return jsonResponse({ error: "Não foi possível gerar o link de pagamento.", debug: { status: res.status, detail, cfRay, date: respDate } }, 502);
     }
 
     const data = await res.json();
