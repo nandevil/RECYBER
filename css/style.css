@@ -1224,11 +1224,15 @@ body.admin-open{overflow:hidden;}
     margin-bottom:12px;padding:4px 14px;
   }
   .admin-leads-table td{
-    border:none;white-space:normal;
+    border:none;white-space:normal;overflow-wrap:anywhere;
     padding:8px 0;
     display:flex;align-items:center;justify-content:space-between;gap:12px;
     border-bottom:1px solid var(--grey-light);
   }
+  /* E-mails/textos sem espaço (ex: fulano@exemplo.com) não quebram
+     sozinhos e empurram a tela pro lado — isso trava o valor pra
+     poder quebrar dentro da própria célula. */
+  .admin-leads-table td{text-align:right;}
   .admin-leads-table td:last-child{border-bottom:none;}
   .admin-leads-table td::before{
     content:attr(data-label);
