@@ -225,11 +225,10 @@ function labelCategory(cat) {
   return found ? found.label : cat;
 }
 
-/* Seção "Fique por dentro da Re.cyber" (newsletter) — durante o Modo
-   Promo vira um bloco preto centralizado (sem imagem); fora dele,
-   layout padrão do site com imagem lateral. As cores em si já
-   invertem sozinhas via body.promo-mode-active — aqui só troca a
-   estrutura. */
+/* Seção "Fique por dentro da Re.cyber" (newsletter) — bloco único
+   centralizado sempre; as cores já invertem sozinhas via
+   body.promo-mode-active, essa classe só liga o efeito de glow no
+   título durante a campanha. */
 function renderNewsletterLayout() {
   const section = document.getElementById("newsletter");
   if (!section) return;
