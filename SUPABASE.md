@@ -609,6 +609,38 @@ create policy "dono pode atualizar inscritos"
 > Isso só permite update pra quem está logado no painel (o dono) —
 > visitantes continuam só conseguindo inserir a própria inscrição.
 
+## Passo 20 — Configurações de Envio (Etiqueta)
+
+Guarda a altura, largura, comprimento e peso padrão de **uma peça**
+(aba "Promoção e Desconto" → "Configurações de Envio"). Não muda o
+frete cobrado do cliente — isso continua fixo (R$18/R$10, calculado
+em `js/checkout.js`). Serve pra alimentar uma etapa futura: gerar a
+etiqueta de envio automaticamente (Melhor Envio) multiplicando essas
+medidas pela quantidade de peças da compra. Só o dono logado lê/edita
+— não é usado em nenhuma tela pública. No **SQL Editor**, cole e rode:
+
+```sql
+create table public.shipping_settings (
+  id int primary key default 1,
+  height_cm numeric not null default 15,
+  width_cm numeric not null default 15,
+  length_cm numeric not null default 15,
+  weight_kg numeric not null default 0.5,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.shipping_settings (id) values (1) on conflict (id) do nothing;
+
+alter table public.shipping_settings enable row level security;
+alter table public.shipping_settings force row level security;
+
+create policy "dono pode ler configurações de envio"
+  on public.shipping_settings for select to authenticated using (true);
+
+create policy "dono pode atualizar configurações de envio"
+  on public.shipping_settings for update to authenticated using (true) with check (true);
+```
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

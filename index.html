@@ -833,6 +833,35 @@
         </label>
         <button type="submit" class="pill admin-upload-submit" id="free-shipping-form-submit">Salvar Frete Grátis</button>
       </form>
+
+      <h2 class="admin-leads-title admin-feedbacks-list-title">Configurações de Envio (Etiqueta)</h2>
+      <h3 class="admin-leads-subtitle">Medidas e peso padrão de UMA peça — usados pra gerar a etiqueta de envio. O frete cobrado do cliente continua fixo (R$18/R$10), isso aqui não muda o valor exibido no checkout.</h3>
+
+      <p class="admin-login-error" id="shipping-settings-form-unavailable" hidden>
+        Edição indisponível: configure a tabela "shipping_settings" no Supabase (veja SUPABASE.md, Passo 20).
+      </p>
+
+      <form class="checkout-form" id="shipping-settings-form">
+        <div class="checkout-grid">
+          <label class="field">
+            <span>Altura (cm)</span>
+            <input type="number" id="ss-altura" min="1" step="0.1" value="15" inputmode="decimal" required>
+          </label>
+          <label class="field">
+            <span>Largura (cm)</span>
+            <input type="number" id="ss-largura" min="1" step="0.1" value="15" inputmode="decimal" required>
+          </label>
+          <label class="field">
+            <span>Comprimento (cm)</span>
+            <input type="number" id="ss-comprimento" min="1" step="0.1" value="15" inputmode="decimal" required>
+          </label>
+          <label class="field">
+            <span>Peso (kg)</span>
+            <input type="number" id="ss-peso" min="0.01" step="0.01" value="0.5" inputmode="decimal" required>
+          </label>
+        </div>
+        <button type="submit" class="pill admin-upload-submit" id="shipping-settings-form-submit">Salvar Configurações de Envio</button>
+      </form>
     </div>
   </section>
 </div>

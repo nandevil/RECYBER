@@ -547,6 +547,7 @@ function showAdminPanel() {
   setupEmailTemplatesForm();
   setupPromoForm();
   setupCartDiscountForm();
+  setupShippingSettingsForm();
   document.getElementById("admin-login").hidden = true;
   document.getElementById("admin-panel").hidden = false;
   document.body.classList.add("admin-open");
@@ -1445,6 +1446,74 @@ document.getElementById("free-shipping-form").addEventListener("submit", async e
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = "Salvar Frete Grátis";
+  }
+});
+
+/* =====================================================
+   CONFIGURAÇÕES DE ENVIO (aba "Promoção e Desconto") — medidas e
+   peso padrão de UMA peça, salvos em public.shipping_settings (linha
+   única, id=1). NÃO afeta o frete cobrado do cliente (isso continua
+   fixo, R$18/R$10, calculado em js/checkout.js) — é só o dado usado
+   depois pra gerar etiqueta de envio (Melhor Envio, etapa futura).
+===================================================== */
+async function setupShippingSettingsForm() {
+  const unavailable = document.getElementById("shipping-settings-form-unavailable");
+  const submitBtn = document.getElementById("shipping-settings-form-submit");
+  if (!supabaseEnabled()) {
+    unavailable.hidden = false;
+    unavailable.textContent = "Edição indisponível: configure o Supabase (veja SUPABASE.md).";
+    submitBtn.disabled = true;
+    return;
+  }
+  unavailable.hidden = true;
+  submitBtn.disabled = false;
+
+  const { data, error } = await sb.from("shipping_settings").select("*").eq("id", 1).maybeSingle();
+  if (error) {
+    unavailable.hidden = false;
+    unavailable.textContent = describeSupabaseFormError(error, { table: "shipping_settings", step: "Passo 20" });
+    submitBtn.disabled = true;
+    return;
+  }
+  if (!data) return;
+
+  document.getElementById("ss-altura").value = data.height_cm;
+  document.getElementById("ss-largura").value = data.width_cm;
+  document.getElementById("ss-comprimento").value = data.length_cm;
+  document.getElementById("ss-peso").value = data.weight_kg;
+}
+
+document.getElementById("shipping-settings-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!supabaseEnabled()) return;
+
+  const submitBtn = document.getElementById("shipping-settings-form-submit");
+  const unavailable = document.getElementById("shipping-settings-form-unavailable");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Salvando...";
+  unavailable.hidden = true;
+
+  try {
+    const { data: sessionData } = await sb.auth.getSession();
+    if (!sessionData.session) throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
+
+    const { error } = await sb.from("shipping_settings").update({
+      height_cm: Number(document.getElementById("ss-altura").value) || 0,
+      width_cm: Number(document.getElementById("ss-largura").value) || 0,
+      length_cm: Number(document.getElementById("ss-comprimento").value) || 0,
+      weight_kg: Number(document.getElementById("ss-peso").value) || 0,
+      updated_at: new Date().toISOString()
+    }).eq("id", 1);
+    if (error) throw error;
+
+    showToast("Configurações de envio salvas com sucesso");
+  } catch (err) {
+    console.error("Configurações de envio:", err);
+    unavailable.hidden = false;
+    unavailable.textContent = describeSupabaseFormError(err, { table: "shipping_settings", step: "Passo 20" });
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Salvar Configurações de Envio";
   }
 });
 
