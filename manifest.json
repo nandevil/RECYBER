@@ -10,7 +10,7 @@
   "orientation": "portrait-primary",
   "lang": "pt-BR",
   "icons": [
-    { "src": "/img/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "/img/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "/img/logo-icon.png", "sizes": "any", "type": "image/png", "purpose": "any" },
+    { "src": "/img/logo-icon.png", "sizes": "any", "type": "image/png", "purpose": "maskable" }
   ]
 }
