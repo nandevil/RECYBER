@@ -556,6 +556,43 @@ Olá, {{nome}}! Nosso brechó entrou em modo promocional: peças selecionadas co
 > "Enviar" um a um, porque não existe envio automático em massa sem a
 > API paga do WhatsApp Business.
 
+## Passo 18 — Newsletter (captura de e-mail na home)
+
+Cria a tabela que recebe as inscrições da seção "Fique por dentro do
+Re.cyber", logo acima do rodapé. Qualquer visitante pode se inscrever
+(`insert`), mas só o dono logado consegue ler a lista (`select`) — o
+mesmo padrão de segurança do restante do site. No **SQL Editor**, cole
+e rode:
+
+```sql
+create table public.newsletter_subscribers (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  created_at timestamptz not null default now(),
+  active boolean not null default true
+);
+
+alter table public.newsletter_subscribers enable row level security;
+alter table public.newsletter_subscribers force row level security;
+
+create policy "qualquer um pode se inscrever"
+  on public.newsletter_subscribers for insert to anon, authenticated with check (true);
+
+create policy "só o dono lê a lista"
+  on public.newsletter_subscribers for select to authenticated using (true);
+```
+
+> Sem essa tabela, o formulário mostra "Não foi possível concluir a
+> inscrição" ao tentar se inscrever — o site continua funcionando
+> normalmente no resto, só essa seção fica indisponível.
+>
+> Pra usar essa lista num disparo futuro (ex: reaproveitando o botão
+> "Disparar aviso de modo promo" ou "Administrar Atualizações"), basta
+> ler `email` onde `active = true`. Ainda não existe um fluxo de
+> "cancelar inscrição" — quando for montar o envio em massa de
+> verdade, inclua um link de descadastro no rodapé do e-mail (evita
+> cair em spam) que faça `update ... set active = false`.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.
