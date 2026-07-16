@@ -185,6 +185,37 @@ function buildOrderWhatsappMessage(order) {
   return encodeURIComponent(msg);
 }
 
+/* Alerta o admin por e-mail (Resend) assim que um pedido é criado —
+   não é confirmação de pagamento (isso é o webhook da InfinitePay),
+   é só "um cliente acabou de fechar o pedido". Nunca trava nem atrasa
+   o checkout: dispara em segundo plano, sem esperar a resposta. */
+function notifyAdminNewOrder(order) {
+  const itemsHtml = order.items
+    .map(i => `<p style="margin:0 0 6px;">• ${i.name} (Tam. ${i.size}) x${i.qty} — ${money(i.price * i.qty)}</p>`)
+    .join("");
+  const html = `
+    <div style="background:#0e0e0e;padding:32px 16px;font-family:'Courier New',monospace;">
+      <div style="max-width:480px;margin:0 auto;background:#ffffff;border:2px solid #161616;border-radius:10px;padding:28px;">
+        <p style="font-family:monospace;font-weight:bold;font-size:15px;letter-spacing:1px;margin:0 0 20px;">RE<span style="color:#2f8f4e;">.</span>CYBER</p>
+        <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">Novo pedido recebido — ${order.id}</h1>
+        <div style="font-size:14px;line-height:1.6;color:#161616;">
+          <p style="margin:0 0 10px;"><strong>Cliente:</strong> ${order.customer.nome} (${order.customer.email} · ${order.customer.telefone})</p>
+          <p style="margin:0 0 10px;"><strong>Pagamento escolhido:</strong> ${order.payment === "cartao" ? "Cartão de Crédito" : "Pix"}</p>
+          ${itemsHtml}
+          <p style="margin:10px 0 0;"><strong>Total: ${money(order.total)}</strong></p>
+        </div>
+        <hr style="border:none;border-top:1px solid #dededd;margin:24px 0 16px;">
+        <p style="font-size:11px;color:#8a8a86;margin:0;">Re.cyber — Slow Fashion Brechó · recyber.com.br</p>
+      </div>
+    </div>`;
+
+  fetch("/api/send-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ to: CONFIG.adminEmail, subject: `Novo pedido recebido — ${order.id}`, html })
+  }).catch(err => console.warn("Alerta de novo pedido:", err));
+}
+
 /* Persiste o pedido: Supabase quando configurado, senão localStorage. */
 async function persistOrder(order) {
   if (supabaseEnabled()) {
@@ -265,6 +296,7 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
   }
 
   saveCustomerProfile(order.customer);
+  notifyAdminNewOrder(order);
 
   /* Cartão de crédito e Pix: gera o link de pagamento hospedado pela
      InfinitePay (o cliente escolhe a forma exata na página deles) e

@@ -5,7 +5,8 @@ const CONFIG = {
   whatsappNumber: "5522999390065", // DDI+DDD+numero, só dígitos
   instagram: "https://instagram.com/re.cyber",
   tiktok: "https://tiktok.com/@re.cyber", // troque pelo usuário real
-  storeName: "Re.cyber"
+  storeName: "Re.cyber",
+  adminEmail: "anandalage18@hotmail.com" // recebe o alerta de "novo pedido" (js/checkout.js)
 };
 
 /* Frete padrão (sem campanha de frete grátis ativa) — usado aqui pro
