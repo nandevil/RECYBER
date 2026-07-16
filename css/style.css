@@ -827,10 +827,6 @@ body.promo-mode-active .cat-card--promo{
   font-family:var(--font-pixel);font-size:.82rem;
   border-top:1.5px solid var(--grey-light);margin-top:6px;padding-top:8px;
 }
-.pix-card{
-  border:2px solid var(--ink);border-radius:8px;padding:14px 16px;
-  background:var(--paper-alt);font-size:.82rem;display:flex;flex-direction:column;gap:4px;
-}
 .checkbox-field{
   display:flex;align-items:flex-start;gap:10px;
   font-size:.78rem;line-height:1.5;cursor:pointer;

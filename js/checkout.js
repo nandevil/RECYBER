@@ -37,7 +37,6 @@ function renderCheckoutSummary() {
 function resetCheckoutForm() {
   document.getElementById("checkout-form").reset();
   document.getElementById("checkout-totals").hidden = true;
-  document.getElementById("pix-card").hidden = true;
   document.querySelectorAll("#checkout-payment-pills .pill").forEach(p => p.classList.remove("active"));
   checkoutPayment = null;
   shippingCalculated = false;
@@ -137,18 +136,20 @@ SHIPPING_REQUIRED_IDS.forEach(id => {
   document.getElementById(id).addEventListener("blur", maybeCalculateShipping);
 });
 
-/* Pagamento */
+/* Pagamento — Cartão e Pix usam o mesmo link hospedado pela
+   InfinitePay; o cliente escolhe a forma exata (cartão ou Pix) na
+   própria página deles. */
 document.getElementById("checkout-payment-pills").addEventListener("click", e => {
   const pill = e.target.closest("[data-payment]");
   if (!pill) return;
   checkoutPayment = pill.dataset.payment;
   document.querySelectorAll("#checkout-payment-pills .pill").forEach(p => p.classList.toggle("active", p === pill));
-  document.getElementById("pix-card").hidden = checkoutPayment !== "pix";
 });
 
-/* Mensagem de WhatsApp para pagamento no Cartão de Crédito */
+/* Mensagem de WhatsApp — só usada se a geração do link de pagamento
+   falhar (fallback pra nunca travar a compra do cliente). */
 function buildOrderWhatsappMessage(order) {
-  let msg = `Olá! Sou ${order.customer.nome} e quero pagar com cartão o pedido *${order.id}* do site *${CONFIG.storeName}*:\n\n`;
+  let msg = `Olá! Sou ${order.customer.nome} e quero pagar o pedido *${order.id}* do site *${CONFIG.storeName}*:\n\n`;
   order.items.forEach(item => {
     msg += `• ${item.name} (Tam. ${item.size}) x${item.qty} — ${money(item.price * item.qty)}\n`;
   });
@@ -235,30 +236,29 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
 
   saveCustomerProfile(order.customer);
 
-  /* Cartão de crédito: gera o link de pagamento hospedado pela
-     InfinitePay e manda o cliente pra lá. Se der qualquer problema
-     (fora do ar, bloqueio, etc.), cai pro fluxo antigo — combinar o
-     pagamento por WhatsApp — pra nunca travar a compra do cliente. */
-  if (checkoutPayment === "cartao") {
-    submitBtn.textContent = "Gerando link de pagamento...";
-    try {
-      const res = await fetch("/api/create-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data.url) {
-        state.cart = [];
-        saveCart();
-        appliedCoupon = "";
-        window.location.href = data.url;
-        return;
-      }
-      console.error("create-payment indisponível, caindo pro WhatsApp:", data);
-    } catch (err) {
-      console.error("create-payment falhou, caindo pro WhatsApp:", err);
+  /* Cartão de crédito e Pix: gera o link de pagamento hospedado pela
+     InfinitePay (o cliente escolhe a forma exata na página deles) e
+     manda ele pra lá. Se der qualquer problema (fora do ar, bloqueio,
+     etc.), cai pro fluxo antigo — combinar o pagamento por WhatsApp —
+     pra nunca travar a compra do cliente. */
+  submitBtn.textContent = "Gerando link de pagamento...";
+  try {
+    const res = await fetch("/api/create-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.url) {
+      state.cart = [];
+      saveCart();
+      appliedCoupon = "";
+      window.location.href = data.url;
+      return;
     }
+    console.error("create-payment indisponível, caindo pro WhatsApp:", data);
+  } catch (err) {
+    console.error("create-payment falhou, caindo pro WhatsApp:", err);
   }
 
   submitBtn.disabled = false;
@@ -271,15 +271,13 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
   closeCheckout();
   document.getElementById("success-overlay").classList.add("open");
 
-  if (checkoutPayment === "cartao") {
-    showToast("Não conseguimos gerar o link de pagamento automático — vamos combinar pelo WhatsApp.");
-    window.open(whatsappLink(buildOrderWhatsappMessage(order)), "_blank");
-  }
+  showToast("Não conseguimos gerar o link de pagamento automático — vamos combinar pelo WhatsApp.");
+  window.open(whatsappLink(buildOrderWhatsappMessage(order)), "_blank");
 });
 
 /* Cliente volta do checkout da InfinitePay (redirect_url=/?pedido=ID)
-   depois de pagar com cartão — o webhook já confirma o pagamento no
-   servidor; aqui é só avisar visualmente que deu certo. */
+   depois de pagar — o webhook já confirma o pagamento no servidor;
+   aqui é só avisar visualmente que deu certo. */
 (function handlePaymentRedirect() {
   const params = new URLSearchParams(window.location.search);
   const pedido = params.get("pedido");
