@@ -42,15 +42,6 @@ export default {
     if (url.pathname === "/api/melhorenvio/services" && request.method === "GET") {
       return handleMelhorEnvioServices(request, env);
     }
-    if (url.pathname === "/api/test-payment-email" && request.method === "GET") {
-      const orderId = url.searchParams.get("order");
-      try {
-        await sendPaymentConfirmedEmail(orderId, env);
-        return jsonResponse({ ok: true });
-      } catch (err) {
-        return jsonResponse({ error: err.message }, 500);
-      }
-    }
 
     return env.ASSETS.fetch(request);
   }
