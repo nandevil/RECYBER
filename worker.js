@@ -13,6 +13,8 @@
    - SUPABASE_SERVICE_ROLE_KEY  (nunca exponha isso no front-end)
    - INFINITEPAY_HANDLE  (sua InfiniteTag, ex: "recyber")
    - RESEND_API_KEY  (Resend, para /api/send-email — Passo 14 do SUPABASE.md)
+   - MELHORENVIO_CLIENT_ID / MELHORENVIO_CLIENT_SECRET  (OAuth do
+     aplicativo cadastrado no Melhor Envio — Passo 21 do SUPABASE.md)
 ===================================================== */
 
 export default {
@@ -27,6 +29,15 @@ export default {
     }
     if (url.pathname === "/api/send-email" && request.method === "POST") {
       return handleSendEmail(request, env);
+    }
+    if (url.pathname === "/api/melhorenvio/authorize" && request.method === "GET") {
+      return handleMelhorEnvioAuthorize(request, env);
+    }
+    if (url.pathname === "/api/melhorenvio/callback" && request.method === "GET") {
+      return handleMelhorEnvioCallback(request, env);
+    }
+    if (url.pathname === "/api/melhorenvio/status" && request.method === "GET") {
+      return handleMelhorEnvioStatus(request, env);
     }
 
     return env.ASSETS.fetch(request);
@@ -205,5 +216,137 @@ async function handleSendEmail(request, env) {
   } catch (err) {
     console.error("send-email:", err);
     return jsonResponse({ error: "Erro interno ao enviar o e-mail." }, 500);
+  }
+}
+
+/* =====================================================
+   MELHOR ENVIO — conexão OAuth2 (Passo 21 do SUPABASE.md). O token
+   fica guardado em public.melhorenvio_tokens (linha única, id=1),
+   lido/escrito só com a service_role key — nunca exposto ao front-end.
+===================================================== */
+function supaHeaders(env) {
+  return {
+    "Content-Type": "application/json",
+    apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
+  };
+}
+
+function melhorEnvioMessagePage(text, ok) {
+  return new Response(
+    `<!doctype html><html><body style="font-family:monospace;background:#0e0e0e;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;padding:24px;">
+      <p style="max-width:420px;">${ok ? "✅" : "❌"} ${text}</p>
+    </body></html>`,
+    { headers: { "Content-Type": "text/html; charset=utf-8" } }
+  );
+}
+
+/* Passo 1: manda o admin pra tela de login/autorização do Melhor
+   Envio, guardando um "state" aleatório pra conferir no callback
+   (proteção contra CSRF — sem isso, qualquer um poderia forjar a
+   volta do callback e vincular a conta errada). */
+async function handleMelhorEnvioAuthorize(request, env) {
+  const origin = new URL(request.url).origin;
+  const state = crypto.randomUUID();
+
+  const patchRes = await fetch(`${env.SUPABASE_URL}/rest/v1/melhorenvio_tokens?id=eq.1`, {
+    method: "PATCH",
+    headers: { ...supaHeaders(env), Prefer: "return=minimal" },
+    body: JSON.stringify({ pending_state: state })
+  });
+  if (!patchRes.ok) {
+    console.error("Melhor Envio (authorize) — falha ao salvar state:", await patchRes.text());
+    return melhorEnvioMessagePage("Erro interno ao iniciar a conexão. Veja o console do Worker.", false);
+  }
+
+  const scope = encodeURIComponent("cart-write shipping-generate shipping-calculate");
+  const redirectUri = encodeURIComponent(`${origin}/api/melhorenvio/callback`);
+  const authorizeUrl = `${env.MELHORENVIO_BASE_URL}/oauth/authorize?client_id=${env.MELHORENVIO_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&state=${state}&scope=${scope}`;
+  return Response.redirect(authorizeUrl, 302);
+}
+
+/* Passo 2: recebe o "code" de volta, confere o state salvo, troca o
+   code por access_token/refresh_token e guarda no Supabase. */
+async function handleMelhorEnvioCallback(request, env) {
+  try {
+    const url = new URL(request.url);
+    const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
+    if (!code || !state) {
+      return melhorEnvioMessagePage("Autorização cancelada ou incompleta.", false);
+    }
+
+    const stateRes = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/melhorenvio_tokens?id=eq.1&select=pending_state`,
+      { headers: supaHeaders(env) }
+    );
+    const stateRows = await stateRes.json();
+    if (!stateRows[0] || stateRows[0].pending_state !== state) {
+      return melhorEnvioMessagePage("Estado de autorização inválido — tente conectar de novo.", false);
+    }
+
+    const tokenRes = await fetch(`${env.MELHORENVIO_BASE_URL}/oauth/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+        "User-Agent": "Re.cyber (atendimento@recyber.com.br)"
+      },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: env.MELHORENVIO_CLIENT_ID,
+        client_secret: env.MELHORENVIO_CLIENT_SECRET,
+        redirect_uri: `${url.origin}/api/melhorenvio/callback`,
+        code
+      })
+    });
+
+    if (!tokenRes.ok) {
+      const detail = await tokenRes.text();
+      console.error("Melhor Envio (callback) — troca de token falhou:", tokenRes.status, detail);
+      return melhorEnvioMessagePage("Não foi possível concluir a conexão com o Melhor Envio. Veja o console do Worker.", false);
+    }
+
+    const tokenData = await tokenRes.json();
+    const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
+
+    const saveRes = await fetch(`${env.SUPABASE_URL}/rest/v1/melhorenvio_tokens?id=eq.1`, {
+      method: "PATCH",
+      headers: { ...supaHeaders(env), Prefer: "return=minimal" },
+      body: JSON.stringify({
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        expires_at: expiresAt,
+        pending_state: null,
+        updated_at: new Date().toISOString()
+      })
+    });
+    if (!saveRes.ok) {
+      console.error("Melhor Envio (callback) — falha ao salvar token:", await saveRes.text());
+      return melhorEnvioMessagePage("Token recebido, mas houve erro ao salvar. Veja o console do Worker.", false);
+    }
+
+    return melhorEnvioMessagePage("Melhor Envio conectado com sucesso! Pode fechar esta aba.", true);
+  } catch (err) {
+    console.error("melhorenvio callback:", err);
+    return melhorEnvioMessagePage("Erro interno ao concluir a conexão.", false);
+  }
+}
+
+/* Status simples (conectado/não conectado + validade) pro painel
+   exibir — nunca devolve o token em si. */
+async function handleMelhorEnvioStatus(request, env) {
+  try {
+    const res = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/melhorenvio_tokens?id=eq.1&select=access_token,expires_at`,
+      { headers: supaHeaders(env) }
+    );
+    if (!res.ok) return jsonResponse({ connected: false });
+    const rows = await res.json();
+    const row = rows[0];
+    return jsonResponse({ connected: !!(row && row.access_token), expiresAt: row ? row.expires_at : null });
+  } catch (err) {
+    console.error("melhorenvio status:", err);
+    return jsonResponse({ connected: false });
   }
 }

@@ -641,6 +641,49 @@ create policy "dono pode atualizar configurações de envio"
   on public.shipping_settings for update to authenticated using (true) with check (true);
 ```
 
+## Passo 21 — Conexão OAuth com o Melhor Envio
+
+Guarda o `access_token`/`refresh_token` da integração com o Melhor
+Envio (usados pra gerar etiqueta automaticamente depois que a compra
+é aprovada — etapa futura). **Diferente de tudo até aqui, essa tabela
+não tem NENHUMA política de RLS pra `anon` nem `authenticated`** — só
+o `worker.js`, usando a `service_role key`, consegue ler/escrever
+(o painel nunca lê o token direto, só chama `/api/melhorenvio/status`
+pra saber se está conectado). No **SQL Editor**, cole e rode:
+
+```sql
+create table public.melhorenvio_tokens (
+  id int primary key default 1,
+  access_token text,
+  refresh_token text,
+  expires_at timestamptz,
+  pending_state text,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.melhorenvio_tokens (id) values (1) on conflict (id) do nothing;
+
+alter table public.melhorenvio_tokens enable row level security;
+alter table public.melhorenvio_tokens force row level security;
+
+-- Sem nenhuma "create policy" de propósito: só a service_role key
+-- (que ignora RLS por padrão no Supabase) consegue tocar essa tabela.
+```
+
+Depois de rodar isso, configure os secrets do Worker (veja
+`wrangler.toml`) e clique em "Conectar Melhor Envio" no painel, aba
+"Promoção e Desconto":
+- `MELHORENVIO_CLIENT_ID` (texto simples, não é segredo de verdade)
+- `MELHORENVIO_CLIENT_SECRET` (secret — nunca cole em texto puro em
+  lugar nenhum, nem aqui)
+
+> O app foi criado no Melhor Envio sem confirmação se era ambiente de
+> Sandbox ou Produção. `wrangler.toml` está configurado com
+> `MELHORENVIO_BASE_URL = "https://sandbox.melhorenvio.com.br"` por
+> padrão — se o botão "Conectar" der erro de autenticação, o app
+> provavelmente foi criado em produção; troque essa variável pra
+> `https://melhorenvio.com.br` e publique de novo.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

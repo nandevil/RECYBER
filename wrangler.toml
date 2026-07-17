@@ -7,6 +7,9 @@ compatibility_flags = ["nodejs_compat"]
 directory = "./"
 binding = "ASSETS"
 
-# Não é segredo — é só o @ público da sua conta InfinitePay.
+# Não são segredo — @ público da InfinitePay e o domínio base da API
+# do Melhor Envio (troque pra "https://melhorenvio.com.br" quando
+# confirmarmos que o app foi criado em produção, não sandbox).
 [vars]
 INFINITEPAY_HANDLE = "recyber"
+MELHORENVIO_BASE_URL = "https://sandbox.melhorenvio.com.br"

@@ -1481,6 +1481,31 @@ async function setupShippingSettingsForm() {
   document.getElementById("ss-largura").value = data.width_cm;
   document.getElementById("ss-comprimento").value = data.length_cm;
   document.getElementById("ss-peso").value = data.weight_kg;
+
+  refreshMelhorEnvioStatus();
+}
+
+/* Só mostra conectado/não conectado + validade — o token em si nunca
+   sai do Worker (fica em public.melhorenvio_tokens, só a service_role
+   key toca essa tabela). */
+async function refreshMelhorEnvioStatus() {
+  const statusEl = document.getElementById("melhorenvio-status");
+  const connectBtn = document.getElementById("melhorenvio-connect");
+  try {
+    const res = await fetch("/api/melhorenvio/status");
+    const data = await res.json();
+    if (data.connected) {
+      const expires = data.expiresAt ? new Date(data.expiresAt).toLocaleDateString("pt-BR") : "";
+      statusEl.textContent = `✅ Conectado${expires ? ` — token válido até ${expires}` : ""}`;
+      connectBtn.textContent = "🔄 Reconectar Melhor Envio";
+    } else {
+      statusEl.textContent = "⚠️ Ainda não conectado.";
+      connectBtn.textContent = "🔗 Conectar Melhor Envio";
+    }
+  } catch (err) {
+    console.warn("Status Melhor Envio:", err);
+    statusEl.textContent = "Não foi possível verificar a conexão agora.";
+  }
 }
 
 document.getElementById("shipping-settings-form").addEventListener("submit", async e => {
