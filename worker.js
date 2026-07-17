@@ -42,6 +42,15 @@ export default {
     if (url.pathname === "/api/melhorenvio/services" && request.method === "GET") {
       return handleMelhorEnvioServices(request, env);
     }
+    if (url.pathname === "/api/test-payment-email" && request.method === "GET") {
+      const orderId = url.searchParams.get("order");
+      try {
+        await sendPaymentConfirmedEmail(orderId, env);
+        return jsonResponse({ ok: true });
+      } catch (err) {
+        return jsonResponse({ error: err.message }, 500);
+      }
+    }
 
     return env.ASSETS.fetch(request);
   }
@@ -177,6 +186,14 @@ async function handleInfinitePayWebhook(request, env) {
       return jsonResponse({ success: false }, 502);
     }
 
+    /* Avisa o cliente por e-mail que o pagamento foi confirmado — nunca
+       derruba a resposta do webhook se falhar. */
+    try {
+      await sendPaymentConfirmedEmail(order_nsu, env);
+    } catch (err) {
+      console.error("E-mail de pagamento confirmado:", err);
+    }
+
     /* Gera a etiqueta no carrinho do Melhor Envio em segundo plano —
        nunca deve derrubar a confirmação de pagamento pro cliente, por
        isso tem seu próprio try/catch e não afeta a resposta abaixo. */
@@ -190,6 +207,58 @@ async function handleInfinitePayWebhook(request, env) {
   } catch (err) {
     console.error("webhook infinitepay:", err);
     return jsonResponse({ success: false }, 500);
+  }
+}
+
+/* Busca o pedido pago e manda o aviso de "pagamento confirmado" pro
+   cliente — mensagem fixa (pedida pelo dono da loja), avisando que o
+   código de rastreio vem depois e que pode cair em spam. */
+async function sendPaymentConfirmedEmail(orderId, env) {
+  const res = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,customer`,
+    {
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
+      }
+    }
+  );
+  if (!res.ok) throw new Error(`Falha ao buscar pedido pro e-mail de confirmação (status ${res.status}).`);
+  const rows = await res.json();
+  const order = rows[0];
+  if (!order || !order.customer || !order.customer.email) return;
+
+  const html = `<!doctype html>
+    <html><head><meta charset="UTF-8"></head>
+    <body style="margin:0;">
+    <div style="background:#0e0e0e;padding:32px 16px;font-family:'Courier New',monospace;">
+      <div style="max-width:480px;margin:0 auto;background:#ffffff;border:2px solid #161616;border-radius:10px;padding:28px;">
+        <p style="font-family:monospace;font-weight:bold;font-size:15px;letter-spacing:1px;margin:0 0 20px;">RE<span style="color:#2f8f4e;">.</span>CYBER</p>
+        <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">Pagamento confirmado — ${order.id}</h1>
+        <div style="font-size:14px;line-height:1.6;color:#161616;">
+          <p style="margin:0;">Parabéns pela compra! Seu código de rastreio será enviado por e-mail assim que o produto for postado. Fique de olho: ele pode ir para a caixa de spam ou lixo eletrônico.</p>
+        </div>
+        <hr style="border:none;border-top:1px solid #dededd;margin:24px 0 16px;">
+        <p style="font-size:11px;color:#8a8a86;margin:0;">Re.cyber — Slow Fashion Brechó · recyber.com.br</p>
+      </div>
+    </div>
+    </body></html>`;
+
+  const emailRes = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${env.RESEND_API_KEY}`
+    },
+    body: JSON.stringify({
+      from: "Re.cyber <atendimento@recyber.com.br>",
+      to: [order.customer.email],
+      subject: "Pagamento confirmado — Re.cyber",
+      html
+    })
+  });
+  if (!emailRes.ok) {
+    console.error("E-mail de pagamento confirmado falhou:", emailRes.status, await emailRes.text());
   }
 }
 

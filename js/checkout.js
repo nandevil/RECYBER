@@ -193,7 +193,9 @@ function notifyAdminNewOrder(order) {
   const itemsHtml = order.items
     .map(i => `<p style="margin:0 0 6px;">• ${i.name} (Tam. ${i.size}) x${i.qty} — ${money(i.price * i.qty)}</p>`)
     .join("");
-  const html = `
+  const html = `<!doctype html>
+    <html><head><meta charset="UTF-8"></head>
+    <body style="margin:0;">
     <div style="background:#0e0e0e;padding:32px 16px;font-family:'Courier New',monospace;">
       <div style="max-width:480px;margin:0 auto;background:#ffffff;border:2px solid #161616;border-radius:10px;padding:28px;">
         <p style="font-family:monospace;font-weight:bold;font-size:15px;letter-spacing:1px;margin:0 0 20px;">RE<span style="color:#2f8f4e;">.</span>CYBER</p>
@@ -207,7 +209,8 @@ function notifyAdminNewOrder(order) {
         <hr style="border:none;border-top:1px solid #dededd;margin:24px 0 16px;">
         <p style="font-size:11px;color:#8a8a86;margin:0;">Re.cyber — Slow Fashion Brechó · recyber.com.br</p>
       </div>
-    </div>`;
+    </div>
+    </body></html>`;
 
   fetch("/api/send-email", {
     method: "POST",
@@ -344,6 +347,8 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
   const params = new URLSearchParams(window.location.search);
   const pedido = params.get("pedido");
   if (!pedido) return;
+  document.getElementById("success-text").textContent =
+    "Parabéns pela compra! Seu código de rastreio será enviado por e-mail assim que o produto for postado. Fique de olho: ele pode ir para a caixa de spam ou lixo eletrônico.";
   document.getElementById("success-overlay").classList.add("open");
   params.delete("pedido");
   const rest = params.toString();
@@ -352,6 +357,8 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
 
 function closeSuccess() {
   document.getElementById("success-overlay").classList.remove("open");
+  document.getElementById("success-text").textContent =
+    "Seu pedido foi finalizado! Aguarde o código de rastreio e atualização do status do seu pedido no e-mail.";
 }
 document.getElementById("success-close").addEventListener("click", closeSuccess);
 document.getElementById("success-ok").addEventListener("click", closeSuccess);
