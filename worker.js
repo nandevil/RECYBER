@@ -42,8 +42,8 @@ export default {
     if (url.pathname === "/api/melhorenvio/services" && request.method === "GET") {
       return handleMelhorEnvioServices(request, env);
     }
-    if (url.pathname === "/api/melhorenvio/quote-debug" && request.method === "GET") {
-      return handleMelhorEnvioQuoteDebug(request, env);
+    if (url.pathname === "/api/melhorenvio/rank-debug" && request.method === "GET") {
+      return handleMelhorEnvioRankDebug(request, env);
     }
 
     return env.ASSETS.fetch(request);
@@ -404,31 +404,24 @@ async function handleMelhorEnvioServices(request, env) {
   }
 }
 
-/* DEBUG TEMPORÁRIO — só pra inspecionar o formato real da resposta do
-   endpoint de cálculo de frete antes de programar o rankeamento por
-   preço de verdade. Remover depois de confirmar os campos. Usa um CEP
-   de destino fixo de teste (não depende de pedido nenhum). */
-async function handleMelhorEnvioQuoteDebug(request, env) {
+/* DEBUG TEMPORÁRIO — testa o rankeamento por menor preço com um
+   pedido fake (CEP fixo de teste), sem depender de comprar de
+   verdade. Remover depois de confirmar que funciona. */
+async function handleMelhorEnvioRankDebug(request, env) {
   try {
     const accessToken = await getMelhorEnvioAccessToken(env);
-    const payload = {
-      from: { postal_code: MELHORENVIO_SENDER.postal_code },
-      to: { postal_code: "20040020" },
-      products: [{ id: "1", width: 15, height: 15, length: 15, weight: 0.5, insurance_value: 50, quantity: 1 }],
-      services: "1,2,3,4,17,31,32,34,33"
+    const settingsRes = await fetch(`${env.SUPABASE_URL}/rest/v1/shipping_settings?id=eq.1&select=*`, { headers: supaHeaders(env) });
+    const settingsRows = await settingsRes.json();
+    const settings = settingsRows[0];
+    if (!settings) return jsonResponse({ error: "shipping_settings vazio." }, 400);
+
+    const fakeOrder = {
+      total: 50,
+      customer: { cep: "20040-020" },
+      items: [{ qty: 2 }]
     };
-    const res = await fetch(`${env.MELHORENVIO_BASE_URL}/api/v2/me/shipment/calculate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${accessToken}`,
-        "User-Agent": "Re.cyber (atendimento@recyber.com.br)"
-      },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.text();
-    return new Response(data, { status: res.status, headers: { "Content-Type": "application/json" } });
+    const cheapest = await pickCheapestMelhorEnvioService(fakeOrder, settings, accessToken, env, false);
+    return jsonResponse(cheapest);
   } catch (err) {
     return jsonResponse({ error: err.message || "Erro interno." }, 500);
   }
@@ -535,9 +528,58 @@ function onlyDigits(v) {
   return (v || "").replace(/\D/g, "");
 }
 
-async function buildMelhorEnvioCartPayload(order, settings, mergeVolumes) {
+/* Todos os IDs de serviço habilitados na conta — consultado toda vez
+   (não cacheado) pra sempre refletir o que está disponível agora,
+   caso o dono habilite/desabilite transportadoras no futuro. */
+async function getAllMelhorEnvioServiceIds(accessToken, env) {
+  const res = await fetch(`${env.MELHORENVIO_BASE_URL}/api/v2/me/shipment/companies`, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "User-Agent": "Re.cyber (atendimento@recyber.com.br)"
+    }
+  });
+  if (!res.ok) throw new Error(`Não foi possível listar as transportadoras (status ${res.status}).`);
+  const companies = await res.json();
+  return companies.flatMap(c => c.services.map(s => s.id));
+}
+
+/* Cota TODOS os serviços habilitados de uma vez e devolve o mais
+   barato. Serviços indisponíveis pro CEP/pacote em questão voltam com
+   um campo "error" em vez de preço — esses são ignorados no
+   rankeamento, não travam o processo. */
+async function pickCheapestMelhorEnvioService(order, settings, accessToken, env, mergeVolumes) {
+  const serviceIds = await getAllMelhorEnvioServiceIds(accessToken, env);
+  const payload = {
+    from: { postal_code: MELHORENVIO_SENDER.postal_code },
+    to: { postal_code: onlyDigits(order.customer.cep) },
+    volumes: buildMelhorEnvioVolumes(order.items, settings, mergeVolumes),
+    options: { insurance_value: Number(order.total) || 0 },
+    services: serviceIds.join(",")
+  };
+  const res = await fetch(`${env.MELHORENVIO_BASE_URL}/api/v2/me/shipment/calculate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "User-Agent": "Re.cyber (atendimento@recyber.com.br)"
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(`Falha ao cotar frete (status ${res.status}): ${await res.text()}`);
+
+  const results = await res.json();
+  const valid = (Array.isArray(results) ? results : [results]).filter(r => r.custom_price && !r.error);
+  if (valid.length === 0) throw new Error("Nenhum serviço de envio disponível pra esse destino/pacote.");
+
+  valid.sort((a, b) => parseFloat(a.custom_price) - parseFloat(b.custom_price));
+  return valid[0];
+}
+
+async function buildMelhorEnvioCartPayload(order, settings, mergeVolumes, serviceId) {
   return {
-    service: Number(settings.melhorenvio_service_id),
+    service: Number(serviceId),
     from: MELHORENVIO_SENDER,
     to: {
       name: order.customer.nome,
@@ -611,8 +653,8 @@ async function createMelhorEnvioCartEntry(orderId, env) {
   const settings = settingsRows[0];
 
   if (!orderRow) { console.error("Melhor Envio — pedido não encontrado:", orderId); return; }
-  if (!settings || !settings.melhorenvio_service_id) {
-    console.warn("Melhor Envio — serviço padrão não configurado (Configurações de Envio no painel). Etiqueta não gerada para", orderId);
+  if (!settings) {
+    console.warn("Melhor Envio — Configurações de Envio (medidas) não cadastradas ainda. Etiqueta não gerada para", orderId);
     return;
   }
 
@@ -626,15 +668,30 @@ async function createMelhorEnvioCartEntry(orderId, env) {
     return;
   }
 
+  /* Se um serviço específico estiver fixado no painel, usa ele direto
+     (sem cotar). Senão — o padrão — cota TODOS os serviços habilitados
+     e usa o mais barato disponível pra esse destino/pacote. */
+  let serviceId = settings.melhorenvio_service_id;
+  if (!serviceId) {
+    try {
+      const cheapest = await pickCheapestMelhorEnvioService(order, settings, accessToken, env, false);
+      serviceId = cheapest.id;
+      console.log(`Melhor Envio — serviço mais barato pra ${orderId}: ${cheapest.company.name} ${cheapest.name} (R$ ${cheapest.custom_price})`);
+    } catch (err) {
+      console.error("Melhor Envio — falha ao cotar frete:", err.message);
+      return;
+    }
+  }
+
   const totalQty = order.items.reduce((n, i) => n + i.qty, 0);
-  let payload = await buildMelhorEnvioCartPayload(order, settings, false);
+  let payload = await buildMelhorEnvioCartPayload(order, settings, false, serviceId);
   let res = await postMelhorEnvioCart(payload, accessToken, env);
 
   if (!res.ok && totalQty > 1) {
     const detail = await res.text();
     if (/volume/i.test(detail)) {
       console.warn("Melhor Envio — transportadora não aceita múltiplos volumes, tentando com volume único:", detail);
-      payload = await buildMelhorEnvioCartPayload(order, settings, true);
+      payload = await buildMelhorEnvioCartPayload(order, settings, true, serviceId);
       res = await postMelhorEnvioCart(payload, accessToken, env);
     } else {
       console.error("Melhor Envio — falha ao inserir no carrinho:", res.status, detail);
