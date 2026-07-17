@@ -22,3 +22,8 @@ binding = "ASSETS"
 INFINITEPAY_HANDLE = "recyber"
 MELHORENVIO_BASE_URL = "https://sandbox.melhorenvio.com.br"
 MELHORENVIO_CLIENT_ID = "27198"
+# URL pública do projeto Supabase — mesma já exposta no front-end
+# (js/supabase-client.js), não é segredo. O que É segredo de verdade
+# (SUPABASE_SERVICE_ROLE_KEY) continua só como Secret no painel do
+# Cloudflare, nunca aqui.
+SUPABASE_URL = "https://pzsbmenyseilagvbrnxn.supabase.co"
