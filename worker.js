@@ -246,23 +246,33 @@ function melhorEnvioMessagePage(text, ok) {
    (proteção contra CSRF — sem isso, qualquer um poderia forjar a
    volta do callback e vincular a conta errada). */
 async function handleMelhorEnvioAuthorize(request, env) {
-  const origin = new URL(request.url).origin;
-  const state = crypto.randomUUID();
+  try {
+    if (!env.MELHORENVIO_BASE_URL || !env.MELHORENVIO_CLIENT_ID) {
+      console.error("Melhor Envio (authorize) — variáveis de ambiente faltando (MELHORENVIO_BASE_URL/MELHORENVIO_CLIENT_ID).");
+      return melhorEnvioMessagePage("Configuração incompleta no Worker (faltam variáveis de ambiente). Veja o console.", false);
+    }
 
-  const patchRes = await fetch(`${env.SUPABASE_URL}/rest/v1/melhorenvio_tokens?id=eq.1`, {
-    method: "PATCH",
-    headers: { ...supaHeaders(env), Prefer: "return=minimal" },
-    body: JSON.stringify({ pending_state: state })
-  });
-  if (!patchRes.ok) {
-    console.error("Melhor Envio (authorize) — falha ao salvar state:", await patchRes.text());
+    const origin = new URL(request.url).origin;
+    const state = crypto.randomUUID();
+
+    const patchRes = await fetch(`${env.SUPABASE_URL}/rest/v1/melhorenvio_tokens?id=eq.1`, {
+      method: "PATCH",
+      headers: { ...supaHeaders(env), Prefer: "return=minimal" },
+      body: JSON.stringify({ pending_state: state })
+    });
+    if (!patchRes.ok) {
+      console.error("Melhor Envio (authorize) — falha ao salvar state:", await patchRes.text());
+      return melhorEnvioMessagePage("Erro interno ao iniciar a conexão. Veja o console do Worker.", false);
+    }
+
+    const scope = encodeURIComponent("cart-write shipping-generate shipping-calculate");
+    const redirectUri = encodeURIComponent(`${origin}/api/melhorenvio/callback`);
+    const authorizeUrl = `${env.MELHORENVIO_BASE_URL}/oauth/authorize?client_id=${env.MELHORENVIO_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&state=${state}&scope=${scope}`;
+    return Response.redirect(authorizeUrl, 302);
+  } catch (err) {
+    console.error("melhorenvio authorize:", err);
     return melhorEnvioMessagePage("Erro interno ao iniciar a conexão. Veja o console do Worker.", false);
   }
-
-  const scope = encodeURIComponent("cart-write shipping-generate shipping-calculate");
-  const redirectUri = encodeURIComponent(`${origin}/api/melhorenvio/callback`);
-  const authorizeUrl = `${env.MELHORENVIO_BASE_URL}/oauth/authorize?client_id=${env.MELHORENVIO_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&state=${state}&scope=${scope}`;
-  return Response.redirect(authorizeUrl, 302);
 }
 
 /* Passo 2: recebe o "code" de volta, confere o state salvo, troca o
