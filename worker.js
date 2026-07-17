@@ -261,10 +261,8 @@ async function handleMelhorEnvioAuthorize(request, env) {
       body: JSON.stringify({ pending_state: state })
     });
     if (!patchRes.ok) {
-      const detail = await patchRes.text();
-      console.error("Melhor Envio (authorize) — falha ao salvar state:", patchRes.status, detail);
-      // DEBUG TEMPORÁRIO — remover depois de diagnosticar.
-      return melhorEnvioMessagePage(`Erro interno ao iniciar a conexão. DEBUG: status ${patchRes.status} — ${detail}`, false);
+      console.error("Melhor Envio (authorize) — falha ao salvar state:", patchRes.status, await patchRes.text());
+      return melhorEnvioMessagePage("Erro interno ao iniciar a conexão. Veja o console do Worker.", false);
     }
 
     const scope = encodeURIComponent("cart-write shipping-generate shipping-calculate");
@@ -273,8 +271,7 @@ async function handleMelhorEnvioAuthorize(request, env) {
     return Response.redirect(authorizeUrl, 302);
   } catch (err) {
     console.error("melhorenvio authorize:", err);
-    // DEBUG TEMPORÁRIO — remover depois de diagnosticar.
-    return melhorEnvioMessagePage(`Erro interno ao iniciar a conexão. DEBUG (catch): ${err.message || err}`, false);
+    return melhorEnvioMessagePage("Erro interno ao iniciar a conexão. Veja o console do Worker.", false);
   }
 }
 
