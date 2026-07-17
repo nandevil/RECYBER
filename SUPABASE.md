@@ -684,6 +684,31 @@ Depois de rodar isso, configure os secrets do Worker (veja
 > provavelmente foi criado em produção; troque essa variável pra
 > `https://melhorenvio.com.br` e publique de novo.
 
+## Passo 22 — Serviço padrão de envio (geração automática de etiqueta)
+
+Adiciona a coluna que falta pra `shipping_settings` guardar qual
+serviço (transportadora + modalidade, ex: Correios PAC) usar por
+padrão ao inserir a etiqueta no carrinho do Melhor Envio, assim que um
+pagamento é aprovado. Sem essa coluna preenchida, a etiqueta
+simplesmente não é gerada (fica só um aviso no log do Worker) — o
+pedido continua sendo marcado como "pago" normalmente. No **SQL
+Editor**, cole e rode:
+
+```sql
+alter table public.shipping_settings
+  add column if not exists melhorenvio_service_id int;
+```
+
+> O ID do serviço você encontra no painel do Melhor Envio (em
+> Configurações → Serviços, ou parecido — cada transportadora
+> habilitada na sua conta tem um número ao lado). Preencha esse número
+> na aba "Configurações de Envio" do painel.
+>
+> O endereço de remetente (nome, telefone, CPF, endereço da loja)
+> ficou fixo direto no `worker.js` (constante `MELHORENVIO_SENDER`),
+> a pedido do dono da loja — se mudar de endereço no futuro, precisa
+> editar o código, não tem tela no painel pra isso ainda.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

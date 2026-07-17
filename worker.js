@@ -174,6 +174,15 @@ async function handleInfinitePayWebhook(request, env) {
       return jsonResponse({ success: false }, 502);
     }
 
+    /* Gera a etiqueta no carrinho do Melhor Envio em segundo plano —
+       nunca deve derrubar a confirmação de pagamento pro cliente, por
+       isso tem seu próprio try/catch e não afeta a resposta abaixo. */
+    try {
+      await createMelhorEnvioCartEntry(order_nsu, env);
+    } catch (err) {
+      console.error("Melhor Envio (pós-pagamento):", err);
+    }
+
     return jsonResponse({ success: true });
   } catch (err) {
     console.error("webhook infinitepay:", err);
@@ -359,4 +368,220 @@ async function handleMelhorEnvioStatus(request, env) {
     console.error("melhorenvio status:", err);
     return jsonResponse({ connected: false });
   }
+}
+
+/* Endereço fixo da loja (remetente) — SUPABASE.md Passo 22 documenta
+   como isso poderia virar configurável pelo painel no futuro; por
+   ora fica fixo aqui, a pedido do dono da loja. */
+const MELHORENVIO_SENDER = {
+  name: "Re.cyber",
+  phone: "22999390065",
+  email: "anandalage18@hotmail.com",
+  document: "14997264733",
+  company_document: "",
+  state_register: "",
+  address: "Avenida Gladstone José De Oliveira",
+  complement: "",
+  number: "355",
+  district: "Praça Da Bandeira",
+  city: "Araruama",
+  country_id: "BR",
+  postal_code: "28979660",
+  state_abbr: "RJ"
+};
+
+/* Garante um access_token válido — renova sozinho com o refresh_token
+   quando estiver perto de expirar (a InfinitePay já ensinou a lição:
+   nunca confiar que um token "vai durar", sempre checar antes de usar). */
+async function getMelhorEnvioAccessToken(env) {
+  const res = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/melhorenvio_tokens?id=eq.1&select=access_token,refresh_token,expires_at`,
+    { headers: supaHeaders(env) }
+  );
+  if (!res.ok) throw new Error("Não foi possível ler o token do Melhor Envio no Supabase.");
+  const rows = await res.json();
+  const row = rows[0];
+  if (!row || !row.access_token) throw new Error("Melhor Envio não conectado ainda.");
+
+  const expiresSoon = !row.expires_at || new Date(row.expires_at).getTime() - Date.now() < 5 * 60 * 1000;
+  if (!expiresSoon) return row.access_token;
+
+  if (!row.refresh_token) throw new Error("Token do Melhor Envio expirado, sem refresh_token salvo.");
+
+  const refreshRes = await fetch(`${env.MELHORENVIO_BASE_URL}/oauth/token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+      "User-Agent": "Re.cyber (atendimento@recyber.com.br)"
+    },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      client_id: env.MELHORENVIO_CLIENT_ID,
+      client_secret: env.MELHORENVIO_CLIENT_SECRET,
+      refresh_token: row.refresh_token
+    })
+  });
+  if (!refreshRes.ok) {
+    console.error("Melhor Envio — falha ao renovar token:", refreshRes.status, await refreshRes.text());
+    throw new Error("Não foi possível renovar o token do Melhor Envio.");
+  }
+  const tokenData = await refreshRes.json();
+  const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
+
+  await fetch(`${env.SUPABASE_URL}/rest/v1/melhorenvio_tokens?id=eq.1`, {
+    method: "PATCH",
+    headers: { ...supaHeaders(env), Prefer: "return=minimal" },
+    body: JSON.stringify({
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token || row.refresh_token,
+      expires_at: expiresAt,
+      updated_at: new Date().toISOString()
+    })
+  });
+
+  return tokenData.access_token;
+}
+
+/* Monta os volumes: um objeto idêntico por PEÇA comprada (não por
+   linha do pedido) — pedido com 3 peças = 3 volumes, usando sempre a
+   medida padrão configurada no painel. Correios/J&T/Loggi não aceitam
+   múltiplos volumes numa etiqueta só; nesse caso funde tudo num único
+   volume (peso somado, maior dimensão de cada eixo) como fallback. */
+function buildMelhorEnvioVolumes(items, settings, mergeIntoOne) {
+  const totalQty = items.reduce((n, i) => n + i.qty, 0);
+  const base = {
+    height: Number(settings.height_cm),
+    width: Number(settings.width_cm),
+    length: Number(settings.length_cm),
+    weight: Number(settings.weight_kg)
+  };
+  if (mergeIntoOne) {
+    return [{
+      height: base.height,
+      width: base.width,
+      length: base.length * totalQty,
+      weight: Number((base.weight * totalQty).toFixed(3))
+    }];
+  }
+  return Array.from({ length: totalQty }, () => ({ ...base }));
+}
+
+function onlyDigits(v) {
+  return (v || "").replace(/\D/g, "");
+}
+
+async function buildMelhorEnvioCartPayload(order, settings, mergeVolumes) {
+  return {
+    service: Number(settings.melhorenvio_service_id),
+    from: MELHORENVIO_SENDER,
+    to: {
+      name: order.customer.nome,
+      phone: onlyDigits(order.customer.telefone),
+      email: order.customer.email,
+      document: onlyDigits(order.customer.cpf),
+      company_document: "",
+      state_register: "ISENTO",
+      address: order.customer.logradouro,
+      complement: order.customer.complemento || "",
+      number: order.customer.numero,
+      district: order.customer.bairro,
+      city: order.customer.cidade || "",
+      country_id: "BR",
+      postal_code: onlyDigits(order.customer.cep),
+      state_abbr: order.customer.uf || ""
+    },
+    products: order.items.map(i => ({
+      name: i.name,
+      quantity: String(i.qty),
+      unitary_value: String(i.price)
+    })),
+    volumes: buildMelhorEnvioVolumes(order.items, settings, mergeVolumes),
+    options: {
+      insurance_value: Number(order.total) || 0,
+      receipt: false,
+      own_hand: false,
+      reverse: false,
+      non_commercial: true,
+      platform: "Re.cyber",
+      tags: [{ tag: order.id, url: `https://recyber.com.br/?pedido=${encodeURIComponent(order.id)}` }]
+    }
+  };
+}
+
+/* Chamada de fato pra API do Melhor Envio, com uma tentativa de
+   fallback (funde os volumes em um só) se a primeira bater na
+   restrição de "múltiplos volumes não suportados" de certas
+   transportadoras — evita ter que adivinhar de antemão qual serviço
+   aceita ou não. */
+async function postMelhorEnvioCart(payload, accessToken, env) {
+  return fetch(`${env.MELHORENVIO_BASE_URL}/api/v2/me/cart`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "User-Agent": "Re.cyber (atendimento@recyber.com.br)"
+    },
+    body: JSON.stringify(payload)
+  });
+}
+
+/* Ponto de entrada chamado pelo webhook de pagamento aprovado. Busca
+   o pedido completo + as configurações de envio, monta o payload e
+   insere no carrinho do Melhor Envio. Loga qualquer problema sem
+   nunca lançar erro pra fora (quem chama já engole exceções, mas
+   melhor deixar explícito aqui também). */
+async function createMelhorEnvioCartEntry(orderId, env) {
+  const [orderRes, settingsRes] = await Promise.all([
+    fetch(`${env.SUPABASE_URL}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=*`, { headers: supaHeaders(env) }),
+    fetch(`${env.SUPABASE_URL}/rest/v1/shipping_settings?id=eq.1&select=*`, { headers: supaHeaders(env) })
+  ]);
+  if (!orderRes.ok || !settingsRes.ok) {
+    console.error("Melhor Envio — falha ao buscar pedido/configurações:", await orderRes.text().catch(() => ""), await settingsRes.text().catch(() => ""));
+    return;
+  }
+  const orders = await orderRes.json();
+  const settingsRows = await settingsRes.json();
+  const orderRow = orders[0];
+  const settings = settingsRows[0];
+
+  if (!orderRow) { console.error("Melhor Envio — pedido não encontrado:", orderId); return; }
+  if (!settings || !settings.melhorenvio_service_id) {
+    console.warn("Melhor Envio — serviço padrão não configurado (Configurações de Envio no painel). Etiqueta não gerada para", orderId);
+    return;
+  }
+
+  const order = { id: orderRow.id, total: orderRow.total, customer: orderRow.customer, items: orderRow.items };
+
+  let accessToken;
+  try {
+    accessToken = await getMelhorEnvioAccessToken(env);
+  } catch (err) {
+    console.error("Melhor Envio — token indisponível:", err.message);
+    return;
+  }
+
+  const totalQty = order.items.reduce((n, i) => n + i.qty, 0);
+  let payload = await buildMelhorEnvioCartPayload(order, settings, false);
+  let res = await postMelhorEnvioCart(payload, accessToken, env);
+
+  if (!res.ok && totalQty > 1) {
+    const detail = await res.text();
+    if (/volume/i.test(detail)) {
+      console.warn("Melhor Envio — transportadora não aceita múltiplos volumes, tentando com volume único:", detail);
+      payload = await buildMelhorEnvioCartPayload(order, settings, true);
+      res = await postMelhorEnvioCart(payload, accessToken, env);
+    } else {
+      console.error("Melhor Envio — falha ao inserir no carrinho:", res.status, detail);
+      return;
+    }
+  }
+
+  if (!res.ok) {
+    console.error("Melhor Envio — falha ao inserir no carrinho:", res.status, await res.text());
+    return;
+  }
+
+  console.log("Melhor Envio — etiqueta inserida no carrinho com sucesso para", orderId);
 }

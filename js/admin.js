@@ -142,7 +142,9 @@ function buildEmailHtml(title, bodyText, imageUrl) {
   const imageHtml = imageUrl
     ? `<img src="${imageUrl}" alt="" style="width:100%;border-radius:8px;border:1.5px solid #161616;margin-bottom:20px;display:block;">`
     : "";
-  return `
+  return `<!doctype html>
+    <html><head><meta charset="UTF-8"></head>
+    <body style="margin:0;">
     <div style="background:#0e0e0e;padding:32px 16px;font-family:'Courier New',monospace;">
       <div style="max-width:480px;margin:0 auto;background:#ffffff;border:2px solid #161616;border-radius:10px;padding:28px;">
         <p style="font-family:monospace;font-weight:bold;font-size:15px;letter-spacing:1px;margin:0 0 20px;">RE<span style="color:#2f8f4e;">.</span>CYBER</p>
@@ -152,7 +154,8 @@ function buildEmailHtml(title, bodyText, imageUrl) {
         <hr style="border:none;border-top:1px solid #dededd;margin:24px 0 16px;">
         <p style="font-size:11px;color:#8a8a86;margin:0;">Re.cyber — Slow Fashion Brechó · recyber.com.br</p>
       </div>
-    </div>`;
+    </div>
+    </body></html>`;
 }
 
 /* Envia o e-mail de verdade via Resend (rota /api/send-email do
@@ -1481,6 +1484,7 @@ async function setupShippingSettingsForm() {
   document.getElementById("ss-largura").value = data.width_cm;
   document.getElementById("ss-comprimento").value = data.length_cm;
   document.getElementById("ss-peso").value = data.weight_kg;
+  document.getElementById("ss-servico").value = data.melhorenvio_service_id || "";
 
   refreshMelhorEnvioStatus();
 }
@@ -1522,11 +1526,13 @@ document.getElementById("shipping-settings-form").addEventListener("submit", asy
     const { data: sessionData } = await sb.auth.getSession();
     if (!sessionData.session) throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
 
+    const servicoValue = document.getElementById("ss-servico").value.trim();
     const { error } = await sb.from("shipping_settings").update({
       height_cm: Number(document.getElementById("ss-altura").value) || 0,
       width_cm: Number(document.getElementById("ss-largura").value) || 0,
       length_cm: Number(document.getElementById("ss-comprimento").value) || 0,
       weight_kg: Number(document.getElementById("ss-peso").value) || 0,
+      melhorenvio_service_id: servicoValue ? Number(servicoValue) : null,
       updated_at: new Date().toISOString()
     }).eq("id", 1);
     if (error) throw error;
