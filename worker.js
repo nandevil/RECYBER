@@ -414,7 +414,8 @@ async function handleMelhorEnvioQuoteDebug(request, env) {
     const payload = {
       from: { postal_code: MELHORENVIO_SENDER.postal_code },
       to: { postal_code: "20040020" },
-      products: [{ id: "1", width: 15, height: 15, length: 15, weight: 0.5, insurance_value: 50, quantity: 1 }]
+      products: [{ id: "1", width: 15, height: 15, length: 15, weight: 0.5, insurance_value: 50, quantity: 1 }],
+      services: "1,2,3,4,17,31,32,34,33"
     };
     const res = await fetch(`${env.MELHORENVIO_BASE_URL}/api/v2/me/shipment/calculate`, {
       method: "POST",
