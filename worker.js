@@ -236,7 +236,7 @@ async function sendPaymentConfirmedEmail(orderId, env) {
         <p style="font-family:monospace;font-weight:bold;font-size:15px;letter-spacing:1px;margin:0 0 20px;">RE<span style="color:#2f8f4e;">.</span>CYBER</p>
         <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">Pagamento confirmado — ${order.id}</h1>
         <div style="font-size:14px;line-height:1.6;color:#161616;">
-          <p style="margin:0;">Parabéns pela compra! Seu código de rastreio será enviado por e-mail assim que o produto for postado. Fique de olho: ele pode ir para a caixa de spam ou lixo eletrônico.</p>
+          <p style="margin:0;">Parabéns pela compra! Seu código de rastreio será enviado por e-mail assim que o produto for postado. Fique de olho: ele pode ir para a caixa de spam ou lixo eletrônico. O e-mail será enviado pela Melhor Envio.</p>
         </div>
         <hr style="border:none;border-top:1px solid #dededd;margin:24px 0 16px;">
         <p style="font-size:11px;color:#8a8a86;margin:0;">Re.cyber — Slow Fashion Brechó · recyber.com.br</p>

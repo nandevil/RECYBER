@@ -348,7 +348,7 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
   const pedido = params.get("pedido");
   if (!pedido) return;
   document.getElementById("success-text").textContent =
-    "Parabéns pela compra! Seu código de rastreio será enviado por e-mail assim que o produto for postado. Fique de olho: ele pode ir para a caixa de spam ou lixo eletrônico.";
+    "Parabéns pela compra! Seu código de rastreio será enviado por e-mail assim que o produto for postado. Fique de olho: ele pode ir para a caixa de spam ou lixo eletrônico. O e-mail será enviado pela Melhor Envio.";
   document.getElementById("success-overlay").classList.add("open");
   params.delete("pedido");
   const rest = params.toString();
