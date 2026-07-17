@@ -39,6 +39,9 @@ export default {
     if (url.pathname === "/api/melhorenvio/status" && request.method === "GET") {
       return handleMelhorEnvioStatus(request, env);
     }
+    if (url.pathname === "/api/melhorenvio/services" && request.method === "GET") {
+      return handleMelhorEnvioServices(request, env);
+    }
 
     return env.ASSETS.fetch(request);
   }
@@ -367,6 +370,34 @@ async function handleMelhorEnvioStatus(request, env) {
   } catch (err) {
     console.error("melhorenvio status:", err);
     return jsonResponse({ connected: false });
+  }
+}
+
+/* Lista as transportadoras/serviços disponíveis na conta conectada,
+   com o ID exato de cada um — a documentação do Melhor Envio avisa
+   que esses números NÃO são um catálogo fixo, cada conta pode ter
+   números diferentes, então é preciso perguntar direto pra API em
+   vez de adivinhar. Usado só pra descobrir o ID a colocar no painel
+   (Configurações de Envio); não expõe token nenhum. */
+async function handleMelhorEnvioServices(request, env) {
+  try {
+    const accessToken = await getMelhorEnvioAccessToken(env);
+    const res = await fetch(`${env.MELHORENVIO_BASE_URL}/api/v2/me/shipment/companies`, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+        "User-Agent": "Re.cyber (atendimento@recyber.com.br)"
+      }
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      console.error("Melhor Envio (services):", res.status, detail);
+      return jsonResponse({ error: "Não foi possível listar os serviços.", detail }, 502);
+    }
+    return jsonResponse(await res.json());
+  } catch (err) {
+    console.error("melhorenvio services:", err);
+    return jsonResponse({ error: err.message || "Erro interno." }, 500);
   }
 }
 
