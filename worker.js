@@ -42,9 +42,6 @@ export default {
     if (url.pathname === "/api/melhorenvio/services" && request.method === "GET") {
       return handleMelhorEnvioServices(request, env);
     }
-    if (url.pathname === "/api/melhorenvio/rank-debug" && request.method === "GET") {
-      return handleMelhorEnvioRankDebug(request, env);
-    }
 
     return env.ASSETS.fetch(request);
   }
@@ -400,29 +397,6 @@ async function handleMelhorEnvioServices(request, env) {
     return jsonResponse(await res.json());
   } catch (err) {
     console.error("melhorenvio services:", err);
-    return jsonResponse({ error: err.message || "Erro interno." }, 500);
-  }
-}
-
-/* DEBUG TEMPORÁRIO — testa o rankeamento por menor preço com um
-   pedido fake (CEP fixo de teste), sem depender de comprar de
-   verdade. Remover depois de confirmar que funciona. */
-async function handleMelhorEnvioRankDebug(request, env) {
-  try {
-    const accessToken = await getMelhorEnvioAccessToken(env);
-    const settingsRes = await fetch(`${env.SUPABASE_URL}/rest/v1/shipping_settings?id=eq.1&select=*`, { headers: supaHeaders(env) });
-    const settingsRows = await settingsRes.json();
-    const settings = settingsRows[0];
-    if (!settings) return jsonResponse({ error: "shipping_settings vazio." }, 400);
-
-    const fakeOrder = {
-      total: 50,
-      customer: { cep: "20040-020" },
-      items: [{ qty: 2 }]
-    };
-    const cheapest = await pickCheapestMelhorEnvioService(fakeOrder, settings, accessToken, env, false);
-    return jsonResponse(cheapest);
-  } catch (err) {
     return jsonResponse({ error: err.message || "Erro interno." }, 500);
   }
 }
