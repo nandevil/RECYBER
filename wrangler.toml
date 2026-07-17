@@ -7,9 +7,18 @@ compatibility_flags = ["nodejs_compat"]
 directory = "./"
 binding = "ASSETS"
 
-# Não são segredo — @ público da InfinitePay e o domínio base da API
-# do Melhor Envio (troque pra "https://melhorenvio.com.br" quando
-# confirmarmos que o app foi criado em produção, não sandbox).
+# Não são segredo — @ público da InfinitePay, domínio base da API do
+# Melhor Envio (troque pra "https://melhorenvio.com.br" quando
+# confirmarmos que o app foi criado em produção, não sandbox) e o
+# Client ID do app do Melhor Envio (não é sigiloso, só identifica a
+# integração — quem é sigiloso é o Client Secret, que continua só
+# como Secret no painel do Cloudflare, nunca aqui no código).
+#
+# IMPORTANTE: qualquer variável de texto simples que você adicionar
+# só pelo painel do Cloudflare (sem colocar aqui) SOME a cada novo
+# deploy — o wrangler.toml é reaplicado inteiro a cada push. Secrets
+# (tipo "Secret" no painel) não têm esse problema, só as "Text".
 [vars]
 INFINITEPAY_HANDLE = "recyber"
 MELHORENVIO_BASE_URL = "https://sandbox.melhorenvio.com.br"
+MELHORENVIO_CLIENT_ID = "27198"
