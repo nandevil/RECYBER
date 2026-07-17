@@ -468,7 +468,7 @@
   <div class="admin-tabs info-pills" id="admin-tabs">
     <button class="pill active" data-tab="leads">&#128230; Controle de Marketing</button>
     <button class="pill" data-tab="pedidos">&#128179; Monitoramento de Pagamento e de Informações</button>
-    <button class="pill" id="admin-shipping-settings-open" data-tab="promo" type="button">&#128230; Configurações de Envio</button>
+    <button class="pill" id="admin-shipping-settings-open" data-tab="envio" type="button">&#128230; Configurações de Envio</button>
     <button class="pill" data-tab="cadastro">&#128247; Cadastro de Peça</button>
     <button class="pill" data-tab="feedbacks">&#128172; Feedbacks</button>
     <button class="pill" data-tab="textos">&#128221; Textos do Modal</button>
@@ -834,8 +834,13 @@
         </label>
         <button type="submit" class="pill admin-upload-submit" id="free-shipping-form-submit">Salvar Frete Grátis</button>
       </form>
+    </div>
+  </section>
 
-      <h2 class="admin-leads-title admin-feedbacks-list-title" id="admin-shipping-settings-section">Configurações de Envio (Etiqueta)</h2>
+  <!-- ABA: CONFIGURAÇÕES DE ENVIO -->
+  <section class="admin-tab-panel" id="admin-tab-envio" hidden>
+    <div class="admin-upload">
+      <h2 class="admin-leads-title">Configurações de Envio (Etiqueta)</h2>
       <h3 class="admin-leads-subtitle">Medidas e peso padrão de UMA peça — usados pra gerar a etiqueta de envio. O frete cobrado do cliente continua fixo (R$18/R$10), isso aqui não muda o valor exibido no checkout.</h3>
 
       <p class="admin-login-error" id="shipping-settings-form-unavailable" hidden>

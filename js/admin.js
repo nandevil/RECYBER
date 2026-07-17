@@ -427,16 +427,9 @@ document.getElementById("admin-tabs").addEventListener("click", e => {
   const pill = e.target.closest("[data-tab]");
   if (!pill) return;
   document.querySelectorAll("#admin-tabs .pill").forEach(p => p.classList.toggle("active", p === pill));
-  ["leads", "pedidos", "cadastro", "feedbacks", "textos", "promo"].forEach(tab => {
+  ["leads", "pedidos", "cadastro", "feedbacks", "textos", "promo", "envio"].forEach(tab => {
     document.getElementById(`admin-tab-${tab}`).hidden = tab !== pill.dataset.tab;
   });
-
-  /* Atalho "📦 Configurações de Envio": além de trocar pra aba
-     "Promoção e Desconto", rola até a seção específica. */
-  if (pill.id === "admin-shipping-settings-open") {
-    document.getElementById("admin-shipping-settings-section")
-      .scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 });
 
 /* Arquiva (soft delete) o pedido: some do painel, mas o registro
