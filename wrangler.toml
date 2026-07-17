@@ -8,11 +8,13 @@ directory = "./"
 binding = "ASSETS"
 
 # Não são segredo — @ público da InfinitePay, domínio base da API do
-# Melhor Envio (troque pra "https://melhorenvio.com.br" quando
-# confirmarmos que o app foi criado em produção, não sandbox) e o
-# Client ID do app do Melhor Envio (não é sigiloso, só identifica a
+# Melhor Envio e o Client ID do app (não é sigiloso, só identifica a
 # integração — quem é sigiloso é o Client Secret, que continua só
 # como Secret no painel do Cloudflare, nunca aqui no código).
+#
+# O app foi criado em PRODUÇÃO (confirmado: sandbox retornava
+# "invalid_client" na troca de token), por isso o domínio abaixo é o
+# de produção, não o de sandbox.
 #
 # IMPORTANTE: qualquer variável de texto simples que você adicionar
 # só pelo painel do Cloudflare (sem colocar aqui) SOME a cada novo
@@ -20,7 +22,7 @@ binding = "ASSETS"
 # (tipo "Secret" no painel) não têm esse problema, só as "Text".
 [vars]
 INFINITEPAY_HANDLE = "recyber"
-MELHORENVIO_BASE_URL = "https://sandbox.melhorenvio.com.br"
+MELHORENVIO_BASE_URL = "https://melhorenvio.com.br"
 MELHORENVIO_CLIENT_ID = "27198"
 # URL pública do projeto Supabase — mesma já exposta no front-end
 # (js/supabase-client.js), não é segredo. O que É segredo de verdade
