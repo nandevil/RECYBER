@@ -42,6 +42,9 @@ export default {
     if (url.pathname === "/api/melhorenvio/services" && request.method === "GET") {
       return handleMelhorEnvioServices(request, env);
     }
+    if (url.pathname === "/api/melhorenvio/test-cart" && request.method === "GET") {
+      return handleMelhorEnvioTestCart(request, env);
+    }
 
     return env.ASSETS.fetch(request);
   }
@@ -397,6 +400,39 @@ async function handleMelhorEnvioServices(request, env) {
     return jsonResponse(await res.json());
   } catch (err) {
     console.error("melhorenvio services:", err);
+    return jsonResponse({ error: err.message || "Erro interno." }, 500);
+  }
+}
+
+/* DEBUG TEMPORÁRIO — dispara a mesma função que o webhook de
+   pagamento chama, pra testar a geração de etiqueta ponta a ponta com
+   um pedido de teste (?order=RC-...), sem precisar de uma compra de
+   verdade. Só marca o pedido como pago se ele já não estiver.
+   Remover depois de validar. */
+async function handleMelhorEnvioTestCart(request, env) {
+  try {
+    const orderId = new URL(request.url).searchParams.get("order");
+    if (!orderId) return jsonResponse({ error: "Passe ?order=ID do pedido de teste." }, 400);
+
+    await fetch(`${env.SUPABASE_URL}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}`, {
+      method: "PATCH",
+      headers: { ...supaHeaders(env), Prefer: "return=minimal" },
+      body: JSON.stringify({ payment_status: "pago" })
+    });
+
+    const logs = [];
+    const originalLog = console.log, originalWarn = console.warn, originalError = console.error;
+    console.log = (...a) => { logs.push(["log", ...a].join(" ")); originalLog(...a); };
+    console.warn = (...a) => { logs.push(["warn", ...a].join(" ")); originalWarn(...a); };
+    console.error = (...a) => { logs.push(["error", ...a].join(" ")); originalError(...a); };
+    try {
+      await createMelhorEnvioCartEntry(orderId, env);
+    } finally {
+      console.log = originalLog; console.warn = originalWarn; console.error = originalError;
+    }
+
+    return jsonResponse({ orderId, logs });
+  } catch (err) {
     return jsonResponse({ error: err.message || "Erro interno." }, 500);
   }
 }
