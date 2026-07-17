@@ -273,7 +273,8 @@ async function handleMelhorEnvioAuthorize(request, env) {
     return Response.redirect(authorizeUrl, 302);
   } catch (err) {
     console.error("melhorenvio authorize:", err);
-    return melhorEnvioMessagePage("Erro interno ao iniciar a conexão. Veja o console do Worker.", false);
+    // DEBUG TEMPORÁRIO — remover depois de diagnosticar.
+    return melhorEnvioMessagePage(`Erro interno ao iniciar a conexão. DEBUG (catch): ${err.message || err}`, false);
   }
 }
 
