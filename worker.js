@@ -42,6 +42,9 @@ export default {
     if (url.pathname === "/api/melhorenvio/services" && request.method === "GET") {
       return handleMelhorEnvioServices(request, env);
     }
+    if (url.pathname === "/api/melhorenvio/quote-debug" && request.method === "GET") {
+      return handleMelhorEnvioQuoteDebug(request, env);
+    }
 
     return env.ASSETS.fetch(request);
   }
@@ -397,6 +400,35 @@ async function handleMelhorEnvioServices(request, env) {
     return jsonResponse(await res.json());
   } catch (err) {
     console.error("melhorenvio services:", err);
+    return jsonResponse({ error: err.message || "Erro interno." }, 500);
+  }
+}
+
+/* DEBUG TEMPORÁRIO — só pra inspecionar o formato real da resposta do
+   endpoint de cálculo de frete antes de programar o rankeamento por
+   preço de verdade. Remover depois de confirmar os campos. Usa um CEP
+   de destino fixo de teste (não depende de pedido nenhum). */
+async function handleMelhorEnvioQuoteDebug(request, env) {
+  try {
+    const accessToken = await getMelhorEnvioAccessToken(env);
+    const payload = {
+      from: { postal_code: MELHORENVIO_SENDER.postal_code },
+      to: { postal_code: "20040020" },
+      products: [{ id: "1", width: 15, height: 15, length: 15, weight: 0.5, insurance_value: 50, quantity: 1 }]
+    };
+    const res = await fetch(`${env.MELHORENVIO_BASE_URL}/api/v2/me/shipment/calculate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+        "User-Agent": "Re.cyber (atendimento@recyber.com.br)"
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.text();
+    return new Response(data, { status: res.status, headers: { "Content-Type": "application/json" } });
+  } catch (err) {
     return jsonResponse({ error: err.message || "Erro interno." }, 500);
   }
 }
