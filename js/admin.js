@@ -70,7 +70,7 @@ const STATUS_LABELS = {
   enviado: "Enviado"
 };
 const PAYMENT_STATUS = ["pendente", "pago", "cancelado"];
-const PAYMENT_STATUS_LABELS = { pendente: "Pendente", pago: "Pago", cancelado: "Cancelado" };
+const PAYMENT_STATUS_LABELS = { pendente: "Pendente", pago: "Pagamento Concluído", cancelado: "Cancelado" };
 
 /* =====================================================
    MENSAGENS DE WHATSAPP + E-MAIL (configuráveis pelo painel, aba
@@ -542,8 +542,27 @@ document.getElementById("admin-close").addEventListener("click", () => {
   window.location.hash = "#catalogo";
 });
 
+/* Tempo real: assim que o pagamento é confirmado (webhook marca
+   payment_status="pago" no Supabase), o painel se atualiza sozinho,
+   sem precisar de F5 — exige a tabela "orders" com Realtime habilitado
+   (SUPABASE.md, Passo 23). */
+let ordersRealtimeChannel = null;
+function subscribeOrdersRealtime() {
+  if (!supabaseEnabled() || ordersRealtimeChannel) return;
+  ordersRealtimeChannel = sb
+    .channel("admin-orders-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => renderAdmin())
+    .subscribe();
+}
+function unsubscribeOrdersRealtime() {
+  if (!ordersRealtimeChannel) return;
+  sb.removeChannel(ordersRealtimeChannel);
+  ordersRealtimeChannel = null;
+}
+
 function showAdminPanel() {
   renderAdmin();
+  subscribeOrdersRealtime();
   setupProductForm();
   setupFeedbackForm();
   setupSettingsForm();
@@ -566,6 +585,7 @@ function showAdminLogin() {
   document.getElementById(supabaseEnabled() ? "admin-email" : "admin-password").focus();
 }
 function hideAdminViews() {
+  unsubscribeOrdersRealtime();
   document.getElementById("admin-panel").hidden = true;
   document.getElementById("admin-login").hidden = true;
   document.body.classList.remove("admin-open");

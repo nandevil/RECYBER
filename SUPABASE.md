@@ -709,6 +709,21 @@ alter table public.shipping_settings
 > a pedido do dono da loja — se mudar de endereço no futuro, precisa
 > editar o código, não tem tela no painel pra isso ainda.
 
+## Passo 23 — Painel atualiza sozinho quando o pagamento é confirmado
+
+Liga o Realtime do Supabase na tabela `orders` — sem isso, o painel só
+mostra o pedido como "Pagamento Concluído" depois que você atualizar a
+página (F5) manualmente. No **SQL Editor**, cole e rode:
+
+```sql
+alter publication supabase_realtime add table public.orders;
+```
+
+> Se der erro "relation is already member of publication", já estava
+> habilitado — pode ignorar. Isso não muda nenhuma permissão (RLS
+> continua valendo do mesmo jeito pra Realtime); só liga o aviso
+> automático de mudança pra quem já tem acesso de leitura.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

@@ -112,6 +112,18 @@ ul{list-style:none;}
 }
 #search-close{font-size:1.5rem;color:var(--ink);line-height:1;}
 
+/* ===================== AVISO: PEÇAS ÚNICAS ===================== */
+.unique-pieces-banner{
+  background:var(--ink);color:var(--paper);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:9px 16px;text-align:center;
+  font-size:.72rem;letter-spacing:.2px;
+}
+.unique-pieces-banner svg{width:13px;height:13px;flex-shrink:0;color:var(--accent);}
+@media (max-width:480px){
+  .unique-pieces-banner{font-size:.64rem;padding:8px 12px;gap:6px;}
+}
+
 /* ===================== HERO ===================== */
 .hero{border-bottom:2px solid var(--ink);}
 
@@ -1052,7 +1064,7 @@ body.admin-open{overflow:hidden;}
 
 /* ---- STATUS DE PAGAMENTO ---- */
 .pay-status-select{width:100%;font-size:.78rem;}
-.pay-status--pago{background:#e2f3e6;border-color:var(--accent);}
+.pay-status--pago{background:#e2f3e6;border-color:var(--accent);color:var(--accent-dark);font-weight:700;}
 .pay-status--cancelado{background:#f6e3e3;border-color:var(--danger);}
 
 /* ---- ADMINISTRAÇÃO DE LEADS ---- */
