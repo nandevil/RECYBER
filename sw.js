@@ -4,7 +4,7 @@
    /api/* (worker.js) nem chamadas de outra origem (Supabase, ViaCEP,
    InfinitePay, Resend) — essas sempre precisam de dado fresco da rede.
 ===================================================== */
-const CACHE_NAME = "recyber-shell-v1";
+const CACHE_NAME = "recyber-shell-v2";
 const APP_SHELL = [
   "/",
   "/css/style.css",
@@ -38,8 +38,13 @@ self.addEventListener("activate", event => {
   );
 });
 
-/* Stale-while-revalidate: responde na hora com o que tem em cache (se
-   tiver) e atualiza o cache em segundo plano pra próxima visita. */
+/* Rede primeiro, cache só como reserva pra quando estiver offline.
+   Já usamos stale-while-revalidate antes, mas isso servia a versão
+   antiga do JS/CSS na primeira visita depois de CADA deploy (só
+   atualizava em segundo plano, pra próxima vez) — péssimo pra um site
+   que muda de código toda hora. Como o admin quase sempre está online,
+   rede primeiro garante código sempre atualizado; cache entra só se a
+   rede falhar de verdade. */
 self.addEventListener("fetch", event => {
   const req = event.request;
   if (req.method !== "GET") return;
@@ -49,12 +54,11 @@ self.addEventListener("fetch", event => {
   if (url.pathname.startsWith("/api/")) return;
 
   event.respondWith(
-    caches.match(req).then(cached => {
-      const network = fetch(req).then(res => {
+    fetch(req)
+      .then(res => {
         if (res.ok) caches.open(CACHE_NAME).then(cache => cache.put(req, res.clone()));
         return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
+      })
+      .catch(() => caches.match(req))
   );
 });
