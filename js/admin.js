@@ -1132,7 +1132,20 @@ async function setupPromoForm() {
 
 /* Botão destacado "Ativar/Desativar Modo Promo" — atalho de um clique
    que liga/desliga a campanha sem precisar abrir e salvar o form
-   inteiro (os campos de desconto/datas continuam os últimos salvos). */
+   inteiro. IMPORTANTE: o visual do Modo Promo só aparece se
+   is_active=true E o horário atual estiver dentro de start_date/
+   end_date (mesma regra de isPromoWindowOpen() em promo-sync.js) —
+   por isso aqui sempre conferimos os dois, nunca só a flag "is_active"
+   isolada, senão o painel mente dizendo "ativo" com uma data já
+   vencida e o visual continua invisível pro cliente. */
+function isPromoRowWindowOpen(row) {
+  if (!row || !row.is_active) return false;
+  const now = new Date();
+  if (row.start_date && now < new Date(row.start_date)) return false;
+  if (row.end_date && now > new Date(row.end_date)) return false;
+  return true;
+}
+
 async function refreshPromoQuickStatus() {
   const statusEl = document.getElementById("promo-quick-status");
   const btn = document.getElementById("promo-quick-toggle");
@@ -1142,10 +1155,14 @@ async function refreshPromoQuickStatus() {
     return;
   }
   btn.disabled = false;
-  const { data, error } = await sb.from("promo_settings").select("is_active").eq("id", 1).maybeSingle();
-  const active = !error && data ? !!data.is_active : false;
-  btn.textContent = active ? "⏸️ Desativar Modo Promo" : "⚡ Ativar Modo Promo";
-  statusEl.textContent = active ? "Modo Promo está ATIVO no site agora." : "Modo Promo está desativado no site.";
+  const { data, error } = await sb.from("promo_settings").select("is_active,start_date,end_date").eq("id", 1).maybeSingle();
+  const open = !error && isPromoRowWindowOpen(data);
+  btn.textContent = open ? "⏸️ Desativar Modo Promo" : "⚡ Ativar Modo Promo";
+  if (!error && data && data.is_active && !open) {
+    statusEl.textContent = "⚠️ Marcado como ativo, mas fora do período configurado (Início/Término) — o site NÃO está mostrando o Modo Promo. Clique no botão pra ativar agora de verdade.";
+  } else {
+    statusEl.textContent = open ? "Modo Promo está ATIVO no site agora." : "Modo Promo está desativado no site.";
+  }
 }
 
 document.getElementById("promo-quick-toggle").addEventListener("click", async () => {
@@ -1156,16 +1173,26 @@ document.getElementById("promo-quick-toggle").addEventListener("click", async ()
     const { data: sessionData } = await sb.auth.getSession();
     if (!sessionData.session) throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
 
-    const { data, error: fetchError } = await sb.from("promo_settings").select("is_active").eq("id", 1).maybeSingle();
+    const { data, error: fetchError } = await sb.from("promo_settings").select("is_active,start_date,end_date").eq("id", 1).maybeSingle();
     if (fetchError) throw fetchError;
-    const nextActive = !(data && data.is_active);
+    const currentlyOpen = isPromoRowWindowOpen(data);
+    const nextActive = !currentlyOpen;
 
-    const { error } = await sb.from("promo_settings")
-      .update({ is_active: nextActive, updated_at: new Date().toISOString() })
-      .eq("id", 1);
+    /* Ativando: limpa Início/Término, senão uma data vencida (ou
+       futura) deixaria a flag "ligada" sem o visual aparecer — o
+       mesmo bug que gerou essa correção. Desativando: só desliga a
+       flag, sem mexer nas datas configuradas. */
+    const payload = { is_active: nextActive, updated_at: new Date().toISOString() };
+    if (nextActive) { payload.start_date = null; payload.end_date = null; }
+
+    const { error } = await sb.from("promo_settings").update(payload).eq("id", 1);
     if (error) throw error;
 
     document.getElementById("promo-active").checked = nextActive;
+    if (nextActive) {
+      document.getElementById("promo-start").value = "";
+      document.getElementById("promo-end").value = "";
+    }
     showToast(nextActive ? "Modo Promo ativado!" : "Modo Promo desativado.");
     if (typeof syncPromoState === "function") syncPromoState();
   } catch (err) {
