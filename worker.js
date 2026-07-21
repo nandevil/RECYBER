@@ -42,18 +42,6 @@ export default {
     if (url.pathname === "/api/melhorenvio/services" && request.method === "GET") {
       return handleMelhorEnvioServices(request, env);
     }
-    if (url.pathname === "/api/promo-force-now" && request.method === "GET") {
-      try {
-        const r = await fetch(`${env.SUPABASE_URL}/rest/v1/promo_settings?id=eq.1`, {
-          method: "PATCH",
-          headers: { ...supaHeaders(env), Prefer: "return=representation" },
-          body: JSON.stringify({ is_active: true, start_date: null, end_date: null, updated_at: new Date().toISOString() })
-        });
-        return new Response(await r.text(), { status: r.status, headers: { "Content-Type": "application/json" } });
-      } catch (err) {
-        return jsonResponse({ error: err.message }, 500);
-      }
-    }
 
     return env.ASSETS.fetch(request);
   }

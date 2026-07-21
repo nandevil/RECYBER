@@ -1170,6 +1170,11 @@ body.admin-open{overflow:hidden;}
 .promo-switch:checked::before{transform:translateX(20px);background:var(--paper);}
 
 .admin-promo-products-hint{margin-top:-10px;}
+.admin-promo-dates-hint{
+  font-size:.72rem;line-height:1.5;color:var(--accent-dark);
+  background:#e2f3e6;border:1.5px solid var(--accent);border-radius:8px;
+  padding:10px 14px;margin-bottom:14px;
+}
 .admin-promo-products{display:flex;flex-direction:column;gap:10px;}
 .admin-promo-item{
   display:flex;align-items:center;gap:12px;

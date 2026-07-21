@@ -764,17 +764,18 @@
           <span>Campanha ativa</span>
           <input type="checkbox" id="promo-active" class="promo-switch">
         </label>
+        <p class="admin-promo-dates-hint">⚠️ Deixe "Início" e "Término" em branco pra campanha valer a partir de agora, sem data pra acabar sozinha. Se preencher, o site só mostra o Modo Promo DENTRO desse período — mesmo com "Campanha ativa" marcado.</p>
         <div class="checkout-grid">
           <label class="field">
             <span>Desconto (%)</span>
             <input type="number" id="promo-discount" min="1" max="99" value="10">
           </label>
           <label class="field">
-            <span>Início</span>
+            <span>Início <em>(opcional)</em></span>
             <input type="datetime-local" id="promo-start">
           </label>
           <label class="field">
-            <span>Término</span>
+            <span>Término <em>(opcional)</em></span>
             <input type="datetime-local" id="promo-end">
           </label>
         </div>
