@@ -742,6 +742,35 @@ alter table public.products
 > peças cadastradas, aba "Cadastro de Peça" — útil pra vendas fora do
 > site, tipo Instagram ou pessoalmente).
 
+## Passo 25 — Cadastro de peça automatizado (fora do painel)
+
+Permite cadastrar peças sem abrir o painel/fazer login — usado quando
+você manda fotos + descrição direto na conversa e pede pra cadastrar
+automaticamente. **Não é a sua senha do painel**: é um token separado,
+só pra essa função específica, que você mesmo gera e guarda como
+Secret no Cloudflare (mesmo padrão do `RESEND_API_KEY`,
+`MELHORENVIO_CLIENT_SECRET` etc — nunca fica no código).
+
+1. No painel do Cloudflare: Workers & Pages → **recyber** → Settings
+   → Variables and Secrets → **+ Add**.
+2. Type: **Secret**. Name: `ADMIN_API_TOKEN`. Valor: qualquer texto
+   longo e aleatório (o token gerado pra essa conversa foi
+   `Rx5qK9Xyj79EoilxxPeVQVAxlKOKZLqhPqKMylKi1+A=` — pode usar esse ou
+   gerar outro).
+3. Salve/publique.
+
+> Esse token dá acesso só a **cadastrar peças** (rota
+> `/api/admin/add-product`) — não abre porta pra pedidos, pagamentos
+> nem qualquer outra parte do sistema. Ainda assim, trate como senha:
+> se desconfiar que vazou, troque o valor no Cloudflare (revoga o
+> antigo na hora).
+>
+> Fluxo de uso: salve as fotos da peça em `img/inbox/` (dentro da
+> pasta do projeto, sincronizada pelo OneDrive — dá pra jogar foto lá
+> direto do celular) e peça pra cadastrar; a automação lê os arquivos
+> dali, sobe pro Storage e insere a peça, sem precisar colar imagem no
+> chat nem abrir o painel.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

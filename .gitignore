@@ -30,3 +30,7 @@ desktop.ini
 # Logs
 *.log
 npm-debug.log*
+
+# Fotos de peças aguardando cadastro (não fazem parte do site publicado)
+img/inbox/*
+!img/inbox/.gitkeep

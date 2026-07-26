@@ -15,6 +15,9 @@
    - RESEND_API_KEY  (Resend, para /api/send-email — Passo 14 do SUPABASE.md)
    - MELHORENVIO_CLIENT_ID / MELHORENVIO_CLIENT_SECRET  (OAuth do
      aplicativo cadastrado no Melhor Envio — Passo 21 do SUPABASE.md)
+   - ADMIN_API_TOKEN  (token de automação de cadastro de peça —
+     NÃO é a senha do painel, é um segredo só pra essa rota, veja
+     Passo 25 do SUPABASE.md)
 ===================================================== */
 
 export default {
@@ -41,6 +44,9 @@ export default {
     }
     if (url.pathname === "/api/melhorenvio/services" && request.method === "GET") {
       return handleMelhorEnvioServices(request, env);
+    }
+    if (url.pathname === "/api/admin/add-product" && request.method === "POST") {
+      return handleAdminAddProduct(request, env);
     }
 
     return env.ASSETS.fetch(request);
@@ -778,4 +784,72 @@ async function createMelhorEnvioCartEntry(orderId, env) {
   }
 
   console.log("Melhor Envio — etiqueta inserida no carrinho com sucesso para", orderId);
+}
+
+/* =====================================================
+   CADASTRO AUTOMATIZADO DE PEÇA — rota protegida por token (não é a
+   senha do painel), usada pra permitir cadastrar peças fora do
+   navegador (via automação), sem exigir login interativo. Recebe as
+   fotos já em base64, sobe pro Storage e insere a peça, tudo com a
+   service_role key (mesmo nível de confiança do painel logado).
+===================================================== */
+async function handleAdminAddProduct(request, env) {
+  try {
+    const auth = request.headers.get("Authorization") || "";
+    if (!env.ADMIN_API_TOKEN || auth !== `Bearer ${env.ADMIN_API_TOKEN}`) {
+      return jsonResponse({ error: "Não autorizado." }, 401);
+    }
+
+    const body = await request.json();
+    const { name, price, size, category, description, tag, images } = body || {};
+    if (!name || !category) {
+      return jsonResponse({ error: "Faltam campos obrigatórios (name, category)." }, 400);
+    }
+
+    const imageUrls = [];
+    for (const img of (images || [])) {
+      const bytes = Uint8Array.from(atob(img.base64), c => c.charCodeAt(0));
+      const cleanName = (img.filename || "foto").replace(/[^a-zA-Z0-9.\-_]/g, "_");
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${cleanName}`;
+
+      const uploadRes = await fetch(`${env.SUPABASE_URL}/storage/v1/object/product-images/${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": img.contentType || "image/jpeg",
+          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
+        },
+        body: bytes
+      });
+      if (!uploadRes.ok) {
+        const detail = await uploadRes.text();
+        return jsonResponse({ error: "Falha ao subir imagem.", detail }, 502);
+      }
+      imageUrls.push(`${env.SUPABASE_URL}/storage/v1/object/public/product-images/${path}`);
+    }
+
+    const insertRes = await fetch(`${env.SUPABASE_URL}/rest/v1/products`, {
+      method: "POST",
+      headers: { ...supaHeaders(env), Prefer: "return=representation" },
+      body: JSON.stringify({
+        name,
+        price: Number(price) || 0,
+        size: size || "",
+        category,
+        description: description || "",
+        image_urls: imageUrls,
+        tag: tag || "novo"
+      })
+    });
+    if (!insertRes.ok) {
+      const detail = await insertRes.text();
+      return jsonResponse({ error: "Falha ao inserir produto.", detail }, 502);
+    }
+
+    const data = await insertRes.json();
+    return jsonResponse({ ok: true, product: data[0] });
+  } catch (err) {
+    console.error("admin add-product:", err);
+    return jsonResponse({ error: err.message || "Erro interno." }, 500);
+  }
 }
