@@ -211,6 +211,7 @@
         <li><a href="#categoria-camisas" data-filter="camisas">Camisas</a></li>
         <li><a href="#categoria-blusas" data-filter="blusas">Blusas</a></li>
         <li><a href="#categoria-saias" data-filter="saias">Saias</a></li>
+        <li><a href="#categoria-vestidos" data-filter="vestidos">Vestidos</a></li>
         <li><a href="#categoria-shorts" data-filter="shorts">Shorts</a></li>
         <li><a href="#categoria-calcas" data-filter="calcas">Calças</a></li>
         <li><a href="#categoria-casacos-sobreposicoes" data-filter="casacos-sobreposicoes">Casacos e Sobreposições</a></li>
@@ -564,8 +565,15 @@
           <span>Descrição</span>
           <textarea id="pf-description" rows="3" placeholder="Estado de conservação, detalhes da peça..."></textarea>
         </label>
-        <button type="submit" class="pill admin-upload-submit" id="product-form-submit">Cadastrar Peça</button>
+        <div class="admin-product-form-actions">
+          <button type="submit" class="pill admin-upload-submit" id="product-form-submit">Cadastrar Peça</button>
+          <button type="button" class="pill" id="product-form-cancel-edit" hidden>Cancelar edição</button>
+        </div>
       </form>
+
+      <h3 class="admin-leads-subtitle admin-feedbacks-list-title">Peças Cadastradas</h3>
+      <div class="admin-products-list" id="admin-products-list"></div>
+      <p class="empty-state" id="admin-products-empty" hidden>Nenhuma peça cadastrada ainda.</p>
     </div>
   </section>
 

@@ -443,6 +443,20 @@ body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
   transition:background .15s,border-color .15s;
 }
 .add-btn:hover{background:var(--accent);border-color:var(--accent);}
+.add-btn:disabled{background:var(--grey-light);border-color:var(--grey-light);color:var(--grey);cursor:not-allowed;}
+
+/* ===================== PEÇA ESGOTADA ===================== */
+.product-sold-overlay{
+  position:absolute;inset:0;z-index:2;
+  background:rgba(22,22,22,.55);
+  display:flex;align-items:center;justify-content:center;
+}
+.product-sold-overlay span{
+  font-family:var(--font-pixel);font-size:.7rem;letter-spacing:1px;
+  color:#fff;background:var(--ink);
+  padding:8px 16px;border-radius:3px;border:1.5px solid #fff;
+  transform:rotate(-8deg);
+}
 
 /* ===================== ABOUT ===================== */
 .about{
@@ -776,7 +790,7 @@ body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
   max-width:700px;width:100%;max-height:88vh;overflow-y:auto;
   display:grid;grid-template-columns:1fr 1fr;
 }
-.modal-image{overflow:hidden;border-right:2px solid var(--ink);border-radius:10px 0 0 10px;display:flex;flex-direction:column;}
+.modal-image{position:relative;overflow:hidden;border-right:2px solid var(--ink);border-radius:10px 0 0 10px;display:flex;flex-direction:column;}
 .modal-image img#modal-main-image{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;}
 .modal-gallery{
   display:flex;gap:6px;padding:8px;overflow-x:auto;
@@ -1193,6 +1207,16 @@ body.admin-open{overflow:hidden;}
   font-size:.62rem;text-transform:uppercase;letter-spacing:.4px;color:var(--grey);
   flex-shrink:0;
 }
+
+.admin-product-form-actions{display:flex;gap:10px;align-items:center;}
+.admin-products-list{display:flex;flex-direction:column;gap:10px;margin-bottom:10px;}
+.admin-product-item{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  border:1.5px solid var(--grey-light);border-radius:10px;
+  padding:10px 14px;background:var(--paper-alt);
+}
+.admin-product-item--sold{opacity:.6;}
+.admin-product-item-actions{display:flex;gap:8px;flex-shrink:0;}
 
 /* ===================== ADMIN — RESPONSIVIDADE ===================== */
 

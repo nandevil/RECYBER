@@ -640,6 +640,7 @@ function setupProductForm() {
     unavailable.hidden = true;
     submitBtn.disabled = false;
   }
+  renderProductsList();
 }
 
 /* Fotos selecionadas ficam nesta lista (não no <input>) para permitir
@@ -669,10 +670,36 @@ document.getElementById("pf-image-previews").addEventListener("click", e => {
   renderProductImagePreviews();
 });
 
+/* Quando não-nulo, o submit do formulário faz UPDATE nessa peça em
+   vez de INSERT de uma peça nova ("modo edição"). */
+let editingProductId = null;
+
 function resetProductForm() {
   document.getElementById("product-form").reset();
   selectedProductImages = [];
+  editingProductId = null;
+  document.getElementById("product-form-submit").textContent = "Cadastrar Peça";
+  document.getElementById("product-form-cancel-edit").hidden = true;
   renderProductImagePreviews();
+}
+
+document.getElementById("product-form-cancel-edit").addEventListener("click", resetProductForm);
+
+/* Preenche o formulário com os dados da peça pra editar. Fotos
+   existentes não são recarregadas no input — só são substituídas se
+   o admin escolher novas fotos; senão, o update mantém as atuais. */
+function startEditProduct(p) {
+  editingProductId = p.id;
+  document.getElementById("pf-name").value = p.name;
+  document.getElementById("pf-price").value = p.price;
+  document.getElementById("pf-size").value = p.size === "Único" ? "" : p.size;
+  document.getElementById("pf-category").value = p.category;
+  document.getElementById("pf-description").value = p.description;
+  selectedProductImages = [];
+  renderProductImagePreviews();
+  document.getElementById("product-form-submit").textContent = "Salvar Alterações";
+  document.getElementById("product-form-cancel-edit").hidden = false;
+  document.getElementById("product-form").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 /* Traduz erros comuns do Supabase para mensagens acionáveis.
@@ -707,21 +734,16 @@ document.getElementById("product-form").addEventListener("submit", async e => {
   e.preventDefault();
   if (!supabaseEnabled()) return;
 
+  const isEditing = !!editingProductId;
   const submitBtn = document.getElementById("product-form-submit");
   const unavailable = document.getElementById("product-form-unavailable");
 
   submitBtn.disabled = true;
-  submitBtn.textContent = "Cadastrando...";
+  submitBtn.textContent = isEditing ? "Salvando..." : "Cadastrando...";
   unavailable.hidden = true;
 
   try {
     const { data: sessionData } = await sb.auth.getSession();
-    console.log("Sessão no momento do envio:", sessionData.session ? {
-      userId: sessionData.session.user.id,
-      email: sessionData.session.user.email,
-      role: sessionData.session.user.role,
-      expiresAt: new Date(sessionData.session.expires_at * 1000).toISOString()
-    } : "NENHUMA SESSÃO ATIVA");
     if (!sessionData.session) {
       throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
     }
@@ -734,28 +756,130 @@ document.getElementById("product-form").addEventListener("submit", async e => {
       imageUrls.push(sb.storage.from("product-images").getPublicUrl(path).data.publicUrl);
     }
 
-    const { error: insertError } = await sb.from("products").insert({
+    const payload = {
       name: document.getElementById("pf-name").value.trim(),
       price: Number(document.getElementById("pf-price").value) || 0,
       size: document.getElementById("pf-size").value.trim(),
       category: document.getElementById("pf-category").value,
-      description: document.getElementById("pf-description").value.trim(),
-      image_urls: imageUrls,
-      tag: "novo"
-    });
-    if (insertError) { insertError.step = "insert"; throw insertError; }
+      description: document.getElementById("pf-description").value.trim()
+    };
+    /* Só mexe nas fotos se o admin escolheu novas — senão mantém as
+       que a peça já tinha (editar não é obrigado a reenviar fotos). */
+    if (imageUrls.length > 0) payload.image_urls = imageUrls;
+    if (!isEditing) {
+      payload.image_urls = imageUrls;
+      payload.tag = "novo";
+    }
+
+    const { error: saveError } = isEditing
+      ? await sb.from("products").update(payload).eq("id", editingProductId)
+      : await sb.from("products").insert(payload);
+    if (saveError) { saveError.step = "insert"; throw saveError; }
 
     resetProductForm();
-    showToast("Peça cadastrada com sucesso");
+    showToast(isEditing ? "Peça atualizada com sucesso" : "Peça cadastrada com sucesso");
     if (typeof syncCatalog === "function") syncCatalog();
+    renderProductsList();
   } catch (err) {
     console.error("Cadastro de peça:", err);
     unavailable.hidden = false;
     unavailable.textContent = describeProductFormError(err);
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = "Cadastrar Peça";
+    submitBtn.textContent = editingProductId ? "Salvar Alterações" : "Cadastrar Peça";
   }
+});
+
+/* Lista de peças já cadastradas, com editar/remover/marcar vendida —
+   reaproveita o padrão visual da lista "Modo Promo por peça". */
+async function renderProductsList() {
+  const list = document.getElementById("admin-products-list");
+  const empty = document.getElementById("admin-products-empty");
+  if (!list) return;
+  if (!supabaseEnabled()) {
+    list.innerHTML = "";
+    empty.hidden = true;
+    return;
+  }
+  const { data, error } = await sb.from("products").select("*").order("created_at", { ascending: false });
+  if (error) {
+    console.error("Listar peças cadastradas:", error);
+    list.innerHTML = "";
+    empty.hidden = true;
+    return;
+  }
+  const products = data.map(rowToProduct);
+  empty.hidden = products.length !== 0;
+  list.innerHTML = products.map(p => `
+    <div class="admin-product-item${p.isSold ? " admin-product-item--sold" : ""}" data-product-id="${p.id}">
+      <img class="admin-promo-photo" src="${p.image || ""}" alt="${p.name}" onerror="this.style.visibility='hidden'">
+      <div class="admin-promo-body">
+        <span class="admin-promo-name">${p.name}</span>
+        <span class="admin-promo-meta">${labelCategory(p.category)} · ${money(p.price)}${p.isSold ? " · Esgotado" : ""}</span>
+      </div>
+      <label class="admin-promo-switch-field">
+        <span>Vendido</span>
+        <input type="checkbox" class="promo-switch admin-product-sold-toggle" data-product-id="${p.id}" ${p.isSold ? "checked" : ""}>
+      </label>
+      <div class="admin-product-item-actions">
+        <button type="button" class="pill pill-sm admin-product-edit" data-product-id="${p.id}">Editar</button>
+        <button type="button" class="pill pill-sm admin-product-remove" data-product-id="${p.id}">Remover</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+document.getElementById("admin-products-list").addEventListener("click", async e => {
+  const editBtn = e.target.closest(".admin-product-edit");
+  const removeBtn = e.target.closest(".admin-product-remove");
+  if (!editBtn && !removeBtn) return;
+
+  const id = (editBtn || removeBtn).dataset.productId;
+
+  if (editBtn) {
+    const { data, error } = await sb.from("products").select("*").eq("id", id).maybeSingle();
+    if (error || !data) {
+      showToast("Erro ao carregar a peça pra edição");
+      return;
+    }
+    startEditProduct(rowToProduct(data));
+    return;
+  }
+
+  if (removeBtn) {
+    if (!confirm("Tem certeza que deseja excluir permanentemente esta peça?")) return;
+    removeBtn.disabled = true;
+    const { error } = await sb.from("products").delete().eq("id", id);
+    if (error) {
+      console.error("Remover peça:", error);
+      showToast("Erro ao remover a peça");
+      removeBtn.disabled = false;
+      return;
+    }
+    if (editingProductId === id) resetProductForm();
+    showToast("Peça removida");
+    renderProductsList();
+    if (typeof syncCatalog === "function") syncCatalog();
+  }
+});
+
+document.getElementById("admin-products-list").addEventListener("change", async e => {
+  const toggle = e.target.closest(".admin-product-sold-toggle");
+  if (!toggle) return;
+  const id = toggle.dataset.productId;
+  toggle.disabled = true;
+
+  const { error } = await sb.from("products").update({ is_sold: toggle.checked }).eq("id", id);
+  if (error) {
+    console.error("Marcar peça como vendida:", error);
+    showToast("Erro ao atualizar");
+    toggle.checked = !toggle.checked;
+  } else {
+    showToast(toggle.checked ? "Peça marcada como esgotada" : "Peça marcada como disponível");
+    renderProductsList();
+    if (typeof syncCatalog === "function") syncCatalog();
+  }
+  toggle.disabled = false;
 });
 
 /* =====================================================

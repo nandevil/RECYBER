@@ -25,6 +25,7 @@ const CATEGORY_ICON_PATHS = {
   camisas: HANGER_PATH,
   blusas: HANGER_PATH,
   saias: "M7 3h10l2 17H5L7 3zM9 3v5a3 3 0 006 0V3",
+  vestidos: "M9 3h6l1 5-2 1 3 11H7l3-11-2-1 1-5z",
   shorts: "M4 4h16l-1 7-2 9h-4l-1-8-1 8H7L5 11 4 4z",
   calcas: "M6 3h12l1 18h-5l-1-11-1 11H7L6 3z",
   "casacos-sobreposicoes": HANGER_PATH,
@@ -36,6 +37,7 @@ const CATEGORY_BG = {
   camisas: "#dcdcd8",
   blusas: "#d9dbd6",
   saias: "#dbd6da",
+  vestidos: "#ded6d9",
   shorts: "#d8dcd9",
   calcas: "#d6d9dc",
   "casacos-sobreposicoes": "#dad7d3",
@@ -183,17 +185,21 @@ function renderGrid() {
   list.forEach((p, idx) => {
     const img = p.image || placeholderImage(p.category, idx);
     const onPromo = isPromoWindowOpen() && p.isPromo;
-    const badgeHtml = onPromo
+    const badgeHtml = p.isSold
+      ? ""
+      : onPromo
       ? `<span class="product-badge product-badge--promo">-${promoState.discountPercent}%</span>`
       : (p.tag ? `<span class="product-badge">${p.tag === "novo" ? "Novo" : "Promo"}</span>` : "");
     const priceHtml = onPromo
       ? `<span class="product-price product-price--promo"><s class="product-price-original">${money(p.price)}</s>${money(effectivePrice(p))}</span>`
       : `<span class="product-price">${money(p.price)}</span>`;
+    const soldOverlayHtml = p.isSold ? `<div class="product-sold-overlay"><span>Esgotado</span></div>` : "";
     const card = document.createElement("div");
     card.className = "product-card";
     card.innerHTML = `
       <div class="product-thumb" data-id="${p.id}">
         ${badgeHtml}
+        ${soldOverlayHtml}
         <img src="${img}" alt="${p.name}" loading="lazy">
       </div>
       <div class="product-info">
@@ -202,7 +208,7 @@ function renderGrid() {
         <span class="product-meta">Tam. ${p.size} · ${p.condition}</span>
         <div class="product-price-row">
           ${priceHtml}
-          <button class="add-btn" data-id="${p.id}" aria-label="Adicionar ao carrinho">+</button>
+          <button class="add-btn" data-id="${p.id}" aria-label="Adicionar ao carrinho" ${p.isSold ? "disabled" : ""}>${p.isSold ? "×" : "+"}</button>
         </div>
       </div>
     `;
@@ -212,7 +218,7 @@ function renderGrid() {
   grid.querySelectorAll(".product-thumb, .product-name").forEach(el => {
     el.addEventListener("click", () => openModal(el.dataset.id));
   });
-  grid.querySelectorAll(".add-btn").forEach(el => {
+  grid.querySelectorAll(".add-btn:not(:disabled)").forEach(el => {
     el.addEventListener("click", () => {
       addToCart(el.dataset.id, 1);
       showToast("Adicionado ao carrinho");
@@ -572,12 +578,14 @@ function openModal(id) {
   const idx = PRODUCTS.indexOf(p);
   const gallery = Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
   const img = gallery[0] || placeholderImage(p.category, idx);
+  const soldOverlayHtml = p.isSold ? `<div class="product-sold-overlay"><span>Esgotado</span></div>` : "";
   const thumbsHtml = gallery.length > 1 ? `
     <div class="modal-gallery">
       ${gallery.map((src, i) => `<button type="button" class="modal-gallery-thumb${i === 0 ? " active" : ""}" data-src="${src}"><img src="${src}" alt=""></button>`).join("")}
     </div>` : "";
   modal.innerHTML = `
     <div class="modal-image">
+      ${soldOverlayHtml}
       <img src="${img}" alt="${p.name}" id="modal-main-image">
       ${thumbsHtml}
     </div>
@@ -594,7 +602,9 @@ function openModal(id) {
         <span>Estado de conservação: ${p.condition}</span>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-primary" id="modal-add">Adicionar ao carrinho</button>
+        ${p.isSold
+          ? `<button class="btn btn-primary" disabled>Peça esgotada</button>`
+          : `<button class="btn btn-primary" id="modal-add">Adicionar ao carrinho</button>`}
         <a class="btn btn-outline" id="modal-whatsapp" href="#">Perguntar no WhatsApp</a>
       </div>
     </div>
@@ -609,12 +619,15 @@ function openModal(id) {
       galleryEl.querySelectorAll(".modal-gallery-thumb").forEach(t => t.classList.toggle("active", t === thumb));
     });
   }
-  modal.querySelector("#modal-add").addEventListener("click", () => {
-    addToCart(p.id, 1);
-    showToast("Adicionado ao carrinho");
-    closeModal();
-    openCart();
-  });
+  const modalAddBtn = modal.querySelector("#modal-add");
+  if (modalAddBtn) {
+    modalAddBtn.addEventListener("click", () => {
+      addToCart(p.id, 1);
+      showToast("Adicionado ao carrinho");
+      closeModal();
+      openCart();
+    });
+  }
   modal.querySelector("#modal-whatsapp").addEventListener("click", e => {
     e.preventDefault();
     const msg = encodeURIComponent(`Olá! Tenho interesse na peça "${p.name}" (Tam. ${p.size}) do site ${CONFIG.storeName}. Ainda está disponível?`);

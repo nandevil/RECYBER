@@ -185,6 +185,14 @@ async function handleInfinitePayWebhook(request, env) {
       console.error("E-mail de pagamento confirmado:", err);
     }
 
+    /* Marca cada peça comprada como "esgotada" — peça única, vendida
+       uma vez não volta a aparecer disponível no catálogo. */
+    try {
+      await markOrderProductsAsSold(order_nsu, env);
+    } catch (err) {
+      console.error("Marcar peças como esgotadas:", err);
+    }
+
     /* Gera a etiqueta no carrinho do Melhor Envio em segundo plano —
        nunca deve derrubar a confirmação de pagamento pro cliente, por
        isso tem seu próprio try/catch e não afeta a resposta abaixo. */
@@ -250,6 +258,37 @@ async function sendPaymentConfirmedEmail(orderId, env) {
   });
   if (!emailRes.ok) {
     console.error("E-mail de pagamento confirmado falhou:", emailRes.status, await emailRes.text());
+  }
+}
+
+/* Marca cada peça do pedido pago como esgotada (public.products,
+   coluna is_sold — Passo 24 do SUPABASE.md). Peça única: uma vez
+   vendida, some do catálogo disponível pra sempre, sem apagar o
+   registro (histórico continua existindo). */
+async function markOrderProductsAsSold(orderId, env) {
+  const res = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=items`,
+    { headers: supaHeaders(env) }
+  );
+  if (!res.ok) throw new Error(`Falha ao buscar itens do pedido (status ${res.status}).`);
+  const rows = await res.json();
+  const order = rows[0];
+  if (!order || !Array.isArray(order.items) || order.items.length === 0) return;
+
+  const productIds = order.items.map(i => i.id).filter(Boolean);
+  if (productIds.length === 0) return;
+
+  const idsList = productIds.map(id => encodeURIComponent(id)).join(",");
+  const updateRes = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/products?id=in.(${idsList})`,
+    {
+      method: "PATCH",
+      headers: { ...supaHeaders(env), Prefer: "return=minimal" },
+      body: JSON.stringify({ is_sold: true })
+    }
+  );
+  if (!updateRes.ok) {
+    console.error("Falha ao marcar peças como esgotadas:", updateRes.status, await updateRes.text());
   }
 }
 

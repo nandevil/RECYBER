@@ -8,7 +8,7 @@
 
   Categorias fixas (não adicione outras sem também atualizar
   CATEGORY_ICON_PATHS/CATEGORY_BG em app.js):
-    camisas, blusas, saias, shorts, calcas,
+    camisas, blusas, saias, vestidos, shorts, calcas,
     casacos-sobreposicoes, bolsas, sapatos
 */
 
@@ -16,6 +16,7 @@ const CATEGORIES = [
   { id: "camisas", label: "Camisas" },
   { id: "blusas", label: "Blusas" },
   { id: "saias", label: "Saias" },
+  { id: "vestidos", label: "Vestidos" },
   { id: "shorts", label: "Shorts" },
   { id: "calcas", label: "Calças" },
   { id: "casacos-sobreposicoes", label: "Casacos e Sobreposições" },

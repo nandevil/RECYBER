@@ -724,6 +724,24 @@ alter publication supabase_realtime add table public.orders;
 > continua valendo do mesmo jeito pra Realtime); só liga o aviso
 > automático de mudança pra quem já tem acesso de leitura.
 
+## Passo 24 — "Peça esgotada" (marca peça como vendida)
+
+Adiciona a coluna que guarda se uma peça já foi vendida. Quando
+marcada, o site público mostra "ESGOTADO" por cima da foto e desativa
+o botão de comprar — sem apagar a peça do catálogo (fica registrada,
+só não compra mais). No **SQL Editor**, cole e rode:
+
+```sql
+alter table public.products
+  add column if not exists is_sold boolean not null default false;
+```
+
+> Isso é marcado de dois jeitos: **automaticamente** (o Worker marca
+> sozinho assim que o pagamento de um pedido com aquela peça é
+> confirmado) e **manualmente** (um interruptor "Vendido" na lista de
+> peças cadastradas, aba "Cadastro de Peça" — útil pra vendas fora do
+> site, tipo Instagram ou pessoalmente).
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.
