@@ -918,6 +918,81 @@ document.getElementById("admin-products-list").addEventListener("change", async 
   toggle.disabled = false;
 });
 
+/* Otimiza fotos de peças cadastradas ANTES da compressão automática
+   existir (ou enviadas de outra forma) — baixa cada foto, recomprime
+   com compressImageForUpload() e sobe de novo, atualizando image_urls
+   da peça. Roda uma peça de cada vez (evita sobrecarregar o navegador
+   com muitos downloads/uploads simultâneos) e só reprocessa fotos que
+   realmente encolheram, senão mantém o arquivo original daquela peça. */
+async function optimizeExistingPhotos() {
+  const btn = document.getElementById("admin-optimize-photos-btn");
+  const status = document.getElementById("admin-optimize-photos-status");
+  if (!supabaseEnabled()) return;
+
+  btn.disabled = true;
+  status.hidden = false;
+  status.textContent = "Carregando lista de peças...";
+
+  const { data, error } = await sb.from("products").select("id, image_urls");
+  if (error) {
+    console.error("Otimizar fotos — listar peças:", error);
+    status.textContent = "Erro ao carregar as peças.";
+    btn.disabled = false;
+    return;
+  }
+
+  let done = 0;
+  let optimizedCount = 0;
+  const total = data.length;
+
+  for (const row of data) {
+    done++;
+    status.textContent = `Otimizando peça ${done} de ${total}...`;
+    const urls = Array.isArray(row.image_urls) ? row.image_urls : [];
+    if (urls.length === 0) continue;
+
+    try {
+      const newUrls = [];
+      let changed = false;
+      for (const url of urls) {
+        const res = await fetch(url);
+        if (!res.ok) { newUrls.push(url); continue; }
+        const blob = await res.blob();
+        const originalName = url.split("/").pop().split("?")[0] || "foto.jpg";
+        const originalFile = new File([blob], originalName, { type: blob.type || "image/jpeg" });
+        const compressed = await compressImageForUpload(originalFile);
+
+        if (compressed === originalFile || compressed.size >= originalFile.size) {
+          newUrls.push(url);
+          continue;
+        }
+
+        const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${compressed.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
+        const { error: uploadError } = await sb.storage.from("product-images").upload(path, compressed);
+        if (uploadError) { newUrls.push(url); continue; }
+        newUrls.push(sb.storage.from("product-images").getPublicUrl(path).data.publicUrl);
+        changed = true;
+      }
+      if (changed) {
+        await sb.from("products").update({ image_urls: newUrls }).eq("id", row.id);
+        optimizedCount++;
+      }
+    } catch (err) {
+      console.error(`Otimizar fotos — peça ${row.id}:`, err);
+    }
+  }
+
+  status.textContent = `Concluído: ${optimizedCount} de ${total} peça(s) tiveram fotos otimizadas.`;
+  btn.disabled = false;
+  renderProductsList();
+  if (typeof syncCatalog === "function") syncCatalog();
+}
+
+document.getElementById("admin-optimize-photos-btn").addEventListener("click", () => {
+  if (!confirm("Isso vai recomprimir as fotos das peças já publicadas (pode levar alguns minutos). Continuar?")) return;
+  optimizeExistingPhotos();
+});
+
 /* =====================================================
    GERENCIAR FEEDBACKS (aba "Feedbacks")
    Sobe a foto (opcional) para o bucket product-images e insere a

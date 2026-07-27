@@ -1220,6 +1220,10 @@ body.admin-open{overflow:hidden;}
 .admin-product-item--sold{opacity:.6;}
 .admin-product-item-actions{display:flex;gap:8px;flex-shrink:0;}
 
+.admin-optimize-photos{margin-bottom:18px;}
+.admin-optimize-photos-hint{font-size:.68rem;color:var(--grey);margin-top:6px;}
+.admin-optimize-photos-status{font-size:.7rem;margin-top:8px;}
+
 /* ===================== ADMIN — RESPONSIVIDADE ===================== */
 
 /* Tablet: 768px–1024px */
