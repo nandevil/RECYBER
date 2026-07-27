@@ -260,16 +260,27 @@ function renderCategoryCards() {
     ? [{ id: "promocoes", label: "Promoções" }]
     : [{ id: "todos", label: "Todos" }, ...CATEGORIES];
   const cards = list.map(cat => {
+    const catProducts = cat.id === "todos" || cat.id === "promocoes"
+      ? []
+      : PRODUCTS.filter(p => p.category === cat.id);
     const count = cat.id === "todos"
       ? PRODUCTS.length
       : cat.id === "promocoes"
       ? promoCount
-      : PRODUCTS.filter(p => p.category === cat.id).length;
+      : catProducts.length;
+    /* Foto da peça mais antiga da categoria (a "primeira colocada") no
+       lugar do ícone genérico, quando existir alguma cadastrada. */
+    const oldestWithPhoto = catProducts
+      .filter(p => p.image && p.createdAt)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
     const iconPath = CATEGORY_ICON_PATHS[cat.id] || HANGER_PATH;
+    const thumbHtml = oldestWithPhoto
+      ? `<img class="cat-card-photo" src="${oldestWithPhoto.image}" alt="" loading="lazy">`
+      : `<svg class="cat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="${iconPath}"/></svg>`;
     return `
       <button class="cat-card${cat.id === "promocoes" ? " cat-card--promo" : ""}${cat.id === state.filter ? " active" : ""}" data-filter="${cat.id}">
         <span class="cat-card-thumb">
-          <svg class="cat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="${iconPath}"/></svg>
+          ${thumbHtml}
         </span>
         <span class="cat-card-info">
           <span class="cat-card-label">${cat.label}</span>

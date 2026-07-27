@@ -69,6 +69,7 @@ function rowToProduct(r) {
     tag: r.tag || "",
     isPromo: !!r.is_promo,
     isSold: !!r.is_sold,
+    createdAt: r.created_at,
     empty: false
   };
 }

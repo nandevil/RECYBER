@@ -838,7 +838,7 @@ async function handleAdminAddProduct(request, env) {
         category,
         description: description || "",
         image_urls: imageUrls,
-        tag: tag || "novo"
+        tag: tag || ""
       })
     });
     if (!insertRes.ok) {

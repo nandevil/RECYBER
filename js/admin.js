@@ -730,6 +730,42 @@ function describeProductFormError(err) {
   return describeSupabaseFormError(err, { table: "products", step: "Passo 5" });
 }
 
+/* Comprime/redimensiona a foto no navegador antes de subir — fotos de
+   celular direto (3-8MB) deixavam o catálogo lento pra carregar.
+   Reduz pro maior lado caber em 1600px e recomprime como JPEG
+   qualidade .82, o que normalmente corta o arquivo pra uma fração do
+   tamanho original sem perda visível numa foto de produto. Se der
+   qualquer problema (formato exótico, navegador sem suporte), usa o
+   arquivo original — nunca trava o cadastro por causa disso. */
+function compressImageForUpload(file, maxDim = 1600, quality = 0.82) {
+  return new Promise(resolve => {
+    if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
+      resolve(file);
+      return;
+    }
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => {
+        if (!blob || blob.size >= file.size) { resolve(file); return; }
+        const newName = file.name.replace(/\.\w+$/, "") + ".jpg";
+        resolve(new File([blob], newName, { type: "image/jpeg" }));
+      }, "image/jpeg", quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
+    img.src = objectUrl;
+  });
+}
+
 document.getElementById("product-form").addEventListener("submit", async e => {
   e.preventDefault();
   if (!supabaseEnabled()) return;
@@ -749,7 +785,8 @@ document.getElementById("product-form").addEventListener("submit", async e => {
     }
 
     const imageUrls = [];
-    for (const file of selectedProductImages) {
+    for (const original of selectedProductImages) {
+      const file = await compressImageForUpload(original);
       const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
       const { error: uploadError } = await sb.storage.from("product-images").upload(path, file);
       if (uploadError) { uploadError.step = "upload"; throw uploadError; }
@@ -768,7 +805,6 @@ document.getElementById("product-form").addEventListener("submit", async e => {
     if (imageUrls.length > 0) payload.image_urls = imageUrls;
     if (!isEditing) {
       payload.image_urls = imageUrls;
-      payload.tag = "novo";
     }
 
     const { error: saveError } = isEditing
