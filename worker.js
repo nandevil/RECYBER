@@ -48,6 +48,9 @@ export default {
     if (url.pathname === "/api/admin/add-product" && request.method === "POST") {
       return handleAdminAddProduct(request, env);
     }
+    if (url.pathname === "/feed.xml" && request.method === "GET") {
+      return handleProductFeed(env);
+    }
 
     return env.ASSETS.fetch(request);
   }
@@ -851,5 +854,63 @@ async function handleAdminAddProduct(request, env) {
   } catch (err) {
     console.error("admin add-product:", err);
     return jsonResponse({ error: err.message || "Erro interno." }, 500);
+  }
+}
+
+/* Feed de produtos (formato RSS/Google Shopping, aceito pelo Meta
+   Commerce Manager pra montar o catálogo do Instagram Shopping) — lê
+   direto do Supabase, então reflete o catálogo publicado sem trabalho
+   manual. Cada item aponta pra "https://recyber.com.br/?produto=ID",
+   que o js/catalog-sync.js abre automaticamente na peça certa. */
+function escapeXml(value) {
+  return String(value ?? "").replace(/[<>&'"]/g, c => ({
+    "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;"
+  }[c]));
+}
+
+async function handleProductFeed(env) {
+  try {
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/products?select=*`, {
+      headers: supaHeaders(env)
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      return new Response(`Erro ao buscar produtos: ${detail}`, { status: 502 });
+    }
+    const products = await res.json();
+
+    const items = products
+      .filter(p => Array.isArray(p.image_urls) && p.image_urls.length > 0)
+      .map(p => {
+        const link = `https://recyber.com.br/?produto=${encodeURIComponent(p.id)}`;
+        const price = (Number(p.price) || 0).toFixed(2);
+        return `  <item>
+    <g:id>${escapeXml(p.id)}</g:id>
+    <g:title>${escapeXml(p.name)}</g:title>
+    <g:description>${escapeXml(p.description || p.name)}</g:description>
+    <g:link>${escapeXml(link)}</g:link>
+    <g:image_link>${escapeXml(p.image_urls[0])}</g:image_link>
+    <g:availability>${p.is_sold ? "out of stock" : "in stock"}</g:availability>
+    <g:price>${price} BRL</g:price>
+    <g:condition>used</g:condition>
+    <g:brand>Re.cyber</g:brand>
+  </item>`;
+      })
+      .join("\n");
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+<channel>
+  <title>Re.cyber</title>
+  <link>https://recyber.com.br</link>
+  <description>Catálogo de produtos — Re.cyber, Slow Fashion Brechó</description>
+${items}
+</channel>
+</rss>`;
+
+    return new Response(xml, { headers: { "Content-Type": "application/xml; charset=utf-8" } });
+  } catch (err) {
+    console.error("feed:", err);
+    return new Response("Erro interno.", { status: 500 });
   }
 }

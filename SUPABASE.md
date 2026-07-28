@@ -771,6 +771,41 @@ Secret no Cloudflare (mesmo padrão do `RESEND_API_KEY`,
 > dali, sobe pro Storage e insere a peça, sem precisar colar imagem no
 > chat nem abrir o painel.
 
+## Passo 26 — Feed de produtos (catálogo pro Instagram Shopping / TikTok)
+
+Rota pública `https://recyber.com.br/feed.xml` — gera automaticamente
+um feed no formato RSS/Google Shopping (o mesmo que o Meta Commerce
+Manager aceita) a partir das peças cadastradas no Supabase. Não exige
+nenhum Secret novo, já funciona com o `SUPABASE_URL` que o worker já
+usa. Cada peça vira um `<item>` com id, título, descrição, link, foto,
+preço, disponibilidade ("in stock"/"out of stock" conforme "peça
+esgotada") e condição ("used", já que é brechó).
+
+O link de cada item é `https://recyber.com.br/?produto=ID` — abre
+direto na peça certa (js/catalog-sync.js lê esse parâmetro na URL e
+chama o modal de visualização automaticamente).
+
+**Pra conectar no Instagram Shopping** (Meta Commerce Manager):
+1. Tenha uma conta comercial no Instagram vinculada a uma Página do
+   Facebook, e o domínio `recyber.com.br` verificado no Meta Business
+   Suite (Configurações → Contas de marca → Domínios).
+2. Business Suite → **Commerce Manager** → Criar catálogo → tipo
+   "E-commerce" → adicionar itens → **Feed de dados** → cole a URL
+   `https://recyber.com.br/feed.xml` → defina atualização automática
+   (diária, por exemplo).
+3. Depois de o catálogo ser aprovado, vincule-o à conta do Instagram
+   (Configurações da conta → Compras) e ative o Instagram Shopping.
+4. No Brasil a Meta não processa pagamento dentro do app — quem clicar
+   num produto é levado pro `recyber.com.br` pra finalizar a compra,
+   exatamente como o site já funciona hoje.
+
+**TikTok Shop** não usa esse feed — é um canal de venda dentro do
+próprio app, com cadastro de vendedor separado (CNPJ ou MEI, conta
+bancária PJ, endereço de armazém/devolução) feito direto no **Seller
+Center** do TikTok Shop. Isso não dá pra automatizar por aqui; quando
+tiver a conta aprovada, um novo endpoint de feed pode ser adaptado pro
+formato deles se for preciso.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

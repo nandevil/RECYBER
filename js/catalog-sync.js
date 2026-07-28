@@ -17,12 +17,26 @@ async function fetchRealProducts() {
   return data.map(rowToProduct);
 }
 
+/* Abre automaticamente a peça indicada em "?produto=ID" na URL — usado
+   pelo feed de produtos (/feed.xml, worker.js) pra levar quem clica no
+   Instagram/TikTok direto pra peça certa, não só pra home. Só tenta
+   uma vez (senão reabriria toda vez que o catálogo resincroniza). */
+let didOpenProductFromUrl = false;
+function openProductFromUrlIfNeeded() {
+  if (didOpenProductFromUrl) return;
+  const id = new URLSearchParams(window.location.search).get("produto");
+  if (!id) return;
+  didOpenProductFromUrl = true;
+  if (typeof openModal === "function") openModal(id);
+}
+
 async function syncCatalog() {
   const real = await fetchRealProducts();
   PRODUCTS.length = 0;
   PRODUCTS.push(...real);
   renderCategoryCards();
   renderGrid();
+  openProductFromUrlIfNeeded();
 }
 
 syncCatalog();
