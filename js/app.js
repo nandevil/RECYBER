@@ -150,7 +150,7 @@ function getFilteredProducts() {
 
   if (state.sort === "menor-preco") list = [...list].sort((a, b) => a.price - b.price);
   if (state.sort === "maior-preco") list = [...list].sort((a, b) => b.price - a.price);
-  if (state.sort === "novidades") list = [...list].sort((a, b) => (b.tag === "novo") - (a.tag === "novo"));
+  if (state.sort === "novidades") list = [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return list;
 }
@@ -182,14 +182,19 @@ function renderGrid() {
     ? "Nenhuma peça encontrada. Tente outro filtro ou busca."
     : "Nenhuma peça disponível nesta categoria no momento. Volte em breve!";
 
+  const NEW_BADGE_DAYS = 14;
   list.forEach((p, idx) => {
     const img = p.image || placeholderImage(p.category, idx);
     const onPromo = isPromoWindowOpen() && p.isPromo;
+    /* "Novo" é calculado pela data de cadastro (peça recém-colocada),
+       não por uma tag manual salva no banco — assim nunca fica "presa"
+       em peças antigas nem precisa de limpeza manual. */
+    const isNew = p.createdAt && (Date.now() - new Date(p.createdAt).getTime()) < NEW_BADGE_DAYS * 24 * 60 * 60 * 1000;
     const badgeHtml = p.isSold
       ? ""
       : onPromo
       ? `<span class="product-badge product-badge--promo">-${promoState.discountPercent}%</span>`
-      : (p.tag ? `<span class="product-badge">${p.tag === "novo" ? "Novo" : "Promo"}</span>` : "");
+      : (isNew ? `<span class="product-badge">Novo</span>` : "");
     const priceHtml = onPromo
       ? `<span class="product-price product-price--promo"><s class="product-price-original">${money(p.price)}</s>${money(effectivePrice(p))}</span>`
       : `<span class="product-price">${money(p.price)}</span>`;
