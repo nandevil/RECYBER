@@ -51,6 +51,9 @@ export default {
     if (url.pathname === "/feed.xml" && request.method === "GET") {
       return handleProductFeed(env);
     }
+    if (url.pathname === "/api/admin/set-category-cover" && request.method === "POST") {
+      return handleSetCategoryCover(request, env);
+    }
 
     return env.ASSETS.fetch(request);
   }
@@ -912,5 +915,62 @@ ${items}
   } catch (err) {
     console.error("feed:", err);
     return new Response("Erro interno.", { status: 500 });
+  }
+}
+
+/* Define a foto de capa de uma categoria (card da tela "Categorias")
+   sem precisar abrir o painel — mesmo token de automação do
+   /api/admin/add-product (Passo 25/27 do SUPABASE.md). Sobe a foto pro
+   bucket product-images e faz upsert em public.category_covers. */
+async function handleSetCategoryCover(request, env) {
+  try {
+    const auth = request.headers.get("Authorization") || "";
+    if (!env.ADMIN_API_TOKEN || auth !== `Bearer ${env.ADMIN_API_TOKEN}`) {
+      return jsonResponse({ error: "Não autorizado." }, 401);
+    }
+
+    const body = await request.json();
+    const { category, image } = body || {};
+    if (!category || !image || !image.base64) {
+      return jsonResponse({ error: "Faltam campos obrigatórios (category, image)." }, 400);
+    }
+
+    const bytes = Uint8Array.from(atob(image.base64), c => c.charCodeAt(0));
+    const cleanName = (image.filename || "capa").replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    const path = `category-covers/${category}-${Date.now()}-${cleanName}`;
+
+    const uploadRes = await fetch(`${env.SUPABASE_URL}/storage/v1/object/product-images/${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": image.contentType || "image/jpeg",
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
+      },
+      body: bytes
+    });
+    if (!uploadRes.ok) {
+      const detail = await uploadRes.text();
+      return jsonResponse({ error: "Falha ao subir imagem.", detail }, 502);
+    }
+    const imageUrl = `${env.SUPABASE_URL}/storage/v1/object/public/product-images/${path}`;
+
+    const upsertRes = await fetch(`${env.SUPABASE_URL}/rest/v1/category_covers`, {
+      method: "POST",
+      headers: {
+        ...supaHeaders(env),
+        Prefer: "resolution=merge-duplicates,return=representation"
+      },
+      body: JSON.stringify({ category, image_url: imageUrl, updated_at: new Date().toISOString() })
+    });
+    if (!upsertRes.ok) {
+      const detail = await upsertRes.text();
+      return jsonResponse({ error: "Falha ao salvar capa da categoria.", detail }, 502);
+    }
+
+    const data = await upsertRes.json();
+    return jsonResponse({ ok: true, cover: data[0] });
+  } catch (err) {
+    console.error("admin set-category-cover:", err);
+    return jsonResponse({ error: err.message || "Erro interno." }, 500);
   }
 }

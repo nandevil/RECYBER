@@ -31,6 +31,7 @@ const CATEGORY_ICON_PATHS = {
   "casacos-sobreposicoes": HANGER_PATH,
   bolsas: "M6 8h12l1 13H5L6 8zM9 8a3 3 0 016 0",
   sapatos: "M4 15c0-2 1-3 3-4l6-3 2 2 5 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-1z",
+  bermudas: "M5 4h14l-1 9-2 8h-4l-1-10-1 10H7l-2-8-1-9z",
   promocoes: "M12 2l2 5 5 .8-3.6 3.6.9 5.1L12 14l-4.3 2.5.9-5.1L5 8.8 10 8l2-6z"
 };
 const CATEGORY_BG = {
@@ -42,7 +43,8 @@ const CATEGORY_BG = {
   calcas: "#d6d9dc",
   "casacos-sobreposicoes": "#dad7d3",
   bolsas: "#d3d9d2",
-  sapatos: "#dcd6d9"
+  sapatos: "#dcd6d9",
+  bermudas: "#d7dad6"
 };
 
 function placeholderImage(category, seed) {
@@ -273,14 +275,18 @@ function renderCategoryCards() {
       : cat.id === "promocoes"
       ? promoCount
       : catProducts.length;
-    /* Foto da peça mais antiga da categoria (a "primeira colocada") no
-       lugar do ícone genérico, quando existir alguma cadastrada. */
+    /* Prioridade da capa do card: (1) foto definida manualmente pro
+       Emanuel(CATEGORY_COVERS, js/category-covers-sync.js), (2) foto da
+       peça mais antiga da categoria (a "primeira colocada"), (3) ícone
+       genérico. */
+    const manualCover = typeof CATEGORY_COVERS !== "undefined" ? CATEGORY_COVERS[cat.id] : null;
     const oldestWithPhoto = catProducts
       .filter(p => p.image && p.createdAt)
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
     const iconPath = CATEGORY_ICON_PATHS[cat.id] || HANGER_PATH;
-    const thumbHtml = oldestWithPhoto
-      ? `<img class="cat-card-photo" src="${oldestWithPhoto.image}" alt="" loading="lazy">`
+    const coverImage = manualCover || (oldestWithPhoto && oldestWithPhoto.image);
+    const thumbHtml = coverImage
+      ? `<img class="cat-card-photo" src="${coverImage}" alt="" loading="lazy">`
       : `<svg class="cat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="${iconPath}"/></svg>`;
     return `
       <button class="cat-card${cat.id === "promocoes" ? " cat-card--promo" : ""}${cat.id === state.filter ? " active" : ""}" data-filter="${cat.id}">

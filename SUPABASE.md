@@ -806,6 +806,42 @@ Center** do TikTok Shop. Isso não dá pra automatizar por aqui; quando
 tiver a conta aprovada, um novo endpoint de feed pode ser adaptado pro
 formato deles se for preciso.
 
+## Passo 27 — Capa manual das categorias
+
+Permite escolher uma foto fixa pro card de cada categoria (tela
+"Categorias" da home), em vez de sempre usar a foto da peça mais
+antiga cadastrada ali. Sem cover definida, continua caindo pro
+comportamento automático de sempre.
+
+No **SQL Editor**, cole e rode:
+
+```sql
+create table public.category_covers (
+  category text primary key,
+  image_url text not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.category_covers enable row level security;
+alter table public.category_covers force row level security;
+
+create policy "qualquer um pode ler capas de categoria"
+  on public.category_covers for select to anon, authenticated using (true);
+
+create policy "dono pode gerenciar capas de categoria"
+  on public.category_covers for all to authenticated using (true) with check (true);
+```
+
+As fotos usam o mesmo bucket `product-images` do Passo 5 — não precisa
+criar bucket novo nem policy de Storage nova.
+
+Pra definir a capa de uma categoria sem abrir o painel, usa a mesma
+automação do Passo 25 (token `ADMIN_API_TOKEN`), na rota
+`POST /api/admin/set-category-cover` com corpo:
+```json
+{ "category": "vestidos", "image": { "filename": "capa.jpg", "contentType": "image/jpeg", "base64": "..." } }
+```
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

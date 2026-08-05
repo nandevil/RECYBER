@@ -9,7 +9,7 @@
   Categorias fixas (não adicione outras sem também atualizar
   CATEGORY_ICON_PATHS/CATEGORY_BG em app.js):
     camisas, blusas, saias, vestidos, shorts, calcas,
-    casacos-sobreposicoes, bolsas, sapatos
+    casacos-sobreposicoes, bolsas, sapatos, bermudas
 */
 
 const CATEGORIES = [
@@ -21,7 +21,8 @@ const CATEGORIES = [
   { id: "calcas", label: "Calças" },
   { id: "casacos-sobreposicoes", label: "Casacos e Sobreposições" },
   { id: "bolsas", label: "Bolsas" },
-  { id: "sapatos", label: "Sapatos" }
+  { id: "sapatos", label: "Sapatos" },
+  { id: "bermudas", label: "Bermudas" }
 ];
 
 /* Começa vazio: js/catalog-sync.js preenche com as peças reais do Supabase. */
