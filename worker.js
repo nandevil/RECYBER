@@ -765,12 +765,16 @@ async function postMelhorEnvioCart(payload, accessToken, env) {
    nunca lançar erro pra fora (quem chama já engole exceções, mas
    melhor deixar explícito aqui também). */
 async function createMelhorEnvioCartEntry(orderId, env) {
+  const log = (confirmed, note, response) => logWebhookAttempt(env, { source: "melhorenvio", payload: { orderId }, response: response ?? null, confirmed, note });
+
   const [orderRes, settingsRes] = await Promise.all([
     fetch(`${env.SUPABASE_URL}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=*`, { headers: supaHeaders(env) }),
     fetch(`${env.SUPABASE_URL}/rest/v1/shipping_settings?id=eq.1&select=*`, { headers: supaHeaders(env) })
   ]);
   if (!orderRes.ok || !settingsRes.ok) {
+    const detail = { orderStatus: orderRes.status, settingsStatus: settingsRes.status };
     console.error("Melhor Envio — falha ao buscar pedido/configurações:", await orderRes.text().catch(() => ""), await settingsRes.text().catch(() => ""));
+    await log(false, "Falha ao buscar pedido/configurações no Supabase", detail);
     return;
   }
   const orders = await orderRes.json();
@@ -778,9 +782,14 @@ async function createMelhorEnvioCartEntry(orderId, env) {
   const orderRow = orders[0];
   const settings = settingsRows[0];
 
-  if (!orderRow) { console.error("Melhor Envio — pedido não encontrado:", orderId); return; }
+  if (!orderRow) {
+    console.error("Melhor Envio — pedido não encontrado:", orderId);
+    await log(false, "Pedido não encontrado na tabela orders");
+    return;
+  }
   if (!settings) {
     console.warn("Melhor Envio — Configurações de Envio (medidas) não cadastradas ainda. Etiqueta não gerada para", orderId);
+    await log(false, "Linha shipping_settings (id=1) não existe — Passo 20 do SUPABASE.md não rodado");
     return;
   }
 
@@ -791,6 +800,7 @@ async function createMelhorEnvioCartEntry(orderId, env) {
     accessToken = await getMelhorEnvioAccessToken(env);
   } catch (err) {
     console.error("Melhor Envio — token indisponível:", err.message);
+    await log(false, "Token da Melhor Envio indisponível: " + err.message);
     return;
   }
 
@@ -805,6 +815,7 @@ async function createMelhorEnvioCartEntry(orderId, env) {
       console.log(`Melhor Envio — serviço mais barato pra ${orderId}: ${cheapest.company.name} ${cheapest.name} (R$ ${cheapest.custom_price})`);
     } catch (err) {
       console.error("Melhor Envio — falha ao cotar frete:", err.message);
+      await log(false, "Falha ao cotar frete (nenhum serviço disponível pro destino/pacote): " + err.message);
       return;
     }
   }
@@ -821,16 +832,20 @@ async function createMelhorEnvioCartEntry(orderId, env) {
       res = await postMelhorEnvioCart(payload, accessToken, env);
     } else {
       console.error("Melhor Envio — falha ao inserir no carrinho:", res.status, detail);
+      await log(false, "Falha ao inserir no carrinho da Melhor Envio", { status: res.status, detail });
       return;
     }
   }
 
   if (!res.ok) {
-    console.error("Melhor Envio — falha ao inserir no carrinho:", res.status, await res.text());
+    const detail = await res.text();
+    console.error("Melhor Envio — falha ao inserir no carrinho:", res.status, detail);
+    await log(false, "Falha ao inserir no carrinho da Melhor Envio (após tentativa de volume único)", { status: res.status, detail });
     return;
   }
 
   console.log("Melhor Envio — etiqueta inserida no carrinho com sucesso para", orderId);
+  await log(true, "Etiqueta inserida no carrinho com sucesso", { serviceId });
 }
 
 /* =====================================================
