@@ -842,6 +842,24 @@ automação do Passo 25 (token `ADMIN_API_TOKEN`), na rota
 { "category": "vestidos", "image": { "filename": "capa.jpg", "contentType": "image/jpeg", "base64": "..." } }
 ```
 
+## Passo 28 — Catálogo atualiza sozinho quando uma peça é vendida
+
+Liga o Realtime do Supabase na tabela `products` — sem isso, quem já
+está com o site aberto só vê uma peça como "Esgotado" depois de dar F5
+manualmente (o pagamento confirmado marca a peça no banco na hora, mas
+a tela de quem já estava navegando não sabia que precisava atualizar).
+No **SQL Editor**, cole e rode:
+
+```sql
+alter publication supabase_realtime add table public.products;
+```
+
+> Mesmo aviso do Passo 23: se der erro "relation is already member of
+> publication", já estava habilitado — pode ignorar. Não muda nenhuma
+> permissão (RLS continua valendo); só liga o aviso automático de
+> mudança pra quem já tem acesso de leitura (que é todo mundo, já que
+> o catálogo é público).
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

@@ -40,3 +40,15 @@ async function syncCatalog() {
 }
 
 syncCatalog();
+
+/* Tempo real: quando uma peça é marcada como vendida (pagamento
+   confirmado, automático ou manual pelo painel) ou qualquer outra
+   mudança no catálogo, quem já está com o site aberto vê a atualização
+   sozinho — sem isso, "Esgotado" só aparecia depois de um F5 manual.
+   Exige Realtime ligado na tabela "products" (SUPABASE.md, Passo 28).
+   Mesmo padrão do Realtime de pedidos no painel (js/admin.js). */
+if (supabaseEnabled()) {
+  sb.channel("public-catalog-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => syncCatalog())
+    .subscribe();
+}

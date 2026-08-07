@@ -470,6 +470,37 @@ document.getElementById("admin-orders").addEventListener("click", e => {
   if (!btn) return;
   triggerStatusNotification(btn.dataset.order, btn.dataset.status);
 });
+/* Confirma o pedido como pago pela mesma rota que o webhook automático
+   usa (worker.js: confirmOrderPaid) — marca a(s) peça(s) como
+   esgotada(s) e gera a etiqueta no Melhor Envio, além de atualizar o
+   status. Precisa disso em vez de um UPDATE direto no Supabase porque
+   esses dois efeitos colaterais só existem no Worker (service role). */
+async function markOrderPaidManually(orderId) {
+  const { data: sessionData } = await sb.auth.getSession();
+  if (!sessionData.session) {
+    showToast("Sua sessão expirou. Saia e entre de novo.");
+    renderAdmin();
+    return;
+  }
+  try {
+    const res = await fetch("/api/admin/mark-order-paid", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionData.session.access_token}`
+      },
+      body: JSON.stringify({ orderId })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `status ${res.status}`);
+    showToast("Pagamento confirmado — peça marcada como vendida e etiqueta enviada pro Melhor Envio (se conectado).");
+  } catch (err) {
+    console.error("Confirmar pagamento manual:", err);
+    showToast("Erro ao confirmar pagamento: " + err.message);
+  }
+  renderAdmin();
+}
+
 document.getElementById("admin-orders").addEventListener("change", e => {
   const sel = e.target.closest(".pay-status-select");
   if (!sel) return;
@@ -492,7 +523,12 @@ document.getElementById("admin-orders").addEventListener("change", e => {
     const order = adminOrders.find(o => o.id === sel.dataset.order);
     if (order) notifyCustomerBothChannels(order, "cancelado");
   }
-  updateOrder(sel.dataset.order, { paymentStatus: newStatus });
+
+  if (newStatus === "pago") {
+    markOrderPaidManually(sel.dataset.order);
+  } else {
+    updateOrder(sel.dataset.order, { paymentStatus: newStatus });
+  }
 });
 
 document.getElementById("admin-export-csv").addEventListener("click", exportLeadsCsv);

@@ -54,6 +54,9 @@ export default {
     if (url.pathname === "/api/admin/set-category-cover" && request.method === "POST") {
       return handleSetCategoryCover(request, env);
     }
+    if (url.pathname === "/api/admin/mark-order-paid" && request.method === "POST") {
+      return handleAdminMarkOrderPaid(request, env);
+    }
 
     return env.ASSETS.fetch(request);
   }
@@ -171,53 +174,59 @@ async function handleInfinitePayWebhook(request, env) {
       return jsonResponse({ success: false });
     }
 
-    const supaRes = await fetch(
-      `${env.SUPABASE_URL}/rest/v1/orders?id=eq.${encodeURIComponent(order_nsu)}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-          Prefer: "return=minimal"
-        },
-        body: JSON.stringify({ payment_status: "pago" })
-      }
-    );
-    if (!supaRes.ok) {
-      console.error("Erro ao atualizar pedido no Supabase:", await supaRes.text());
+    try {
+      await confirmOrderPaid(order_nsu, env);
+    } catch (err) {
+      console.error("Erro ao confirmar pedido pago:", err);
       return jsonResponse({ success: false }, 502);
-    }
-
-    /* Avisa o cliente por e-mail que o pagamento foi confirmado — nunca
-       derruba a resposta do webhook se falhar. */
-    try {
-      await sendPaymentConfirmedEmail(order_nsu, env);
-    } catch (err) {
-      console.error("E-mail de pagamento confirmado:", err);
-    }
-
-    /* Marca cada peça comprada como "esgotada" — peça única, vendida
-       uma vez não volta a aparecer disponível no catálogo. */
-    try {
-      await markOrderProductsAsSold(order_nsu, env);
-    } catch (err) {
-      console.error("Marcar peças como esgotadas:", err);
-    }
-
-    /* Gera a etiqueta no carrinho do Melhor Envio em segundo plano —
-       nunca deve derrubar a confirmação de pagamento pro cliente, por
-       isso tem seu próprio try/catch e não afeta a resposta abaixo. */
-    try {
-      await createMelhorEnvioCartEntry(order_nsu, env);
-    } catch (err) {
-      console.error("Melhor Envio (pós-pagamento):", err);
     }
 
     return jsonResponse({ success: true });
   } catch (err) {
     console.error("webhook infinitepay:", err);
     return jsonResponse({ success: false }, 500);
+  }
+}
+
+/* Roda tudo que precisa acontecer quando um pedido é confirmado como
+   pago — usado tanto pelo webhook automático da InfinitePay quanto
+   pelo painel (quando o dono marca "Pagamento Concluído" manualmente,
+   ex: pagamento combinado fora do checkout). Cada efeito colateral tem
+   seu próprio try/catch: uma falha no e-mail ou no Melhor Envio nunca
+   deve impedir os outros nem a confirmação do pagamento em si. */
+async function confirmOrderPaid(orderId, env) {
+  const supaRes = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}`,
+    {
+      method: "PATCH",
+      headers: { ...supaHeaders(env), Prefer: "return=minimal" },
+      body: JSON.stringify({ payment_status: "pago" })
+    }
+  );
+  if (!supaRes.ok) {
+    throw new Error(`Falha ao atualizar pedido no Supabase (status ${supaRes.status}): ${await supaRes.text()}`);
+  }
+
+  /* Avisa o cliente por e-mail que o pagamento foi confirmado. */
+  try {
+    await sendPaymentConfirmedEmail(orderId, env);
+  } catch (err) {
+    console.error("E-mail de pagamento confirmado:", err);
+  }
+
+  /* Marca cada peça comprada como "esgotada" — peça única, vendida
+     uma vez não volta a aparecer disponível no catálogo. */
+  try {
+    await markOrderProductsAsSold(orderId, env);
+  } catch (err) {
+    console.error("Marcar peças como esgotadas:", err);
+  }
+
+  /* Gera a etiqueta no carrinho do Melhor Envio. */
+  try {
+    await createMelhorEnvioCartEntry(orderId, env);
+  } catch (err) {
+    console.error("Melhor Envio (pós-pagamento):", err);
   }
 }
 
@@ -971,6 +980,40 @@ async function handleSetCategoryCover(request, env) {
     return jsonResponse({ ok: true, cover: data[0] });
   } catch (err) {
     console.error("admin set-category-cover:", err);
+    return jsonResponse({ error: err.message || "Erro interno." }, 500);
+  }
+}
+
+/* Confirma manualmente um pedido como pago direto do painel (ex:
+   pagamento combinado por fora, Pix confirmado no banco). Antes disso
+   o botão do painel só fazia UPDATE de payment_status — não disparava
+   "peça esgotada" nem a etiqueta do Melhor Envio, porque esses efeitos
+   só existiam dentro do webhook automático da InfinitePay. Agora os
+   dois caminhos chamam a mesma confirmOrderPaid(). Autenticação: exige
+   uma sessão válida do dono logado (mesmo nível de confiança das
+   políticas RLS "to authenticated") — não usa o ADMIN_API_TOKEN, que é
+   escopado só pra cadastro/automação, não pra confirmar pagamentos. */
+async function handleAdminMarkOrderPaid(request, env) {
+  try {
+    const auth = request.headers.get("Authorization") || "";
+    const userToken = auth.replace(/^Bearer\s+/i, "");
+    if (!userToken) return jsonResponse({ error: "Não autorizado." }, 401);
+
+    const userRes = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${userToken}`
+      }
+    });
+    if (!userRes.ok) return jsonResponse({ error: "Sessão inválida ou expirada." }, 401);
+
+    const { orderId } = await request.json();
+    if (!orderId) return jsonResponse({ error: "Faltou orderId." }, 400);
+
+    await confirmOrderPaid(orderId, env);
+    return jsonResponse({ ok: true });
+  } catch (err) {
+    console.error("admin mark-order-paid:", err);
     return jsonResponse({ error: err.message || "Erro interno." }, 500);
   }
 }
