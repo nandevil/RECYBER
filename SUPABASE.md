@@ -806,6 +806,15 @@ Center** do TikTok Shop. Isso não dá pra automatizar por aqui; quando
 tiver a conta aprovada, um novo endpoint de feed pode ser adaptado pro
 formato deles se for preciso.
 
+> **Variante em CSV**: `https://recyber.com.br/feed-produtos.csv` gera
+> o mesmo catálogo em CSV (colunas `id,title,description,availability,
+> condition,price,link,image_link,brand,google_product_category`), com
+> uma diferença de propósito: todo `link` aponta pra
+> `https://recyber.com.br/` (home), não pra peça específica — use essa
+> versão se quiser que todo clique no anúncio/loja leve pro site geral
+> em vez de abrir a peça direto. Cole essa URL em Gerenciador de
+> Comércio → Fontes de dados → "Usar um URL".
+
 ## Passo 27 — Capa manual das categorias
 
 Permite escolher uma foto fixa pro card de cada categoria (tela

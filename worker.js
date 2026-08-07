@@ -51,6 +51,9 @@ export default {
     if (url.pathname === "/feed.xml" && request.method === "GET") {
       return handleProductFeed(env);
     }
+    if (url.pathname === "/feed-produtos.csv" && request.method === "GET") {
+      return handleProductFeedCsv(env);
+    }
     if (url.pathname === "/api/admin/set-category-cover" && request.method === "POST") {
       return handleSetCategoryCover(request, env);
     }
@@ -923,6 +926,70 @@ ${items}
     return new Response(xml, { headers: { "Content-Type": "application/xml; charset=utf-8" } });
   } catch (err) {
     console.error("feed:", err);
+    return new Response("Erro interno.", { status: 500 });
+  }
+}
+
+const GOOGLE_PRODUCT_CATEGORY = {
+  camisas: "Apparel & Accessories > Clothing > Shirts & Tops",
+  blusas: "Apparel & Accessories > Clothing > Shirts & Tops",
+  saias: "Apparel & Accessories > Clothing > Skirts",
+  vestidos: "Apparel & Accessories > Clothing > Dresses",
+  shorts: "Apparel & Accessories > Clothing > Shorts",
+  bermudas: "Apparel & Accessories > Clothing > Shorts",
+  calcas: "Apparel & Accessories > Clothing > Pants",
+  "casacos-sobreposicoes": "Apparel & Accessories > Clothing > Outerwear > Coats & Jackets",
+  bolsas: "Apparel & Accessories > Handbags, Wallets & Cases > Handbags",
+  sapatos: "Apparel & Accessories > Shoes"
+};
+
+/* Campo de CSV: só cerca com aspas quando precisa (vírgula, aspas ou
+   quebra de linha no valor) — aspas internas viram "" (regra padrão). */
+function csvField(value) {
+  const s = String(value ?? "");
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+/* Feed em CSV pro Meta Commerce Manager (Gerenciador de Comércio →
+   Fontes de dados → "Usar um URL"). Diferente do /feed.xml: aqui todo
+   link aponta pra home (não pra peça específica) e inclui a categoria
+   do Google — formato pedido explicitamente pra essa integração. */
+async function handleProductFeedCsv(env) {
+  try {
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/products?select=*`, {
+      headers: supaHeaders(env)
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      return new Response(`Erro ao buscar produtos: ${detail}`, { status: 502 });
+    }
+    const products = await res.json();
+
+    const header = "id,title,description,availability,condition,price,link,image_link,brand,google_product_category";
+    const rows = products
+      .filter(p => Array.isArray(p.image_urls) && p.image_urls.length > 0)
+      .map(p => {
+        const price = (Number(p.price) || 0).toFixed(2);
+        const category = GOOGLE_PRODUCT_CATEGORY[p.category] || "Apparel & Accessories > Clothing";
+        return [
+          p.id,
+          p.name,
+          p.description || p.name,
+          p.is_sold ? "out of stock" : "in stock",
+          "used",
+          `${price} BRL`,
+          "https://recyber.com.br/",
+          p.image_urls[0],
+          "Re.cyber",
+          category
+        ].map(csvField).join(",");
+      });
+
+    const csv = [header, ...rows].join("\r\n");
+    return new Response(csv, { headers: { "Content-Type": "text/csv; charset=utf-8" } });
+  } catch (err) {
+    console.error("feed csv:", err);
     return new Response("Erro interno.", { status: 500 });
   }
 }
