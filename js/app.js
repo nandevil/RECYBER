@@ -125,6 +125,20 @@ function money(v) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+/* Escapa HTML antes de inserir texto que veio do cliente (nome,
+   endereço, id do pedido, item do carrinho etc.) em qualquer innerHTML
+   — usado em js/checkout.js e js/admin.js. Esses campos chegam do
+   formulário público sem passar por validação de servidor (o Supabase
+   aceita inserção anônima de pedidos com "with check(true)"), então
+   tratamos como texto não confiável sempre que é exibido de volta,
+   seja no e-mail de aviso pro dono ou no painel. Sem isso, alguém
+   poderia colocar HTML/script no nome ou endereço do pedido. */
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
 /* =====================================================
    RENDER — GRID DE PRODUTOS
 ===================================================== */

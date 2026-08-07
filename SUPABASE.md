@@ -869,6 +869,92 @@ alter publication supabase_realtime add table public.products;
 > mudança pra quem já tem acesso de leitura (que é todo mundo, já que
 > o catálogo é público).
 
+## Passo 29 — Diagnóstico do webhook de pagamento (InfinitePay)
+
+Se o status do pedido nunca muda sozinho pra "Pagamento Concluído"
+(precisando sempre confirmar manualmente no painel), o próximo passo é
+enxergar o que a InfinitePay está realmente respondendo quando o
+webhook é chamado — sem isso é impossível saber se o problema é o
+webhook não chegar, a confirmação da transação falhar, ou outra coisa.
+Essa tabela guarda as últimas tentativas pra investigar.
+
+No **SQL Editor**, cole e rode:
+
+```sql
+create table public.webhook_logs (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  source text not null,
+  payload jsonb,
+  response jsonb,
+  confirmed boolean,
+  note text
+);
+
+alter table public.webhook_logs enable row level security;
+alter table public.webhook_logs force row level security;
+-- Sem nenhuma policy: só a service_role key (usada só dentro do
+-- Worker) consegue ler/escrever. Nem o dono logado nem visitantes têm
+-- acesso — é só um log técnico temporário pra diagnóstico.
+```
+
+Depois de rodar isso, peça pra eu consultar `/api/admin/webhook-logs`
+(mesmo token `ADMIN_API_TOKEN`) depois de um pagamento de teste — aí
+dá pra ver exatamente o que a InfinitePay respondeu e corrigir o
+código com precisão, em vez de tentar adivinhar.
+
+## Passo 30 — Trava o formato do id do pedido (reforço contra XSS)
+
+O `id` do pedido é criado pelo próprio navegador do cliente
+(`RC-<timestamp>`) e a política de inserção anônima aceita qualquer
+texto (`with check (true)`) — nada impede, em teoria, que alguém monte
+uma chamada direta pra API do Supabase (sem passar pelo site) com um
+`id` ou outros campos contendo HTML/script. O painel já escapa esse
+conteúdo antes de exibir (proteção principal), mas travar o formato
+aceito no próprio banco é uma segunda camada de defesa — impede que
+esse tipo de valor sequer seja gravado. No **SQL Editor**, cole e rode:
+
+```sql
+drop policy if exists "anon pode inserir pedidos" on public.orders;
+create policy "anon pode inserir pedidos"
+  on public.orders for insert to anon
+  with check (id ~ '^RC-[0-9]+$');
+```
+
+> Só recria a política de inserção com uma validação a mais — não
+> afeta pedidos que já existem, só passa a exigir esse formato pra
+> pedidos novos. Se algum dia o site mudar como gera o id do pedido,
+> essa expressão (`^RC-[0-9]+$`) precisa ser atualizada junto.
+
+## ⚠️ Ação crítica — desativar cadastro público no Supabase Auth
+
+**Isso não dá pra corrigir por código — precisa ser feito manualmente
+no painel do Supabase, o quanto antes.** Testei (sem criar nenhuma
+conta de verdade) e confirmei que o projeto aceita **qualquer pessoa
+se cadastrar** direto na API de autenticação do Supabase — mesmo o
+site só tendo tela de login, não de cadastro, isso não bloqueia
+chamadas diretas à API.
+
+O problema: todas as regras de segurança do banco (RLS) — pedidos,
+produtos, configurações, lista de e-mails da newsletter — liberam
+acesso de escrita/leitura pra **qualquer usuário autenticado**,
+presumindo que só existe uma conta (a sua). Com cadastro público
+ligado, qualquer pessoa pode criar uma conta e, a partir dela, **ler
+todos os pedidos (nome, CPF, endereço, telefone de clientes),
+editar/apagar produtos, mexer nas configurações do site e ver a lista
+de e-mails da newsletter** — sem precisar da sua senha.
+
+**Como corrigir agora:**
+1. [supabase.com/dashboard](https://supabase.com/dashboard) → seu projeto
+2. **Authentication** (menu lateral) → **Sign In / Providers** (ou
+   **Settings** → **Auth**, dependendo da versão do painel)
+3. Localize a opção **"Allow new users to sign up"** (ou "Enable
+   sign ups") e **desative**
+4. Salve
+
+Isso não afeta seu login — sua conta já existe e continua funcionando
+normalmente. Só impede que gente nova se cadastre sozinha.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

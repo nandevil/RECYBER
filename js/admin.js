@@ -136,9 +136,13 @@ function fillTemplate(text, order) {
   return text.replace(/\{\{nome\}\}/g, order.customer.nome).replace(/\{\{pedido\}\}/g, order.id);
 }
 
-/* Template de e-mail minimalista preto e branco, no estilo do site. */
+/* Template de e-mail minimalista preto e branco, no estilo do site.
+   title/bodyText já vêm com {{nome}}/{{pedido}} substituídos
+   (fillTemplate) por dados do pedido, que são preenchidos pelo
+   cliente no checkout — por isso escapamos aqui antes de virar HTML,
+   mesmo o texto em si sendo um template escrito pelo dono. */
 function buildEmailHtml(title, bodyText, imageUrl) {
-  const paragraphs = bodyText.split("\n").filter(Boolean).map(p => `<p style="margin:0 0 14px;">${p}</p>`).join("");
+  const paragraphs = bodyText.split("\n").filter(Boolean).map(p => `<p style="margin:0 0 14px;">${escapeHtml(p)}</p>`).join("");
   const imageHtml = imageUrl
     ? `<img src="${imageUrl}" alt="" style="width:100%;border-radius:8px;border:1.5px solid #161616;margin-bottom:20px;display:block;">`
     : "";
@@ -149,7 +153,7 @@ function buildEmailHtml(title, bodyText, imageUrl) {
       <div style="max-width:480px;margin:0 auto;background:#ffffff;border:2px solid #161616;border-radius:10px;padding:28px;">
         <p style="font-family:monospace;font-weight:bold;font-size:15px;letter-spacing:1px;margin:0 0 20px;">RE<span style="color:#2f8f4e;">.</span>CYBER</p>
         ${imageHtml}
-        <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">${title}</h1>
+        <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">${escapeHtml(title)}</h1>
         <div style="font-size:14px;line-height:1.6;color:#161616;">${paragraphs}</div>
         <hr style="border:none;border-top:1px solid #dededd;margin:24px 0 16px;">
         <p style="font-size:11px;color:#8a8a86;margin:0;">Re.cyber — Slow Fashion Brechó · recyber.com.br</p>
@@ -235,13 +239,14 @@ function productThumbHtml(item) {
   const fallback = typeof PRODUCTS !== "undefined" ? PRODUCTS.find(pr => pr.id === item.id) : null;
   const img = item.image || (fallback && fallback.image);
   if (!img) return `<span class="order-item-thumb order-item-thumb--empty" aria-hidden="true"></span>`;
-  return `<img class="order-item-thumb" src="${img}" alt="${item.name}" loading="lazy" onerror="this.outerHTML='&lt;span class=&quot;order-item-thumb order-item-thumb--empty&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;'">`;
+  return `<img class="order-item-thumb" src="${escapeHtml(img)}" alt="${escapeHtml(item.name)}" loading="lazy" onerror="this.outerHTML='&lt;span class=&quot;order-item-thumb order-item-thumb--empty&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;'">`;
 }
 
 function orderCardHtml(order) {
   const date = new Date(order.createdAt).toLocaleString("pt-BR");
+  const orderId = escapeHtml(order.id);
   const thumbsHtml = order.items.map(i => productThumbHtml(i)).join("");
-  const itemsHtml = order.items.map(i => `<li>${i.qty}x ${i.name} (Tam. ${i.size}) — ${money(i.price * i.qty)}</li>`).join("");
+  const itemsHtml = order.items.map(i => `<li>${i.qty}x ${escapeHtml(i.name)} (Tam. ${escapeHtml(i.size)}) — ${money(i.price * i.qty)}</li>`).join("");
   const paymentLabel = order.payment === "pix" ? "Pix" : "Cartão de Crédito";
   const payStatus = order.paymentStatus || "pendente";
   const payOptions = PAYMENT_STATUS.map(s =>
@@ -251,10 +256,10 @@ function orderCardHtml(order) {
   return `
     <div class="order-card">
       <div class="order-card-head">
-        <span class="order-id">${order.id}</span>
+        <span class="order-id">${orderId}</span>
         <div class="order-card-head-right">
           <span class="order-status order-status--${order.status}" ${payStatus === "cancelado" ? "hidden" : ""}>${STATUS_LABELS[order.status] || order.status}</span>
-          <button type="button" class="order-remove-btn" data-order="${order.id}" title="Remover Pedido" aria-label="Remover Pedido">
+          <button type="button" class="order-remove-btn" data-order="${orderId}" title="Remover Pedido" aria-label="Remover Pedido">
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
@@ -264,13 +269,13 @@ function orderCardHtml(order) {
       <div class="order-card-grid">
         <div class="order-block order-block--panel">
           <h4>Cliente</h4>
-          <p>${safe(order.customer.nome)}</p>
-          <p>${safe(order.customer.email)} · ${safe(order.customer.telefone)}</p>
-          <p>CPF: ${safe(order.customer.cpf)}</p>
+          <p>${escapeHtml(safe(order.customer.nome))}</p>
+          <p>${escapeHtml(safe(order.customer.email))} · ${escapeHtml(safe(order.customer.telefone))}</p>
+          <p>CPF: ${escapeHtml(safe(order.customer.cpf))}</p>
           <div class="order-block-divider"></div>
           <h4>Endereço</h4>
-          <p>${safe(order.customer.logradouro)}, ${safe(order.customer.numero, "-")}${order.customer.complemento ? ` — ${order.customer.complemento}` : ""}</p>
-          <p>${safe(order.customer.bairro)} · CEP ${safe(order.customer.cep)}</p>
+          <p>${escapeHtml(safe(order.customer.logradouro))}, ${escapeHtml(safe(order.customer.numero, "-"))}${order.customer.complemento ? ` — ${escapeHtml(order.customer.complemento)}` : ""}</p>
+          <p>${escapeHtml(safe(order.customer.bairro))} · CEP ${escapeHtml(safe(order.customer.cep))}</p>
         </div>
 
         <div class="order-block order-block--panel order-block--payment">
@@ -281,7 +286,7 @@ function orderCardHtml(order) {
           <p class="order-total-final">Total: ${money(order.total)}</p>
           <label class="order-payment-status-label">
             <span>Status do pagamento</span>
-            <select class="sort-select pay-status-select pay-status--${payStatus}" data-order="${order.id}">${payOptions}</select>
+            <select class="sort-select pay-status-select pay-status--${payStatus}" data-order="${orderId}">${payOptions}</select>
           </label>
         </div>
       </div>
@@ -293,8 +298,8 @@ function orderCardHtml(order) {
       </div>
 
       <div class="order-actions" ${payStatus === "cancelado" ? "hidden" : ""}>
-        <button type="button" class="pill pill-sm" data-order="${order.id}" data-status="em-preparacao">Notificar Início de Preparação</button>
-        <button type="button" class="pill pill-sm" data-order="${order.id}" data-status="enviado">Notificar Envio do Pedido</button>
+        <button type="button" class="pill pill-sm" data-order="${orderId}" data-status="em-preparacao">Notificar Início de Preparação</button>
+        <button type="button" class="pill pill-sm" data-order="${orderId}" data-status="enviado">Notificar Envio do Pedido</button>
       </div>
     </div>
   `;

@@ -190,8 +190,9 @@ function buildOrderWhatsappMessage(order) {
    é só "um cliente acabou de fechar o pedido". Nunca trava nem atrasa
    o checkout: dispara em segundo plano, sem esperar a resposta. */
 function notifyAdminNewOrder(order) {
+  const orderId = escapeHtml(order.id);
   const itemsHtml = order.items
-    .map(i => `<p style="margin:0 0 6px;">• ${i.name} (Tam. ${i.size}) x${i.qty} — ${money(i.price * i.qty)}</p>`)
+    .map(i => `<p style="margin:0 0 6px;">• ${escapeHtml(i.name)} (Tam. ${escapeHtml(i.size)}) x${i.qty} — ${money(i.price * i.qty)}</p>`)
     .join("");
   const html = `<!doctype html>
     <html><head><meta charset="UTF-8"></head>
@@ -199,9 +200,9 @@ function notifyAdminNewOrder(order) {
     <div style="background:#0e0e0e;padding:32px 16px;font-family:'Courier New',monospace;">
       <div style="max-width:480px;margin:0 auto;background:#ffffff;border:2px solid #161616;border-radius:10px;padding:28px;">
         <p style="font-family:monospace;font-weight:bold;font-size:15px;letter-spacing:1px;margin:0 0 20px;">RE<span style="color:#2f8f4e;">.</span>CYBER</p>
-        <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">Novo pedido recebido — ${order.id}</h1>
+        <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">Novo pedido recebido — ${orderId}</h1>
         <div style="font-size:14px;line-height:1.6;color:#161616;">
-          <p style="margin:0 0 10px;"><strong>Cliente:</strong> ${order.customer.nome} (${order.customer.email} · ${order.customer.telefone})</p>
+          <p style="margin:0 0 10px;"><strong>Cliente:</strong> ${escapeHtml(order.customer.nome)} (${escapeHtml(order.customer.email)} · ${escapeHtml(order.customer.telefone)})</p>
           <p style="margin:0 0 10px;"><strong>Pagamento escolhido:</strong> ${order.payment === "cartao" ? "Cartão de Crédito" : "Pix"}</p>
           ${itemsHtml}
           <p style="margin:10px 0 0;"><strong>Total: ${money(order.total)}</strong></p>

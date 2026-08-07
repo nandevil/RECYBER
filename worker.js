@@ -60,6 +60,9 @@ export default {
     if (url.pathname === "/api/admin/mark-order-paid" && request.method === "POST") {
       return handleAdminMarkOrderPaid(request, env);
     }
+    if (url.pathname === "/api/admin/webhook-logs" && request.method === "GET") {
+      return handleAdminWebhookLogs(request, env);
+    }
 
     return env.ASSETS.fetch(request);
   }
@@ -160,6 +163,7 @@ async function handleInfinitePayWebhook(request, env) {
     const payload = await request.json();
     const { order_nsu, transaction_nsu, slug } = payload || {};
     if (!order_nsu || !transaction_nsu) {
+      await logWebhookAttempt(env, { source: "infinitepay", payload, response: null, confirmed: false, note: "faltou order_nsu/transaction_nsu no corpo do webhook" });
       return jsonResponse({ success: false }, 400);
     }
 
@@ -173,6 +177,15 @@ async function handleInfinitePayWebhook(request, env) {
 
     const confirmed = checkRes.ok && checkData &&
       (checkData.success === true || checkData.paid === true || checkData.status === "paid");
+
+    await logWebhookAttempt(env, {
+      source: "infinitepay",
+      payload,
+      response: { status: checkRes.status, body: checkData },
+      confirmed,
+      note: confirmed ? null : "payment_check não confirmou pagamento (ver response)"
+    });
+
     if (!confirmed) {
       return jsonResponse({ success: false });
     }
@@ -188,6 +201,22 @@ async function handleInfinitePayWebhook(request, env) {
   } catch (err) {
     console.error("webhook infinitepay:", err);
     return jsonResponse({ success: false }, 500);
+  }
+}
+
+/* Grava uma tentativa de webhook pra diagnóstico (Passo 29 do
+   SUPABASE.md) — nunca lança erro (se a tabela não existir ainda,
+   ou qualquer outro problema, só loga e segue, pra nunca derrubar o
+   webhook de pagamento de verdade por causa disso). */
+async function logWebhookAttempt(env, { source, payload, response, confirmed, note }) {
+  try {
+    await fetch(`${env.SUPABASE_URL}/rest/v1/webhook_logs`, {
+      method: "POST",
+      headers: { ...supaHeaders(env), Prefer: "return=minimal" },
+      body: JSON.stringify({ source, payload, response, confirmed, note })
+    });
+  } catch (err) {
+    console.warn("logWebhookAttempt falhou (não crítico):", err.message);
   }
 }
 
@@ -257,7 +286,7 @@ async function sendPaymentConfirmedEmail(orderId, env) {
     <div style="background:#0e0e0e;padding:32px 16px;font-family:'Courier New',monospace;">
       <div style="max-width:480px;margin:0 auto;background:#ffffff;border:2px solid #161616;border-radius:10px;padding:28px;">
         <p style="font-family:monospace;font-weight:bold;font-size:15px;letter-spacing:1px;margin:0 0 20px;">RE<span style="color:#2f8f4e;">.</span>CYBER</p>
-        <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">Pagamento confirmado — ${order.id}</h1>
+        <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">Pagamento confirmado — ${escapeXml(order.id)}</h1>
         <div style="font-size:14px;line-height:1.6;color:#161616;">
           <p style="margin:0;">Parabéns pela compra! Seu código de rastreio será enviado por e-mail assim que o produto for postado. Fique de olho: ele pode ir para a caixa de spam ou lixo eletrônico. O e-mail será enviado pela Melhor Envio.</p>
         </div>
@@ -1081,6 +1110,35 @@ async function handleAdminMarkOrderPaid(request, env) {
     return jsonResponse({ ok: true });
   } catch (err) {
     console.error("admin mark-order-paid:", err);
+    return jsonResponse({ error: err.message || "Erro interno." }, 500);
+  }
+}
+
+/* Só pra diagnóstico (Passo 29 do SUPABASE.md) — mostra as últimas
+   tentativas de webhook de pagamento gravadas em public.webhook_logs,
+   pra descobrir por que o status não muda sozinho sem precisar de
+   acesso aos logs do Cloudflare. Protegido pelo ADMIN_API_TOKEN (não
+   exige login do dono porque é só leitura de diagnóstico técnico, sem
+   dado de cliente sensível além do que já está no pedido). */
+async function handleAdminWebhookLogs(request, env) {
+  try {
+    const auth = request.headers.get("Authorization") || "";
+    if (!env.ADMIN_API_TOKEN || auth !== `Bearer ${env.ADMIN_API_TOKEN}`) {
+      return jsonResponse({ error: "Não autorizado." }, 401);
+    }
+
+    const res = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/webhook_logs?select=*&order=created_at.desc&limit=20`,
+      { headers: supaHeaders(env) }
+    );
+    if (!res.ok) {
+      const detail = await res.text();
+      return jsonResponse({ error: "Falha ao buscar logs.", detail }, 502);
+    }
+    const logs = await res.json();
+    return jsonResponse({ logs });
+  } catch (err) {
+    console.error("admin webhook-logs:", err);
     return jsonResponse({ error: err.message || "Erro interno." }, 500);
   }
 }
