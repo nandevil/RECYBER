@@ -207,15 +207,10 @@ ul{list-style:none;}
 
 /* ===================== CATALOG ===================== */
 .catalog{padding:56px 0 64px;}
-/* Grid de 3 colunas: botão "Categorias" | título (sempre centralizado
-   na linha inteira, independente da largura do select) | ordenação. */
 .catalog-head{
-  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
-  gap:16px;margin-bottom:24px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;margin-bottom:20px;
 }
-#catalog-title{grid-column:2;text-align:center;}
-#back-to-categories{grid-column:1;justify-self:start;}
-#sort-select{grid-column:3;justify-self:end;}
 .back-to-categories{
   font-family:var(--font-mono);font-size:.78rem;
   border:1.5px solid var(--ink);background:transparent;color:var(--ink);
@@ -288,6 +283,36 @@ ul{list-style:none;}
 .cat-card--promo .cat-card-label{color:#c0392b;}
 .cat-card--promo.active .cat-card-thumb{background:#c0392b;}
 .cat-card--promo.active .cat-card-label{color:#c0392b;}
+
+/* Atalhos compactos de categoria (estilo Shein/Shopee) — fileira
+   horizontal com rolagem, ícones/fotos redondos, acima da vitrine de
+   produtos que fica sempre visível (sem tela de categorias separada). */
+.category-cards--quicklinks{
+  display:flex;flex-wrap:nowrap;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;
+  gap:18px;margin:0 0 28px;padding:2px 2px 8px;
+  scrollbar-width:thin;
+}
+.category-cards--quicklinks .cat-card{
+  flex:0 0 auto;width:68px;
+  flex-direction:column;align-items:center;text-align:center;
+  background:transparent;border:none;box-shadow:none;border-radius:0;
+}
+.category-cards--quicklinks .cat-card:hover{transform:none;box-shadow:none;}
+.category-cards--quicklinks .cat-card-thumb{
+  aspect-ratio:1/1;width:60px;height:60px;
+  border:1.5px solid var(--grey-light);border-radius:50%;
+}
+.category-cards--quicklinks .cat-card-icon{width:24px;height:24px;}
+.category-cards--quicklinks .cat-card-info{padding:6px 0 0;align-items:center;}
+.category-cards--quicklinks .cat-card-label{
+  font-size:.6rem;white-space:nowrap;line-height:1.3;
+}
+.category-cards--quicklinks .cat-card-count{display:none;}
+.category-cards--quicklinks .cat-card.active .cat-card-thumb{
+  border-color:var(--ink);border-width:2px;
+}
+.category-cards--quicklinks .cat-card--promo .cat-card-thumb{border-color:#c0392b;}
 
 /* ===================== MODO PROMO — TEMA ESCURO PÚBLICO =====================
    Ativado/desativado automaticamente (js/promo-sync.js) enquanto a campanha
@@ -1356,35 +1381,26 @@ body.admin-open{overflow:hidden;}
   .hero-tagline{border-left:none;padding-left:0;border-top:2px solid var(--ink);padding-top:16px;width:100%;}
   .year-text{font-size:clamp(3rem,18vw,5rem);}
 
-  /* product grid → list on mobile */
-  .product-grid{grid-template-columns:1fr;gap:12px;}
-  .product-card{flex-direction:row;border-radius:10px;}
-  .product-thumb{
-    width:120px;min-width:120px;
-    aspect-ratio:1/1;
-    border-bottom:none;border-right:1.5px solid var(--grey-light);
-    border-radius:10px 0 0 10px;
-  }
-  .product-info{padding:12px 14px;}
+  /* Grade de 2 colunas no mobile (estilo marketplace) — card vertical
+     normal (foto em cima, info embaixo), só compacto. */
+  .product-grid{grid-template-columns:repeat(2,1fr);gap:12px;}
+  .product-card{border-radius:10px;}
+  .product-info{padding:10px 12px;}
 
   .footer-inner{grid-template-columns:1fr;}
 }
 
 /* ===================== RESPIRO MOBILE (<768px) ===================== */
 @media (max-width:767px){
-  /* Cabeçalho do catálogo: botão voltar / título empilhados sobre o
-     seletor de ordenação, com respiro entre eles */
+  /* Cabeçalho do catálogo: título e seletor de ordenação empilhados,
+     com respiro entre eles */
   .catalog-head{
-    grid-template-columns:1fr;
-    justify-items:center;
+    flex-direction:column;
+    align-items:stretch;
     gap:12px;
-    margin-bottom:24px;
+    margin-bottom:20px;
   }
-  #back-to-categories,
-  #catalog-title,
-  #sort-select{grid-column:1;}
-  #back-to-categories{justify-self:center;}
-  #sort-select{justify-self:stretch;width:100%;}
+  #sort-select{width:100%;}
 
   /* Respiro entre os filtros/grade e a linha divisória da próxima seção */
   .catalog{padding-bottom:32px;}

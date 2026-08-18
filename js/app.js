@@ -171,18 +171,17 @@ function getFilteredProducts() {
   return list;
 }
 
-/* Alterna entre a tela de categorias e a tela de produtos filtrados. */
+/* Home em formato marketplace: os atalhos de categoria (compactos, no
+   topo) e a vitrine de produtos ficam sempre visíveis juntos — não
+   existe mais uma "tela de categorias" separada da "tela de
+   produtos". Só o título acima do grid muda conforme o filtro/busca. */
 function updateCatalogView() {
-  const showProducts = isProductView();
-  document.getElementById("category-cards").hidden = showProducts;
-  document.getElementById("product-grid").hidden = !showProducts;
-  document.getElementById("sort-select").hidden = !showProducts;
-  document.getElementById("back-to-categories").hidden = !showProducts;
-  document.getElementById("catalog-title").textContent = !showProducts
-    ? "Categorias"
+  const isSearching = !!state.search.trim();
+  document.getElementById("catalog-title").textContent = isSearching
+    ? "Resultados da busca"
     : state.filter === "todos" ? "Todos"
     : state.filter ? labelCategory(state.filter)
-    : "Resultados da busca";
+    : "Todos";
 }
 
 function renderGrid() {
@@ -337,7 +336,7 @@ function hashToFilter() {
    FILTROS / BUSCA / ORDENAÇÃO
 ===================================================== */
 function setFilter(filter, opts = {}) {
-  state.filter = filter;
+  state.filter = filter || "todos";
   document.querySelectorAll("[data-filter]").forEach(c => c.classList.toggle("active", c.dataset.filter === filter));
   renderGrid();
   updateCatalogView();
@@ -360,8 +359,6 @@ document.querySelectorAll("[data-filter]").forEach(el => {
     document.getElementById("catalogo").scrollIntoView({ behavior: "smooth" });
   });
 });
-document.getElementById("back-to-categories").addEventListener("click", () => setFilter(null));
-
 window.addEventListener("popstate", () => setFilter(hashToFilter(), { skipHash: true }));
 window.addEventListener("hashchange", () => setFilter(hashToFilter(), { skipHash: true }));
 
@@ -738,7 +735,7 @@ function showToast(text) {
 document.getElementById("year").textContent = new Date().getFullYear();
 buildCircuitRing();
 buildBarcode();
-state.filter = hashToFilter();
+state.filter = hashToFilter() || "todos";
 renderCategoryCards();
 renderGrid();
 updateCatalogView();
