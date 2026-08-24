@@ -863,10 +863,16 @@ async function handleAdminAddProduct(request, env) {
     }
 
     const body = await request.json();
-    const { name, price, size, category, description, tag, images } = body || {};
+    const { name, price, size, sizes, category, description, tag, images } = body || {};
     if (!name || !category) {
       return jsonResponse({ error: "Faltam campos obrigatórios (name, category)." }, 400);
     }
+    /* "sizes" (array [{size,measurements}]) é o formato novo — quando
+       vem preenchido, o campo legado "size" (texto simples) é montado
+       a partir dele, pra continuar funcionando em qualquer lugar do
+       código que ainda lê só o texto. */
+    const sizesArray = Array.isArray(sizes) ? sizes.filter(s => s && s.size) : [];
+    const sizeText = sizesArray.length > 0 ? sizesArray.map(s => s.size).join(", ") : (size || "");
 
     const imageUrls = [];
     for (const img of (images || [])) {
@@ -896,7 +902,8 @@ async function handleAdminAddProduct(request, env) {
       body: JSON.stringify({
         name,
         price: Number(price) || 0,
-        size: size || "",
+        size: sizeText,
+        sizes: sizesArray,
         category,
         description: description || "",
         image_urls: imageUrls,

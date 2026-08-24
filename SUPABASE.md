@@ -955,6 +955,23 @@ de e-mails da newsletter** — sem precisar da sua senha.
 Isso não afeta seu login — sua conta já existe e continua funcionando
 normalmente. Só impede que gente nova se cadastre sozinha.
 
+## Passo 31 — Vários tamanhos por peça (com medidas)
+
+Permite cadastrar uma peça com mais de um tamanho disponível, cada um
+com suas próprias medidas (ex: "M — largura 20cm, comprimento 50cm" e
+"G — largura 50cm, comprimento 80cm"). No **SQL Editor**, cole e rode:
+
+```sql
+alter table public.products add column if not exists sizes jsonb not null default '[]'::jsonb;
+```
+
+> Não quebra peças já cadastradas — elas continuam com o campo antigo
+> `size` (texto simples) até você editá-las e preencher os tamanhos
+> novos pelo painel. O campo `size` continua existindo e é preenchido
+> automaticamente (lista dos tamanhos separada por vírgula) só pra
+> compatibilidade com qualquer parte do sistema que ainda leia o
+> formato antigo.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

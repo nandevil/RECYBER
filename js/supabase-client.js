@@ -62,6 +62,7 @@ function rowToProduct(r) {
     name: r.name,
     price: Number(r.price) || 0,
     size: r.size || "Único",
+    sizes: Array.isArray(r.sizes) ? r.sizes.filter(s => s && s.size) : [],
     condition: r.condition || "",
     description: r.description || "",
     image: images[0] || "",

@@ -552,14 +552,15 @@
             <span>Preço (R$)</span>
             <input type="number" id="pf-price" min="0" step="0.01" required>
           </label>
-          <label class="field">
-            <span>Tamanho</span>
-            <input type="text" id="pf-size" placeholder="Ex: M, 42, Único">
-          </label>
           <label class="field field-wide">
             <span>Categoria</span>
             <select id="pf-category" required></select>
           </label>
+        </div>
+        <div class="field field-wide">
+          <span>Tamanhos e medidas <em>(um por linha — pode adicionar vários)</em></span>
+          <div class="pf-sizes-list" id="pf-sizes-list"></div>
+          <button type="button" class="pill pill-sm" id="pf-sizes-add">+ Adicionar tamanho</button>
         </div>
         <label class="field field-wide">
           <span>Descrição</span>

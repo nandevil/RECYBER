@@ -240,7 +240,16 @@ function renderGrid() {
   });
   grid.querySelectorAll(".add-btn:not(:disabled)").forEach(el => {
     el.addEventListener("click", () => {
-      addToCart(el.dataset.id, 1);
+      const p = PRODUCTS.find(pr => pr.id === el.dataset.id);
+      /* Com mais de um tamanho cadastrado, o "+" rápido não sabe qual
+         o cliente quer — abre a visualização rápida pra ele escolher
+         em vez de adicionar um tamanho ao acaso. */
+      if (p && Array.isArray(p.sizes) && p.sizes.length > 1) {
+        openModal(p.id);
+        return;
+      }
+      const size = p && Array.isArray(p.sizes) && p.sizes.length === 1 ? p.sizes[0].size : (p ? p.size : "");
+      addToCart(el.dataset.id, 1, size);
       showToast("Adicionado ao carrinho");
     });
   });
@@ -397,28 +406,37 @@ document.getElementById("search-close").addEventListener("click", () => {
 /* =====================================================
    CARRINHO
 ===================================================== */
-function addToCart(id, qty) {
-  const existing = state.cart.find(i => i.id === id);
+/* Cada peça pode ter vários tamanhos (Passo 31) — o tamanho escolhido
+   é parte do item do carrinho, não da peça. Duas linhas do mesmo
+   produto em tamanhos diferentes ficam separadas; por isso o "id" do
+   carrinho aqui é a combinação id+size, não só o id da peça. */
+function cartLineKey(id, size) {
+  return `${id}::${size || ""}`;
+}
+
+function addToCart(id, qty, size = "") {
+  const key = cartLineKey(id, size);
+  const existing = state.cart.find(i => cartLineKey(i.id, i.size) === key);
   if (existing) {
     existing.qty += qty;
   } else {
-    state.cart.push({ id, qty });
+    state.cart.push({ id, qty, size });
   }
   saveCart();
 }
 
-function updateQty(id, delta) {
-  const item = state.cart.find(i => i.id === id);
+function updateQty(key, delta) {
+  const item = state.cart.find(i => cartLineKey(i.id, i.size) === key);
   if (!item) return;
   item.qty += delta;
   if (item.qty <= 0) {
-    state.cart = state.cart.filter(i => i.id !== id);
+    state.cart = state.cart.filter(i => cartLineKey(i.id, i.size) !== key);
   }
   saveCart();
 }
 
-function removeFromCart(id) {
-  state.cart = state.cart.filter(i => i.id !== id);
+function removeFromCart(key) {
+  state.cart = state.cart.filter(i => cartLineKey(i.id, i.size) !== key);
   saveCart();
 }
 
@@ -452,20 +470,21 @@ function updateCartUI() {
       const p = PRODUCTS.find(pr => pr.id === item.id);
       if (!p) return;
       const img = p.image || placeholderImage(p.category, idx);
+      const key = cartLineKey(item.id, item.size);
       const row = document.createElement("div");
       row.className = "cart-item";
       row.innerHTML = `
-        <div class="cart-item-thumb"><img src="${img}" alt="${p.name}"></div>
+        <div class="cart-item-thumb"><img src="${img}" alt="${escapeHtml(p.name)}"></div>
         <div class="cart-item-info">
-          <span class="cart-item-name">${p.name}</span>
-          <span class="cart-item-meta">Tam. ${p.size} · ${money(effectivePrice(p))}</span>
+          <span class="cart-item-name">${escapeHtml(p.name)}</span>
+          <span class="cart-item-meta">Tam. ${escapeHtml(item.size || p.size)} · ${money(effectivePrice(p))}</span>
           <div class="cart-item-row">
             <div class="qty-control">
-              <button data-action="dec" data-id="${p.id}">-</button>
+              <button data-action="dec" data-key="${key}">-</button>
               <span>${item.qty}</span>
-              <button data-action="inc" data-id="${p.id}">+</button>
+              <button data-action="inc" data-key="${key}">+</button>
             </div>
-            <button class="remove-btn" data-action="remove" data-id="${p.id}">remover</button>
+            <button class="remove-btn" data-action="remove" data-key="${key}">remover</button>
           </div>
         </div>
       `;
@@ -475,10 +494,10 @@ function updateCartUI() {
 
   itemsEl.querySelectorAll("[data-action]").forEach(btn => {
     btn.addEventListener("click", () => {
-      const { action, id } = btn.dataset;
-      if (action === "inc") updateQty(id, 1);
-      if (action === "dec") updateQty(id, -1);
-      if (action === "remove") removeFromCart(id);
+      const { action, key } = btn.dataset;
+      if (action === "inc") updateQty(key, 1);
+      if (action === "dec") updateQty(key, -1);
+      if (action === "remove") removeFromCart(key);
     });
   });
 
@@ -567,7 +586,7 @@ function buildWhatsappMessage(items) {
   items.forEach(item => {
     const p = PRODUCTS.find(pr => pr.id === item.id);
     if (!p) return;
-    msg += `• ${p.name} (Tam. ${p.size}) x${item.qty} — ${money(effectivePrice(p) * item.qty)}\n`;
+    msg += `• ${p.name} (Tam. ${item.size || p.size}) x${item.qty} — ${money(effectivePrice(p) * item.qty)}\n`;
   });
   msg += `\n*Total: ${money(cartTotal())}*\n\nPodemos combinar pagamento e entrega?`;
   return encodeURIComponent(msg);
@@ -616,6 +635,26 @@ function openModal(id) {
     <div class="modal-gallery">
       ${gallery.map((src, i) => `<button type="button" class="modal-gallery-thumb${i === 0 ? " active" : ""}" data-src="${src}"><img src="${src}" alt=""></button>`).join("")}
     </div>` : "";
+
+  /* Peça com vários tamanhos cadastrados (Passo 31): mostra um
+     seletor com as medidas de cada um, e o cliente precisa escolher
+     antes de comprar. Sem tamanhos estruturados, cai no texto simples
+     de sempre. */
+  const hasSizeOptions = Array.isArray(p.sizes) && p.sizes.length > 0;
+  let selectedSize = hasSizeOptions ? p.sizes[0].size : p.size;
+  const sizeSpecHtml = hasSizeOptions
+    ? `<div class="modal-size-picker">
+        <span class="modal-size-picker-label">Tamanho:</span>
+        <div class="modal-size-options">
+          ${p.sizes.map((s, i) => `
+            <button type="button" class="modal-size-option${i === 0 ? " active" : ""}" data-size="${escapeHtml(s.size)}">
+              <span class="modal-size-option-label">${escapeHtml(s.size)}</span>
+              ${s.measurements ? `<span class="modal-size-option-measurements">${escapeHtml(s.measurements)}</span>` : ""}
+            </button>`).join("")}
+        </div>
+      </div>`
+    : `<span>Tamanho: ${escapeHtml(p.size)}</span>`;
+
   modal.innerHTML = `
     <div class="modal-image">
       ${soldOverlayHtml}
@@ -631,7 +670,7 @@ function openModal(id) {
         : money(p.price)}</span>
       <p class="modal-desc">${p.description}</p>
       <div class="modal-specs">
-        <span>Tamanho: ${p.size}</span>
+        ${sizeSpecHtml}
         <span>Estado de conservação: ${p.condition}</span>
       </div>
       <div class="modal-actions">
@@ -652,10 +691,19 @@ function openModal(id) {
       galleryEl.querySelectorAll(".modal-gallery-thumb").forEach(t => t.classList.toggle("active", t === thumb));
     });
   }
+  const sizePickerEl = modal.querySelector(".modal-size-picker");
+  if (sizePickerEl) {
+    sizePickerEl.addEventListener("click", e => {
+      const btn = e.target.closest(".modal-size-option");
+      if (!btn) return;
+      selectedSize = btn.dataset.size;
+      sizePickerEl.querySelectorAll(".modal-size-option").forEach(o => o.classList.toggle("active", o === btn));
+    });
+  }
   const modalAddBtn = modal.querySelector("#modal-add");
   if (modalAddBtn) {
     modalAddBtn.addEventListener("click", () => {
-      addToCart(p.id, 1);
+      addToCart(p.id, 1, selectedSize);
       showToast("Adicionado ao carrinho");
       closeModal();
       openCart();
@@ -663,7 +711,7 @@ function openModal(id) {
   }
   modal.querySelector("#modal-whatsapp").addEventListener("click", e => {
     e.preventDefault();
-    const msg = encodeURIComponent(`Olá! Tenho interesse na peça "${p.name}" (Tam. ${p.size}) do site ${CONFIG.storeName}. Ainda está disponível?`);
+    const msg = encodeURIComponent(`Olá! Tenho interesse na peça "${p.name}" (Tam. ${selectedSize}) do site ${CONFIG.storeName}. Ainda está disponível?`);
     window.open(whatsappLink(msg).replace(/text=.*/, `text=${msg}`), "_blank");
   });
 

@@ -711,6 +711,48 @@ document.getElementById("pf-image-previews").addEventListener("click", e => {
   renderProductImagePreviews();
 });
 
+/* Tamanhos + medidas da peça (aba Cadastro) — linhas manipuladas
+   direto no DOM (sem re-render a cada tecla, pra não perder o foco
+   enquanto digita). Cada linha vira um objeto {size, measurements} no
+   momento do submit (collectSizeRows). Deixa "M, Único, 42" etc como
+   texto livre — não é uma lista fixa de tamanhos. */
+function pfSizeRowHtml(size = "", measurements = "") {
+  return `
+    <div class="pf-size-row">
+      <input type="text" class="pf-size-input" placeholder="Tamanho (ex: M)" value="${escapeHtml(size)}">
+      <input type="text" class="pf-size-measurements" placeholder="Medidas (ex: largura 20cm, comprimento 50cm)" value="${escapeHtml(measurements)}">
+      <button type="button" class="pf-size-remove" aria-label="Remover tamanho">&times;</button>
+    </div>`;
+}
+function addSizeRow(size = "", measurements = "") {
+  document.getElementById("pf-sizes-list").insertAdjacentHTML("beforeend", pfSizeRowHtml(size, measurements));
+}
+function resetSizeRows(rows = [{ size: "", measurements: "" }]) {
+  const list = document.getElementById("pf-sizes-list");
+  list.innerHTML = "";
+  (rows.length > 0 ? rows : [{ size: "", measurements: "" }]).forEach(r => addSizeRow(r.size, r.measurements));
+}
+function collectSizeRows() {
+  return [...document.querySelectorAll("#pf-sizes-list .pf-size-row")]
+    .map(row => ({
+      size: row.querySelector(".pf-size-input").value.trim(),
+      measurements: row.querySelector(".pf-size-measurements").value.trim()
+    }))
+    .filter(r => r.size);
+}
+document.getElementById("pf-sizes-add").addEventListener("click", () => addSizeRow());
+document.getElementById("pf-sizes-list").addEventListener("click", e => {
+  const btn = e.target.closest(".pf-size-remove");
+  if (!btn) return;
+  const list = document.getElementById("pf-sizes-list");
+  const row = btn.closest(".pf-size-row");
+  if (list.children.length > 1) {
+    row.remove();
+  } else {
+    row.querySelectorAll("input").forEach(i => i.value = "");
+  }
+});
+
 /* Quando não-nulo, o submit do formulário faz UPDATE nessa peça em
    vez de INSERT de uma peça nova ("modo edição"). */
 let editingProductId = null;
@@ -722,6 +764,7 @@ function resetProductForm() {
   document.getElementById("product-form-submit").textContent = "Cadastrar Peça";
   document.getElementById("product-form-cancel-edit").hidden = true;
   renderProductImagePreviews();
+  resetSizeRows();
 }
 
 document.getElementById("product-form-cancel-edit").addEventListener("click", resetProductForm);
@@ -733,11 +776,17 @@ function startEditProduct(p) {
   editingProductId = p.id;
   document.getElementById("pf-name").value = p.name;
   document.getElementById("pf-price").value = p.price;
-  document.getElementById("pf-size").value = p.size === "Único" ? "" : p.size;
   document.getElementById("pf-category").value = p.category;
   document.getElementById("pf-description").value = p.description;
   selectedProductImages = [];
   renderProductImagePreviews();
+  /* Peça já tem tamanhos estruturados (Passo 31)? usa eles. Senão,
+     cai pro campo antigo (texto simples) numa única linha, sem medidas. */
+  resetSizeRows(
+    Array.isArray(p.sizes) && p.sizes.length > 0
+      ? p.sizes
+      : [{ size: p.size === "Único" ? "" : p.size, measurements: "" }]
+  );
   document.getElementById("product-form-submit").textContent = "Salvar Alterações";
   document.getElementById("product-form-cancel-edit").hidden = false;
   document.getElementById("product-form").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -834,10 +883,12 @@ document.getElementById("product-form").addEventListener("submit", async e => {
       imageUrls.push(sb.storage.from("product-images").getPublicUrl(path).data.publicUrl);
     }
 
+    const sizeRows = collectSizeRows();
     const payload = {
       name: document.getElementById("pf-name").value.trim(),
       price: Number(document.getElementById("pf-price").value) || 0,
-      size: document.getElementById("pf-size").value.trim(),
+      sizes: sizeRows,
+      size: sizeRows.map(r => r.size).join(", ") || "Único",
       category: document.getElementById("pf-category").value,
       description: document.getElementById("pf-description").value.trim()
     };

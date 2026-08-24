@@ -843,6 +843,21 @@ body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
 .modal-desc{font-size:.83rem;}
 .modal-specs{font-size:.75rem;color:var(--grey);display:flex;flex-direction:column;gap:4px;}
 .modal-actions{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
+.modal-size-picker{display:flex;flex-direction:column;gap:8px;}
+.modal-size-picker-label{text-transform:uppercase;letter-spacing:.5px;}
+.modal-size-options{display:flex;flex-wrap:wrap;gap:8px;}
+.modal-size-option{
+  display:flex;flex-direction:column;gap:2px;align-items:flex-start;
+  border:1.5px solid var(--grey-light);border-radius:10px;
+  padding:6px 12px;background:var(--paper-alt);
+  transition:border-color .15s,background .15s;
+}
+.modal-size-option:hover{border-color:var(--ink);}
+.modal-size-option.active{border-color:var(--ink);background:var(--ink);}
+.modal-size-option.active .modal-size-option-label,
+.modal-size-option.active .modal-size-option-measurements{color:var(--paper);}
+.modal-size-option-label{font-family:var(--font-mono);font-weight:700;font-size:.78rem;color:var(--ink);}
+.modal-size-option-measurements{font-size:.62rem;color:var(--grey);}
 
 /* ===================== INFORMAÇÕES ===================== */
 .info-modal{
@@ -1135,6 +1150,23 @@ body.admin-open{overflow:hidden;}
   font-size:.75rem;line-height:1;cursor:pointer;
 }
 .pf-image-remove:hover{background:var(--danger);}
+.pf-sizes-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+.pf-size-row{display:flex;gap:8px;align-items:center;}
+.pf-size-row .pf-size-input{flex:0 0 90px;}
+.pf-size-row .pf-size-measurements{flex:1 1 auto;}
+.pf-size-row input{
+  border:1.5px solid var(--ink);border-radius:var(--radius);
+  padding:10px 12px;font-family:var(--font-mono);font-size:.85rem;
+  background:var(--paper-alt);color:var(--ink);
+}
+.pf-size-row input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.pf-size-remove{
+  flex:0 0 auto;width:32px;height:32px;border-radius:50%;
+  background:var(--ink);color:var(--paper);border:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.95rem;line-height:1;cursor:pointer;
+}
+.pf-size-remove:hover{background:var(--danger);}
 .admin-upload-submit{
   align-self:flex-start;
   padding:13px 32px;
