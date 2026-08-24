@@ -1049,12 +1049,12 @@ async function handleProductFeedCsv(env) {
   }
 }
 
-/* Mapeamento pras categorias femininas do TikTok Shop — extraído do
-   modelo de planilha "Vestidos" baixado no Seller Center (só cobre
-   roupas femininas por enquanto; bolsas, sapatos e roupas masculinas
-   ficam em árvores de categoria diferentes, com modelo próprio ainda
-   não obtido). Só produtos com gender="feminino" e categoria mapeada
-   aqui entram no export. */
+/* Mapeamento pras categorias do TikTok Shop, um por gênero — extraído
+   dos modelos de planilha baixados no Seller Center (Vestidos =
+   feminino, Camisas = masculino). Bolsas e Sapatos ficam de fora por
+   enquanto: são árvores de categoria à parte, sem modelo baixado
+   ainda. Só produtos com gênero+categoria mapeados aqui entram no
+   export. */
 const TIKTOK_CATEGORY_FEMININO = {
   vestidos: "Vestidos femininos/Vestidos casuais",
   blusas: "Peças femininas para parte superior/Blusas e camisas",
@@ -1065,14 +1065,27 @@ const TIKTOK_CATEGORY_FEMININO = {
   calcas: "Peças femininas para parte inferior/Calças",
   "casacos-sobreposicoes": "Peças femininas para parte superior/Jaquetas e casacos"
 };
+const TIKTOK_CATEGORY_MASCULINO = {
+  camisas: "Peças masculinas para parte superior/Camisetas",
+  blusas: "Peças masculinas para parte superior/Camisetas",
+  shorts: "Peças masculinas para parte inferior/Shorts",
+  bermudas: "Peças masculinas para parte inferior/Shorts",
+  calcas: "Peças masculinas para parte inferior/Calças",
+  "casacos-sobreposicoes": "Peças masculinas para parte superior/Jaquetas e casacos"
+};
+const TIKTOK_CATEGORY_BY_GENDER = {
+  feminino: TIKTOK_CATEGORY_FEMININO,
+  masculino: TIKTOK_CATEGORY_MASCULINO
+};
 
 /* Gera as LINHAS de dados (sem cabeçalho de instrução/dropdown) no
    formato exato do modelo de carga em massa do TikTok Shop Seller
    Center (32 colunas, uma linha por tamanho/variação) — pra colar a
    partir da linha 7 do arquivo .xlsx baixado de lá, não pra subir
    direto (o modelo deles tem validações internas que não recriamos).
-   Só produtos femininos com categoria mapeada; o resto fica de fora
-   (ver TIKTOK_CATEGORY_FEMININO) até termos os outros modelos. */
+   Só produtos com gênero+categoria mapeados (feminino ou masculino);
+   o resto (unissex, bolsas, sapatos) fica de fora até termos os
+   outros modelos — ver TIKTOK_CATEGORY_BY_GENDER. */
 async function handleTikTokFeedCsv(env) {
   try {
     const [productsRes, settingsRes] = await Promise.all([
@@ -1101,9 +1114,10 @@ async function handleTikTokFeedCsv(env) {
     const skipped = [];
     const rows = [];
     for (const p of products) {
-      const category = TIKTOK_CATEGORY_FEMININO[p.category];
+      const categoryTable = TIKTOK_CATEGORY_BY_GENDER[p.gender];
+      const category = categoryTable ? categoryTable[p.category] : null;
       const images = Array.isArray(p.image_urls) ? p.image_urls : [];
-      if (p.gender !== "feminino" || !category || images.length === 0) {
+      if (!category || images.length === 0) {
         skipped.push(p.id);
         continue;
       }

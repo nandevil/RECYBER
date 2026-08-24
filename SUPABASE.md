@@ -996,22 +996,28 @@ Seller Center (32 colunas, uma linha por tamanho/variação de cada
 peça), extraído do arquivo baixado em Gerenciar produtos → Adicionar
 produto → Carregar em massa → Baixar modelo (categoria "Vestidos").
 
-**Cobertura atual — só roupa feminina**: entram no arquivo só peças
-com **gênero = Feminino** (Passo 32) e categoria entre Vestidos,
-Blusas, Camisas, Saias, Shorts, Bermudas, Calças ou Casacos e
-Sobreposições. Bolsas, Sapatos e roupas Masculinas ficam de fora por
-enquanto — o TikTok usa uma árvore de categoria e um modelo de
-planilha diferente pra cada uma dessas, que ainda não baixamos (mesmo
-processo do Passo 1 no Seller Center, categoria diferente).
+**Cobertura atual — roupas feminina e masculina**: entram no arquivo
+peças com **gênero = Feminino ou Masculino** (Passo 32) nas categorias
+Vestidos (só feminino), Blusas, Camisas, Saias (só feminino), Shorts,
+Bermudas, Calças e Casacos e Sobreposições. Bolsas, Sapatos e peças
+"Unissex" ficam de fora por enquanto — o TikTok usa uma árvore de
+categoria e um modelo de planilha próprio pra Bolsas/Sapatos, que
+ainda não baixamos (mesmo processo do Passo 1 no Seller Center,
+categoria diferente).
 
-**Como usar:**
+**Como usar (o mesmo arquivo `tiktok-feed.csv` já traz as duas árvores
+juntas — é só separar as linhas por categoria na hora de colar):**
 1. Abra `https://recyber.com.br/tiktok-feed.csv` no navegador (baixa
    ou abre como planilha, dependendo do programa padrão)
-2. Abra também o arquivo modelo `.xlsx` baixado do Seller Center
-3. Cole os dados do CSV a partir da **linha 7** do modelo (as 6
-   primeiras linhas são cabeçalho/instrução do próprio TikTok — não
-   mexa nelas)
+2. Abra o arquivo modelo `.xlsx` correspondente ao gênero (o baixado
+   com categoria "Vestidos" pras linhas femininas, o de "Camisas" pras
+   masculinas — são modelos diferentes, cada um só aceita as
+   categorias da própria árvore)
+3. Cole as linhas do CSV daquele gênero a partir da **linha 7** do
+   modelo (as 6 primeiras linhas são cabeçalho/instrução do próprio
+   TikTok — não mexa nelas)
 4. Salve o `.xlsx` e suba em Gerenciar produtos → Carregar em massa
+   (um upload pra cada gênero, já que são modelos separados)
 
 > Não geramos o `.xlsx` pronto porque o modelo do TikTok tem validações
 > internas (listas suspensas, formatação condicional) que são
