@@ -63,6 +63,9 @@ export default {
     if (url.pathname === "/api/admin/webhook-logs" && request.method === "GET") {
       return handleAdminWebhookLogs(request, env);
     }
+    if (url.pathname === "/tiktok-feed.csv" && request.method === "GET") {
+      return handleTikTokFeedCsv(env);
+    }
 
     return env.ASSETS.fetch(request);
   }
@@ -1043,6 +1046,106 @@ async function handleProductFeedCsv(env) {
   } catch (err) {
     console.error("feed csv:", err);
     return new Response("Erro interno.", { status: 500 });
+  }
+}
+
+/* Mapeamento pras categorias femininas do TikTok Shop — extraído do
+   modelo de planilha "Vestidos" baixado no Seller Center (só cobre
+   roupas femininas por enquanto; bolsas, sapatos e roupas masculinas
+   ficam em árvores de categoria diferentes, com modelo próprio ainda
+   não obtido). Só produtos com gender="feminino" e categoria mapeada
+   aqui entram no export. */
+const TIKTOK_CATEGORY_FEMININO = {
+  vestidos: "Vestidos femininos/Vestidos casuais",
+  blusas: "Peças femininas para parte superior/Blusas e camisas",
+  camisas: "Peças femininas para parte superior/Camisetas",
+  saias: "Peças femininas para parte inferior/Saias",
+  shorts: "Peças femininas para parte inferior/Shorts",
+  bermudas: "Peças femininas para parte inferior/Shorts",
+  calcas: "Peças femininas para parte inferior/Calças",
+  "casacos-sobreposicoes": "Peças femininas para parte superior/Jaquetas e casacos"
+};
+
+/* Gera as LINHAS de dados (sem cabeçalho de instrução/dropdown) no
+   formato exato do modelo de carga em massa do TikTok Shop Seller
+   Center (32 colunas, uma linha por tamanho/variação) — pra colar a
+   partir da linha 7 do arquivo .xlsx baixado de lá, não pra subir
+   direto (o modelo deles tem validações internas que não recriamos).
+   Só produtos femininos com categoria mapeada; o resto fica de fora
+   (ver TIKTOK_CATEGORY_FEMININO) até termos os outros modelos. */
+async function handleTikTokFeedCsv(env) {
+  try {
+    const [productsRes, settingsRes] = await Promise.all([
+      fetch(`${env.SUPABASE_URL}/rest/v1/products?select=*`, { headers: supaHeaders(env) }),
+      fetch(`${env.SUPABASE_URL}/rest/v1/shipping_settings?id=eq.1&select=*`, { headers: supaHeaders(env) })
+    ]);
+    if (!productsRes.ok) {
+      return new Response(`Erro ao buscar produtos: ${await productsRes.text()}`, { status: 502 });
+    }
+    const products = await productsRes.json();
+    const settingsRows = settingsRes.ok ? await settingsRes.json() : [];
+    const settings = settingsRows[0] || { weight_kg: 0.5, length_cm: 15, width_cm: 15, height_cm: 15 };
+
+    const header = [
+      "category", "brand", "product_name", "product_description", "main_image",
+      "image_2", "image_3", "image_4", "image_5", "image_6", "image_7", "image_8", "image_9",
+      "gtin_type", "gtin_code",
+      "property_name_1", "property_value_1", "property_1_image",
+      "property_name_2", "property_value_2",
+      "parcel_weight", "parcel_length", "parcel_width", "parcel_height",
+      "delivery", "price", "quantity", "seller_sku",
+      "minimum_order_quantity", "maximum_order_quantity", "cumulative_order_quantity",
+      "size_chart"
+    ].join(",");
+
+    const skipped = [];
+    const rows = [];
+    for (const p of products) {
+      const category = TIKTOK_CATEGORY_FEMININO[p.category];
+      const images = Array.isArray(p.image_urls) ? p.image_urls : [];
+      if (p.gender !== "feminino" || !category || images.length === 0) {
+        skipped.push(p.id);
+        continue;
+      }
+      const sizeRows = Array.isArray(p.sizes) && p.sizes.length > 0
+        ? p.sizes
+        : [{ size: (p.size && p.size !== "Único") ? p.size : "Único" }];
+
+      for (const s of sizeRows) {
+        rows.push([
+          category,
+          "", // brand — brechó não tem marca própria por peça
+          p.name,
+          p.description || p.name,
+          images[0] || "",
+          images[1] || "", images[2] || "", images[3] || "", images[4] || "",
+          images[5] || "", images[6] || "", images[7] || "", images[8] || "",
+          "", "", // gtin_type, gtin_code — peça usada, sem código de barras
+          "Tamanho", s.size || "Único", "",
+          "", "", // property_name_2/value_2 — só uma dimensão de variação (tamanho)
+          Math.round((Number(settings.weight_kg) || 0.5) * 1000), // kg -> g
+          Number(settings.length_cm) || 15,
+          Number(settings.width_cm) || 15,
+          Number(settings.height_cm) || 15,
+          "", // delivery — herda config da loja
+          (Number(p.price) || 0).toFixed(2),
+          p.is_sold ? 0 : 1,
+          `${p.id}-${(s.size || "unico").replace(/[^a-zA-Z0-9]/g, "")}`,
+          1, "", "", ""
+        ].map(csvField).join(","));
+      }
+    }
+
+    const csv = [header, ...rows].join("\r\n");
+    return new Response(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "X-Skipped-Products": skipped.length.toString()
+      }
+    });
+  } catch (err) {
+    console.error("tiktok feed csv:", err);
+    return jsonResponse({ error: err.message || "Erro interno." }, 500);
   }
 }
 

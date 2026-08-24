@@ -988,6 +988,36 @@ alter table public.products add column if not exists gender text not null defaul
 > público do site — o campo só existe pra alimentar exportações como a
 > do TikTok Shop.
 
+## Passo 33 — Exportar catálogo pro TikTok Shop (carga em massa)
+
+Rota pública `https://recyber.com.br/tiktok-feed.csv` — gera as linhas
+de dados no formato exato do modelo de carga em massa do TikTok Shop
+Seller Center (32 colunas, uma linha por tamanho/variação de cada
+peça), extraído do arquivo baixado em Gerenciar produtos → Adicionar
+produto → Carregar em massa → Baixar modelo (categoria "Vestidos").
+
+**Cobertura atual — só roupa feminina**: entram no arquivo só peças
+com **gênero = Feminino** (Passo 32) e categoria entre Vestidos,
+Blusas, Camisas, Saias, Shorts, Bermudas, Calças ou Casacos e
+Sobreposições. Bolsas, Sapatos e roupas Masculinas ficam de fora por
+enquanto — o TikTok usa uma árvore de categoria e um modelo de
+planilha diferente pra cada uma dessas, que ainda não baixamos (mesmo
+processo do Passo 1 no Seller Center, categoria diferente).
+
+**Como usar:**
+1. Abra `https://recyber.com.br/tiktok-feed.csv` no navegador (baixa
+   ou abre como planilha, dependendo do programa padrão)
+2. Abra também o arquivo modelo `.xlsx` baixado do Seller Center
+3. Cole os dados do CSV a partir da **linha 7** do modelo (as 6
+   primeiras linhas são cabeçalho/instrução do próprio TikTok — não
+   mexa nelas)
+4. Salve o `.xlsx` e suba em Gerenciar produtos → Carregar em massa
+
+> Não geramos o `.xlsx` pronto porque o modelo do TikTok tem validações
+> internas (listas suspensas, formatação condicional) que são
+> arriscadas de recriar do zero — colar os dados no arquivo original
+> deles preserva tudo isso.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.
