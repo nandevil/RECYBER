@@ -1266,6 +1266,16 @@ body.admin-open{overflow:hidden;}
   font-size:.62rem;text-transform:uppercase;letter-spacing:.4px;color:var(--grey);
   flex-shrink:0;
 }
+.admin-product-gender-field{
+  display:flex;flex-direction:column;gap:3px;
+  font-size:.62rem;text-transform:uppercase;letter-spacing:.4px;color:var(--grey);
+  flex-shrink:0;
+}
+.admin-product-gender-select{
+  font-family:var(--font-mono);font-size:.72rem;
+  border:1.5px solid var(--grey-light);border-radius:6px;
+  padding:4px 8px;background:var(--paper);color:var(--ink);
+}
 
 .admin-product-form-actions{display:flex;gap:10px;align-items:center;}
 .admin-products-list{display:flex;flex-direction:column;gap:10px;margin-bottom:10px;}

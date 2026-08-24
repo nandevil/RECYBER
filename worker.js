@@ -66,6 +66,12 @@ export default {
     if (url.pathname === "/tiktok-feed.csv" && request.method === "GET") {
       return handleTikTokFeedCsv(env);
     }
+    if (url.pathname === "/tiktok-feed-feminino.csv" && request.method === "GET") {
+      return handleTikTokFeedCsv(env, "feminino");
+    }
+    if (url.pathname === "/tiktok-feed-masculino.csv" && request.method === "GET") {
+      return handleTikTokFeedCsv(env, "masculino");
+    }
 
     return env.ASSETS.fetch(request);
   }
@@ -1086,7 +1092,7 @@ const TIKTOK_CATEGORY_BY_GENDER = {
    Só produtos com gênero+categoria mapeados (feminino ou masculino);
    o resto (unissex, bolsas, sapatos) fica de fora até termos os
    outros modelos — ver TIKTOK_CATEGORY_BY_GENDER. */
-async function handleTikTokFeedCsv(env) {
+async function handleTikTokFeedCsv(env, genderFilter) {
   try {
     const [productsRes, settingsRes] = await Promise.all([
       fetch(`${env.SUPABASE_URL}/rest/v1/products?select=*`, { headers: supaHeaders(env) }),
@@ -1114,6 +1120,7 @@ async function handleTikTokFeedCsv(env) {
     const skipped = [];
     const rows = [];
     for (const p of products) {
+      if (genderFilter && p.gender !== genderFilter) continue;
       const categoryTable = TIKTOK_CATEGORY_BY_GENDER[p.gender];
       const category = categoryTable ? categoryTable[p.category] : null;
       const images = Array.isArray(p.image_urls) ? p.image_urls : [];

@@ -947,6 +947,14 @@ async function renderProductsList() {
         <span class="admin-promo-name">${p.name}</span>
         <span class="admin-promo-meta">${labelCategory(p.category)} · ${money(p.price)}${p.isSold ? " · Esgotado" : ""}</span>
       </div>
+      <label class="admin-product-gender-field">
+        <span>Gênero</span>
+        <select class="admin-product-gender-select" data-product-id="${p.id}">
+          <option value="unissex" ${p.gender === "unissex" ? "selected" : ""}>Unissex</option>
+          <option value="feminino" ${p.gender === "feminino" ? "selected" : ""}>Feminino</option>
+          <option value="masculino" ${p.gender === "masculino" ? "selected" : ""}>Masculino</option>
+        </select>
+      </label>
       <label class="admin-promo-switch-field">
         <span>Vendido</span>
         <input type="checkbox" class="promo-switch admin-product-sold-toggle" data-product-id="${p.id}" ${p.isSold ? "checked" : ""}>
@@ -994,6 +1002,21 @@ document.getElementById("admin-products-list").addEventListener("click", async e
 });
 
 document.getElementById("admin-products-list").addEventListener("change", async e => {
+  const genderSelect = e.target.closest(".admin-product-gender-select");
+  if (genderSelect) {
+    const id = genderSelect.dataset.productId;
+    genderSelect.disabled = true;
+    const { error } = await sb.from("products").update({ gender: genderSelect.value }).eq("id", id);
+    genderSelect.disabled = false;
+    if (error) {
+      console.error("Atualizar gênero da peça:", error);
+      showToast("Erro ao atualizar o gênero");
+    } else {
+      showToast("Gênero atualizado");
+    }
+    return;
+  }
+
   const toggle = e.target.closest(".admin-product-sold-toggle");
   if (!toggle) return;
   const id = toggle.dataset.productId;
