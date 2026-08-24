@@ -972,6 +972,22 @@ alter table public.products add column if not exists sizes jsonb not null defaul
 > compatibilidade com qualquer parte do sistema que ainda leia o
 > formato antigo.
 
+## Passo 32 — Gênero da peça (feminino/masculino/unissex)
+
+Necessário pra exportar o catálogo pro TikTok Shop corretamente — a
+árvore de categorias deles é separada por gênero, e categorizar uma
+peça masculina como feminina (ou vice-versa) pode gerar advertência da
+própria plataforma. No **SQL Editor**, cole e rode:
+
+```sql
+alter table public.products add column if not exists gender text not null default 'unissex';
+```
+
+> Peças já cadastradas ficam como "unissex" até você editá-las e
+> escolher o gênero certo pelo painel. Isso não afeta nada no catálogo
+> público do site — o campo só existe pra alimentar exportações como a
+> do TikTok Shop.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

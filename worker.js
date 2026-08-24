@@ -863,7 +863,7 @@ async function handleAdminAddProduct(request, env) {
     }
 
     const body = await request.json();
-    const { name, price, size, sizes, category, description, tag, images } = body || {};
+    const { name, price, size, sizes, category, gender, description, tag, images } = body || {};
     if (!name || !category) {
       return jsonResponse({ error: "Faltam campos obrigatórios (name, category)." }, 400);
     }
@@ -905,6 +905,7 @@ async function handleAdminAddProduct(request, env) {
         size: sizeText,
         sizes: sizesArray,
         category,
+        gender: gender || "unissex",
         description: description || "",
         image_urls: imageUrls,
         tag: tag || ""

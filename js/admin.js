@@ -777,6 +777,7 @@ function startEditProduct(p) {
   document.getElementById("pf-name").value = p.name;
   document.getElementById("pf-price").value = p.price;
   document.getElementById("pf-category").value = p.category;
+  document.getElementById("pf-gender").value = p.gender || "unissex";
   document.getElementById("pf-description").value = p.description;
   selectedProductImages = [];
   renderProductImagePreviews();
@@ -890,6 +891,7 @@ document.getElementById("product-form").addEventListener("submit", async e => {
       sizes: sizeRows,
       size: sizeRows.map(r => r.size).join(", ") || "Único",
       category: document.getElementById("pf-category").value,
+      gender: document.getElementById("pf-gender").value,
       description: document.getElementById("pf-description").value.trim()
     };
     /* Só mexe nas fotos se o admin escolheu novas — senão mantém as
