@@ -754,9 +754,10 @@ Secret no Cloudflare (mesmo padrão do `RESEND_API_KEY`,
 1. No painel do Cloudflare: Workers & Pages → **recyber** → Settings
    → Variables and Secrets → **+ Add**.
 2. Type: **Secret**. Name: `ADMIN_API_TOKEN`. Valor: qualquer texto
-   longo e aleatório (o token gerado pra essa conversa foi
-   `Rx5qK9Xyj79EoilxxPeVQVAxlKOKZLqhPqKMylKi1+A=` — pode usar esse ou
-   gerar outro).
+   longo e aleatório que só você conhece (gere um novo — por exemplo
+   com `openssl rand -base64 32` ou um gerenciador de senhas — nunca
+   reaproveite um valor que já apareceu em texto neste documento ou
+   em qualquer conversa).
 3. Salve/publique.
 
 > Esse token dá acesso só a **cadastrar peças** (rota

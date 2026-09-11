@@ -17,7 +17,7 @@
        .then(b => console.log([...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("")))
    e cole o resultado em ADMIN_PASSWORD_HASH.
 ===================================================== */
-const ADMIN_PASSWORD_HASH = "15116bf2bbce39ea573bd4d7e9e7631311bfecb5e3226abee48129c10d1d8fa8"; // senha padrão: recyber2021
+const ADMIN_PASSWORD_HASH = "010a79f5d4f783bc0888d3e9fb09fc1ae08b763be5ef2906c0de50add9a1d626";
 const ADMIN_SESSION_KEY = "recyber_admin_session";
 
 async function sha256Hex(text) {

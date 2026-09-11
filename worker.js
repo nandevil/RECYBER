@@ -30,6 +30,14 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // [assets] directory = "./" no wrangler.toml serve a raiz inteira do
+    // repo — inclui arquivos internos (código-fonte, docs de setup,
+    // scripts, histórico do git) que nunca deveriam ir pro público. Bloqueia
+    // isso aqui antes de qualquer outra rota ou do fallback pro ASSETS.
+    if (isBlockedAssetPath(url.pathname)) {
+      return new Response("Not found", { status: 404 });
+    }
+
     if (url.pathname === "/api/create-payment" && request.method === "POST") {
       return handleCreatePayment(request, env);
     }
@@ -85,6 +93,28 @@ export default {
     return env.ASSETS.fetch(request);
   }
 };
+
+// Extensões/arquivos/pastas que nunca podem ser servidos publicamente,
+// mesmo estando dentro da raiz apontada por [assets] directory no
+// wrangler.toml. Checagem por prefixo de path (sempre em minúsculas).
+const BLOCKED_PATH_PREFIXES = [
+  "/.git/",
+  "/.gitignore",
+  "/.claude/",
+  "/wrangler.toml",
+  "/supabase.md",
+  "/server.ps1",
+  "/test-pagamento.html",
+  "/worker.js",
+  "/recyber/",
+  "/package.json",
+  "/package-lock.json",
+];
+
+function isBlockedAssetPath(pathname) {
+  const lower = pathname.toLowerCase();
+  return BLOCKED_PATH_PREFIXES.some((prefix) => lower === prefix || lower.startsWith(prefix));
+}
 
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -157,8 +187,7 @@ async function handleCreatePayment(request, env) {
       const cfRay = res.headers.get("cf-ray") || "";
       const respDate = res.headers.get("date") || "";
       console.error("InfinitePay create-link falhou:", res.status, detail, "cf-ray:", cfRay, "date:", respDate);
-      // DEBUG TEMPORÁRIO — remover "debug" da resposta antes de divulgar o checkout.
-      return jsonResponse({ error: "Não foi possível gerar o link de pagamento.", debug: { status: res.status, detail, cfRay, date: respDate } }, 502);
+      return jsonResponse({ error: "Não foi possível gerar o link de pagamento." }, 502);
     }
 
     const data = await res.json();
