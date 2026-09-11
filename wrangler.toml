@@ -7,6 +7,13 @@ compatibility_flags = ["nodejs_compat"]
 directory = "./"
 binding = "ASSETS"
 
+# Bucket R2 pras fotos de peças/categorias — substitui o Supabase
+# Storage (que cobra/bloqueia por tráfego). Egress do R2 é sempre
+# grátis, então isso tira as fotos do que consumia a cota do Supabase.
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "recyber-images"
+
 # Não são segredo — @ público da InfinitePay, domínio base da API do
 # Melhor Envio e o Client ID do app (não é sigiloso, só identifica a
 # integração — quem é sigiloso é o Client Secret, que continua só
@@ -29,3 +36,6 @@ MELHORENVIO_CLIENT_ID = "27198"
 # (SUPABASE_SERVICE_ROLE_KEY) continua só como Secret no painel do
 # Cloudflare, nunca aqui.
 SUPABASE_URL = "https://pzsbmenyseilagvbrnxn.supabase.co"
+# URL pública do bucket R2 (Public Development URL) — usada pra montar
+# o link de cada foto enviada pro R2. Não é segredo.
+R2_PUBLIC_URL = "https://pub-ee5c472613004972ac0cf85f25dae701.r2.dev"

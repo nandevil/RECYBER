@@ -1024,6 +1024,57 @@ juntas — é só separar as linhas por categoria na hora de colar):**
 > arriscadas de recriar do zero — colar os dados no arquivo original
 > deles preserva tudo isso.
 
+## Passo 34 — Fotos migradas pro Cloudflare R2 (fora do Supabase)
+
+O Supabase Storage cobra/bloqueia por **tráfego** (egress) — o plano
+gratuito tem só 5GB/mês, e como as fotos das peças são recarregadas a
+cada visita ao site, isso estourou rápido e derrubou o projeto inteiro
+(erro 402 "exceed_cached_egress_quota", banco E fotos bloqueados até o
+ciclo renovar ou o plano ser pago).
+
+A partir daqui, **as fotos não ficam mais no Supabase** — ficam num
+bucket **Cloudflare R2** (`recyber-images`), que tem os mesmos 10GB de
+armazenamento grátis, mas **egress sempre gratuito, sem limite**. O
+banco de dados (pedidos, produtos, textos) continua no Supabase
+normalmente — só o peso pesado (fotos) saiu de lá.
+
+### Configuração (já feita, documentando pra referência futura)
+
+1. No painel do Cloudflare → **R2 Object Storage** → ativar o R2 na
+   conta (gratuito dentro do limite, só pede forma de pagamento
+   cadastrada como garantia de excedente)
+2. Criar bucket: nome `recyber-images`, Location "Automatic", Storage
+   Class "Standard"
+3. No bucket → **Settings** → **Public Development URL** → Enable —
+   gera uma URL tipo `https://pub-xxxxxxxxxxxx.r2.dev`
+4. No `wrangler.toml`, adicionar o binding do bucket e a URL pública:
+   ```toml
+   [[r2_buckets]]
+   binding = "IMAGES"
+   bucket_name = "recyber-images"
+
+   [vars]
+   R2_PUBLIC_URL = "https://pub-xxxxxxxxxxxx.r2.dev"
+   ```
+
+### Como funciona no código
+
+- **Peça/feedback/etc. cadastrados pelo painel**: o navegador não sobe
+  mais a foto direto pro Storage — manda pro Worker
+  (`POST /api/admin/upload-image`, exige sessão do dono logado), que
+  sobe pro R2 e devolve a URL pública.
+- **Automação sem login** (`/api/admin/add-product`,
+  `/api/admin/set-category-cover`, protegidas por `ADMIN_API_TOKEN`):
+  já sobem a foto direto pro R2 também, usando a mesma função
+  `uploadImageToR2()`.
+- **Fotos já publicadas antes dessa mudança** continuam funcionando
+  (as URLs antigas do Supabase Storage não somem), mas pra elas
+  pararem de consumir tráfego do Supabase é preciso migrar — use o
+  botão **"Migrar fotos pro novo armazenamento (R2)"** na aba Cadastro
+  de Peça do painel. Pode rodar quantas vezes quiser: ele pula
+  automaticamente as fotos que já estão no R2, então só processa o que
+  ainda falta a cada rodada.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

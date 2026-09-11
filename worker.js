@@ -18,6 +18,12 @@
    - ADMIN_API_TOKEN  (token de automação de cadastro de peça —
      NÃO é a senha do painel, é um segredo só pra essa rota, veja
      Passo 25 do SUPABASE.md)
+
+   Fotos ficam no bucket R2 "recyber-images" (binding IMAGES no
+   wrangler.toml), não mais no Supabase Storage — egress do R2 é
+   sempre grátis, o que tirou as fotos do consumo de tráfego que
+   travava o projeto no Supabase. R2_PUBLIC_URL (var em wrangler.toml)
+   é a URL pública (Public Development URL) do bucket.
 ===================================================== */
 
 export default {
@@ -71,6 +77,9 @@ export default {
     }
     if (url.pathname === "/tiktok-feed-masculino.csv" && request.method === "GET") {
       return handleTikTokFeedCsv(env, "masculino");
+    }
+    if (url.pathname === "/api/admin/upload-image" && request.method === "POST") {
+      return handleAdminUploadImage(request, env);
     }
 
     return env.ASSETS.fetch(request);
@@ -403,6 +412,51 @@ function supaHeaders(env) {
     apikey: env.SUPABASE_SERVICE_ROLE_KEY,
     Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
   };
+}
+
+/* =====================================================
+   R2 — armazenamento de fotos (substitui o Supabase Storage, que
+   cobra/bloqueia por tráfego). Egress do R2 é sempre grátis, então as
+   fotos param de consumir a cota do Supabase. O bucket é privado por
+   padrão pro binding do Worker escrever; a leitura pública acontece
+   via R2_PUBLIC_URL (Public Development URL do bucket).
+===================================================== */
+async function uploadImageToR2(base64, filename, contentType, env, folder = "") {
+  const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+  const cleanName = (filename || "foto").replace(/[^a-zA-Z0-9.\-_]/g, "_");
+  const path = `${folder ? folder + "/" : ""}${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${cleanName}`;
+  await env.IMAGES.put(path, bytes, {
+    httpMetadata: { contentType: contentType || "image/jpeg" }
+  });
+  return `${env.R2_PUBLIC_URL}/${path}`;
+}
+
+/* Upload de foto pro painel logado (cadastro de peça, feedback etc.) —
+   antes ia direto do navegador pro Supabase Storage via SDK; agora
+   precisa passar pelo Worker porque o R2 não tem um SDK público
+   seguro pra chamar direto do navegador. Exige sessão do dono (mesmo
+   padrão do /api/admin/mark-order-paid), não o ADMIN_API_TOKEN (esse
+   é só pra automação sem login). */
+async function handleAdminUploadImage(request, env) {
+  try {
+    const auth = request.headers.get("Authorization") || "";
+    const userToken = auth.replace(/^Bearer\s+/i, "");
+    if (!userToken) return jsonResponse({ error: "Não autorizado." }, 401);
+
+    const userRes = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${userToken}` }
+    });
+    if (!userRes.ok) return jsonResponse({ error: "Sessão inválida ou expirada." }, 401);
+
+    const { filename, contentType, base64, folder } = await request.json();
+    if (!base64) return jsonResponse({ error: "Faltou a imagem." }, 400);
+
+    const url = await uploadImageToR2(base64, filename, contentType, env, folder || "");
+    return jsonResponse({ ok: true, url });
+  } catch (err) {
+    console.error("admin upload-image:", err);
+    return jsonResponse({ error: err.message || "Erro interno." }, 500);
+  }
 }
 
 function melhorEnvioMessagePage(text, ok) {
@@ -885,24 +939,8 @@ async function handleAdminAddProduct(request, env) {
 
     const imageUrls = [];
     for (const img of (images || [])) {
-      const bytes = Uint8Array.from(atob(img.base64), c => c.charCodeAt(0));
-      const cleanName = (img.filename || "foto").replace(/[^a-zA-Z0-9.\-_]/g, "_");
-      const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${cleanName}`;
-
-      const uploadRes = await fetch(`${env.SUPABASE_URL}/storage/v1/object/product-images/${path}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": img.contentType || "image/jpeg",
-          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
-        },
-        body: bytes
-      });
-      if (!uploadRes.ok) {
-        const detail = await uploadRes.text();
-        return jsonResponse({ error: "Falha ao subir imagem.", detail }, 502);
-      }
-      imageUrls.push(`${env.SUPABASE_URL}/storage/v1/object/public/product-images/${path}`);
+      const url = await uploadImageToR2(img.base64, img.filename, img.contentType, env);
+      imageUrls.push(url);
     }
 
     const insertRes = await fetch(`${env.SUPABASE_URL}/rest/v1/products`, {
@@ -1173,7 +1211,7 @@ async function handleTikTokFeedCsv(env, genderFilter) {
 /* Define a foto de capa de uma categoria (card da tela "Categorias")
    sem precisar abrir o painel — mesmo token de automação do
    /api/admin/add-product (Passo 25/27 do SUPABASE.md). Sobe a foto pro
-   bucket product-images e faz upsert em public.category_covers. */
+   R2 e faz upsert em public.category_covers. */
 async function handleSetCategoryCover(request, env) {
   try {
     const auth = request.headers.get("Authorization") || "";
@@ -1187,24 +1225,7 @@ async function handleSetCategoryCover(request, env) {
       return jsonResponse({ error: "Faltam campos obrigatórios (category, image)." }, 400);
     }
 
-    const bytes = Uint8Array.from(atob(image.base64), c => c.charCodeAt(0));
-    const cleanName = (image.filename || "capa").replace(/[^a-zA-Z0-9.\-_]/g, "_");
-    const path = `category-covers/${category}-${Date.now()}-${cleanName}`;
-
-    const uploadRes = await fetch(`${env.SUPABASE_URL}/storage/v1/object/product-images/${path}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": image.contentType || "image/jpeg",
-        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
-      },
-      body: bytes
-    });
-    if (!uploadRes.ok) {
-      const detail = await uploadRes.text();
-      return jsonResponse({ error: "Falha ao subir imagem.", detail }, 502);
-    }
-    const imageUrl = `${env.SUPABASE_URL}/storage/v1/object/public/product-images/${path}`;
+    const imageUrl = await uploadImageToR2(image.base64, image.filename || "capa", image.contentType, env, `category-covers/${category}`);
 
     const upsertRes = await fetch(`${env.SUPABASE_URL}/rest/v1/category_covers`, {
       method: "POST",

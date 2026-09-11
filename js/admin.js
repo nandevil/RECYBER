@@ -857,6 +857,41 @@ function compressImageForUpload(file, maxDim = 1600, quality = 0.82) {
   });
 }
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* Sobe uma foto pro bucket R2 (via Worker) — substitui os uploads
+   diretos pro Supabase Storage, que consumiam a cota de tráfego dele.
+   Exige sessão do dono logado (mesma rota exige isso no servidor). */
+async function uploadImageToR2FromAdmin(file, folder = "") {
+  const { data: sessionData } = await sb.auth.getSession();
+  if (!sessionData.session) {
+    throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
+  }
+  const base64 = await fileToBase64(file);
+  const res = await fetch("/api/admin/upload-image", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${sessionData.session.access_token}`
+    },
+    body: JSON.stringify({ filename: file.name, contentType: file.type, base64, folder })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error || `Falha ao subir imagem (status ${res.status}).`);
+    err.step = "upload";
+    throw err;
+  }
+  return data.url;
+}
+
 document.getElementById("product-form").addEventListener("submit", async e => {
   e.preventDefault();
   if (!supabaseEnabled()) return;
@@ -878,10 +913,7 @@ document.getElementById("product-form").addEventListener("submit", async e => {
     const imageUrls = [];
     for (const original of selectedProductImages) {
       const file = await compressImageForUpload(original);
-      const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
-      const { error: uploadError } = await sb.storage.from("product-images").upload(path, file);
-      if (uploadError) { uploadError.step = "upload"; throw uploadError; }
-      imageUrls.push(sb.storage.from("product-images").getPublicUrl(path).data.publicUrl);
+      imageUrls.push(await uploadImageToR2FromAdmin(file));
     }
 
     const sizeRows = collectSizeRows();
@@ -1035,12 +1067,13 @@ document.getElementById("admin-products-list").addEventListener("change", async 
   toggle.disabled = false;
 });
 
-/* Otimiza fotos de peças cadastradas ANTES da compressão automática
-   existir (ou enviadas de outra forma) — baixa cada foto, recomprime
-   com compressImageForUpload() e sobe de novo, atualizando image_urls
-   da peça. Roda uma peça de cada vez (evita sobrecarregar o navegador
-   com muitos downloads/uploads simultâneos) e só reprocessa fotos que
-   realmente encolheram, senão mantém o arquivo original daquela peça. */
+/* Migra as fotos já cadastradas do Supabase Storage pro bucket R2 —
+   baixa cada foto, recomprime com compressImageForUpload() e sobe de
+   novo no R2 via uploadImageToR2FromAdmin(), atualizando image_urls da
+   peça. Roda uma peça de cada vez (evita sobrecarregar o navegador com
+   muitos downloads/uploads simultâneos). Fotos que já estão no R2 (já
+   migradas numa rodada anterior) são puladas, então é seguro rodar de
+   novo quantas vezes precisar — só processa o que ainda falta. */
 async function optimizeExistingPhotos() {
   const btn = document.getElementById("admin-optimize-photos-btn");
   const status = document.getElementById("admin-optimize-photos-status");
@@ -1052,7 +1085,7 @@ async function optimizeExistingPhotos() {
 
   const { data, error } = await sb.from("products").select("id, image_urls");
   if (error) {
-    console.error("Otimizar fotos — listar peças:", error);
+    console.error("Migrar fotos — listar peças:", error);
     status.textContent = "Erro ao carregar as peças.";
     btn.disabled = false;
     return;
@@ -1064,7 +1097,7 @@ async function optimizeExistingPhotos() {
 
   for (const row of data) {
     done++;
-    status.textContent = `Otimizando peça ${done} de ${total}...`;
+    status.textContent = `Migrando fotos da peça ${done} de ${total}...`;
     const urls = Array.isArray(row.image_urls) ? row.image_urls : [];
     if (urls.length === 0) continue;
 
@@ -1072,6 +1105,10 @@ async function optimizeExistingPhotos() {
       const newUrls = [];
       let changed = false;
       for (const url of urls) {
+        if (url.includes(".r2.dev/") || url.includes(".r2.cloudflarestorage.com/")) {
+          newUrls.push(url); // já está no R2, não precisa migrar de novo
+          continue;
+        }
         const res = await fetch(url);
         if (!res.ok) { newUrls.push(url); continue; }
         const blob = await res.blob();
@@ -1079,34 +1116,31 @@ async function optimizeExistingPhotos() {
         const originalFile = new File([blob], originalName, { type: blob.type || "image/jpeg" });
         const compressed = await compressImageForUpload(originalFile);
 
-        if (compressed === originalFile || compressed.size >= originalFile.size) {
+        try {
+          newUrls.push(await uploadImageToR2FromAdmin(compressed));
+          changed = true;
+        } catch (uploadErr) {
+          console.error("Migrar foto pro R2:", uploadErr);
           newUrls.push(url);
-          continue;
         }
-
-        const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${compressed.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
-        const { error: uploadError } = await sb.storage.from("product-images").upload(path, compressed);
-        if (uploadError) { newUrls.push(url); continue; }
-        newUrls.push(sb.storage.from("product-images").getPublicUrl(path).data.publicUrl);
-        changed = true;
       }
       if (changed) {
         await sb.from("products").update({ image_urls: newUrls }).eq("id", row.id);
         optimizedCount++;
       }
     } catch (err) {
-      console.error(`Otimizar fotos — peça ${row.id}:`, err);
+      console.error(`Migrar fotos — peça ${row.id}:`, err);
     }
   }
 
-  status.textContent = `Concluído: ${optimizedCount} de ${total} peça(s) tiveram fotos otimizadas.`;
+  status.textContent = `Concluído: ${optimizedCount} de ${total} peça(s) tiveram fotos migradas pro R2.`;
   btn.disabled = false;
   renderProductsList();
   if (typeof syncCatalog === "function") syncCatalog();
 }
 
 document.getElementById("admin-optimize-photos-btn").addEventListener("click", () => {
-  if (!confirm("Isso vai recomprimir as fotos das peças já publicadas (pode levar alguns minutos). Continuar?")) return;
+  if (!confirm("Isso vai migrar as fotos das peças já publicadas pro novo armazenamento (R2) — pode levar alguns minutos. Continuar?")) return;
   optimizeExistingPhotos();
 });
 
@@ -1236,10 +1270,7 @@ document.getElementById("feedback-form").addEventListener("submit", async e => {
 
     let photoUrl = "";
     if (selectedFeedbackImage) {
-      const path = `feedback-${Date.now()}-${selectedFeedbackImage.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
-      const { error: uploadError } = await sb.storage.from("product-images").upload(path, selectedFeedbackImage);
-      if (uploadError) { uploadError.step = "upload"; throw uploadError; }
-      photoUrl = sb.storage.from("product-images").getPublicUrl(path).data.publicUrl;
+      photoUrl = await uploadImageToR2FromAdmin(selectedFeedbackImage, "feedback");
     }
 
     const { error: insertError } = await sb.from("feedbacks").insert({
@@ -1410,10 +1441,7 @@ document.getElementById("email-templates-form").addEventListener("submit", async
 
       const file = selectedEmailTemplateImages[key];
       if (file) {
-        const path = `email-${key}-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
-        const { error: uploadError } = await sb.storage.from("spoilers").upload(path, file);
-        if (uploadError) { uploadError.step = "upload"; throw uploadError; }
-        payload[`${key}_image_url`] = sb.storage.from("spoilers").getPublicUrl(path).data.publicUrl;
+        payload[`${key}_image_url`] = await uploadImageToR2FromAdmin(file, "email-templates");
       }
     }
 
@@ -2029,10 +2057,7 @@ document.getElementById("admin-updates-form").addEventListener("submit", async e
       const { data: sessionData } = await sb.auth.getSession();
       if (!sessionData.session) throw new Error("Sua sessão expirou. Clique em \"Sair\" e faça login de novo.");
 
-      const path = `spoiler-${Date.now()}-${selectedUpdatePhoto.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
-      const { error: uploadError } = await sb.storage.from("spoilers").upload(path, selectedUpdatePhoto);
-      if (uploadError) throw uploadError;
-      photoUrl = sb.storage.from("spoilers").getPublicUrl(path).data.publicUrl;
+      photoUrl = await uploadImageToR2FromAdmin(selectedUpdatePhoto, "spoilers");
     }
 
     const dia = document.getElementById("upd-dia").value.trim();
