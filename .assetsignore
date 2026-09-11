@@ -1,0 +1,20 @@
+# Como [assets] directory = "./" no wrangler.toml aponta pra raiz inteira
+# do repo, sem isso o Cloudflare sobe (e serve publicamente, direto do
+# cache de assets, sem passar pelo fetch() do worker.js) arquivos internos
+# que nunca deveriam ir pro público. Funciona como um .gitignore, mas pro
+# upload de assets do Worker.
+.git
+.gitignore
+.assetsignore
+.claude
+.vscode
+.idea
+wrangler.toml
+SUPABASE.md
+server.ps1
+test-pagamento.html
+worker.js
+RECYBER
+package.json
+package-lock.json
+node_modules
