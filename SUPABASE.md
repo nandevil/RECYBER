@@ -1107,6 +1107,13 @@ create policy "dono pode apagar gastos"
 Lucro = recebimentos (pedidos pagos do mês) − gastos lançados. O
 relatório mensal é recalculado toda vez que a aba abre.
 
+**E-mail mensal automático**: todo dia 1º às 08:00 (Brasília) o
+Cloudflare dispara uma tarefa agendada (`[triggers] crons` no
+`wrangler.toml`) que manda pro `REPORT_EMAIL` o resumo do mês anterior
+(recebimentos, gastos por categoria e lucro), via Resend. Não precisa
+de nenhum Secret novo. Pra testar sem esperar o dia 1º: com o painel
+logado, `POST /api/admin/send-finance-report` com `{ "month": "YYYY-MM" }`.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

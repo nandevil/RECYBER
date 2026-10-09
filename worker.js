@@ -90,7 +90,16 @@ export default {
       return handleAdminUploadImage(request, env);
     }
 
+    if (url.pathname === "/api/admin/send-finance-report" && request.method === "POST") {
+      return handleAdminSendFinanceReport(request, env);
+    }
+
     return env.ASSETS.fetch(request);
+  },
+
+  // Cron Trigger (wrangler.toml [triggers]) — dia 1º de cada mês.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(sendMonthlyFinanceReport(env).catch(err => console.error("Relatório mensal:", err)));
   }
 };
 
@@ -1308,6 +1317,136 @@ async function handleAdminMarkOrderPaid(request, env) {
   } catch (err) {
     console.error("admin mark-order-paid:", err);
     return jsonResponse({ error: err.message || "Erro interno." }, 500);
+  }
+}
+
+/* =====================================================
+   RELATÓRIO FINANCEIRO MENSAL POR E-MAIL (Passo 35 do SUPABASE.md)
+   Roda sozinho no dia 1º (Cron Trigger) e manda o resumo do mês
+   ANTERIOR pro REPORT_EMAIL: recebimentos (pedidos pagos), gastos
+   (tabela expenses, por categoria) e lucro. Mês fechado em horário de
+   Brasília (UTC-3).
+===================================================== */
+function previousMonthKeyBrt() {
+  const brt = new Date(Date.now() - 3 * 3600 * 1000);
+  let y = brt.getUTCFullYear();
+  let m = brt.getUTCMonth(); // 0-based: mês atual - 1 = mês anterior em 1-based
+  if (m === 0) { y -= 1; m = 12; }
+  return `${y}-${String(m).padStart(2, "0")}`;
+}
+
+function brl(n) {
+  return Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+async function buildFinanceReport(monthKey, env) {
+  const [y, m] = monthKey.split("-").map(Number);
+  const startUtc = new Date(Date.UTC(y, m - 1, 1, 3)).toISOString();
+  const endUtc = new Date(Date.UTC(y, m, 1, 3)).toISOString();
+  const nextKey = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+
+  const ordersRes = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/orders?payment_status=eq.pago&created_at=gte.${encodeURIComponent(startUtc)}&created_at=lt.${encodeURIComponent(endUtc)}&select=total&limit=5000`,
+    { headers: supaHeaders(env) }
+  );
+  if (!ordersRes.ok) throw new Error(`Falha ao buscar pedidos (status ${ordersRes.status}).`);
+  const orders = await ordersRes.json();
+  const receipts = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+
+  let expenses = [];
+  let expensesMissing = false;
+  const expRes = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/expenses?spent_at=gte.${monthKey}-01&spent_at=lt.${nextKey}-01&select=category,amount&limit=5000`,
+    { headers: supaHeaders(env) }
+  );
+  if (expRes.ok) expenses = await expRes.json();
+  else expensesMissing = true;
+
+  const byCategory = {};
+  expenses.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + (Number(e.amount) || 0); });
+  const totalExpenses = expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+  return { monthKey, salesCount: orders.length, receipts, totalExpenses, profit: receipts - totalExpenses, byCategory, expensesMissing };
+}
+
+function financeReportHtml(r) {
+  const [y, m] = r.monthKey.split("-");
+  const label = `${m}/${y}`;
+  const margin = r.receipts > 0 ? `${((r.profit / r.receipts) * 100).toFixed(1).replace(".", ",")}%` : "—";
+  const profitColor = r.profit >= 0 ? "#1f7a3d" : "#b3261e";
+  const catRows = Object.entries(r.byCategory)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat, v]) => `<tr><td style="padding:4px 0;">${escapeXml(cat)}</td><td style="padding:4px 0;text-align:right;">${brl(v)}</td></tr>`)
+    .join("");
+  const note = r.expensesMissing
+    ? `<p style="font-size:12px;color:#b3261e;">Gastos não carregados: a tabela "expenses" ainda não existe no Supabase (Passo 35).</p>`
+    : "";
+
+  return `<!doctype html>
+    <html><head><meta charset="UTF-8"></head>
+    <body style="margin:0;">
+    <div style="background:#0e0e0e;padding:32px 16px;font-family:'Courier New',monospace;">
+      <div style="max-width:480px;margin:0 auto;background:#ffffff;border:2px solid #161616;border-radius:10px;padding:28px;">
+        <p style="font-family:monospace;font-weight:bold;font-size:15px;letter-spacing:1px;margin:0 0 20px;">RE<span style="color:#2f8f4e;">.</span>CYBER</p>
+        <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">Relatório financeiro — ${escapeXml(label)}</h1>
+        <table style="width:100%;font-size:14px;color:#161616;border-collapse:collapse;">
+          <tr><td style="padding:4px 0;">Recebimentos (${r.salesCount} venda${r.salesCount === 1 ? "" : "s"} paga${r.salesCount === 1 ? "" : "s"})</td><td style="padding:4px 0;text-align:right;">${brl(r.receipts)}</td></tr>
+          <tr><td style="padding:4px 0;">Gastos</td><td style="padding:4px 0;text-align:right;">${brl(r.totalExpenses)}</td></tr>
+          <tr><td style="padding:8px 0;border-top:1px solid #dededd;"><strong>Lucro</strong></td><td style="padding:8px 0;border-top:1px solid #dededd;text-align:right;color:${profitColor};"><strong>${brl(r.profit)}</strong></td></tr>
+          <tr><td style="padding:4px 0;">Margem</td><td style="padding:4px 0;text-align:right;">${margin}</td></tr>
+        </table>
+        ${catRows ? `<p style="font-size:12px;margin:20px 0 6px;color:#8a8a86;">GASTOS POR CATEGORIA</p><table style="width:100%;font-size:13px;color:#161616;border-collapse:collapse;">${catRows}</table>` : ""}
+        ${note}
+        <hr style="border:none;border-top:1px solid #dededd;margin:24px 0 16px;">
+        <p style="font-size:11px;color:#8a8a86;margin:0;">Detalhes completos na aba Financeiro do painel · recyber.com.br</p>
+      </div>
+    </div>
+    </body></html>`;
+}
+
+async function sendMonthlyFinanceReport(env, monthKey = previousMonthKeyBrt()) {
+  if (!env.REPORT_EMAIL) throw new Error("REPORT_EMAIL não configurado no wrangler.toml.");
+  const report = await buildFinanceReport(monthKey, env);
+  const [y, m] = monthKey.split("-");
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${env.RESEND_API_KEY}` },
+    body: JSON.stringify({
+      from: "Re.cyber <atendimento@recyber.com.br>",
+      to: [env.REPORT_EMAIL],
+      subject: `Relatório financeiro ${m}/${y} — Re.cyber`,
+      html: financeReportHtml(report)
+    })
+  });
+  if (!res.ok) throw new Error(`Resend falhou (status ${res.status}): ${await res.text()}`);
+  return report;
+}
+
+/* Teste manual: botão futuro/curl com a sessão do dono logado.
+   Corpo opcional { month: "YYYY-MM" } (padrão: mês anterior). */
+async function handleAdminSendFinanceReport(request, env) {
+  try {
+    const auth = request.headers.get("Authorization") || "";
+    const userToken = auth.replace(/^Bearer\s+/i, "");
+    if (!userToken) return jsonResponse({ error: "Não autorizado." }, 401);
+
+    const userRes = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${userToken}` }
+    });
+    if (!userRes.ok) return jsonResponse({ error: "Sessão inválida ou expirada." }, 401);
+
+    let month;
+    try { ({ month } = await request.json()); } catch (_) { /* corpo vazio */ }
+    if (month && !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      return jsonResponse({ error: "Mês inválido (use YYYY-MM)." }, 400);
+    }
+
+    const report = await sendMonthlyFinanceReport(env, month || undefined);
+    return jsonResponse({ ok: true, month: report.monthKey });
+  } catch (err) {
+    console.error("admin send-finance-report:", err);
+    return jsonResponse({ error: "Não foi possível enviar o relatório." }, 500);
   }
 }
 

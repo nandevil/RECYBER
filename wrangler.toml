@@ -10,6 +10,10 @@ binding = "ASSETS"
 # Bucket R2 pras fotos de peças/categorias — substitui o Supabase
 # Storage (que cobra/bloqueia por tráfego). Egress do R2 é sempre
 # grátis, então isso tira as fotos do que consumia a cota do Supabase.
+# Relatório financeiro mensal por e-mail: todo dia 1º às 08:00 (Brasília).
+[triggers]
+crons = ["0 11 1 * *"]
+
 [[r2_buckets]]
 binding = "IMAGES"
 bucket_name = "recyber-images"
@@ -38,4 +42,6 @@ MELHORENVIO_CLIENT_ID = "27198"
 SUPABASE_URL = "https://pzsbmenyseilagvbrnxn.supabase.co"
 # URL pública do bucket R2 (Public Development URL) — usada pra montar
 # o link de cada foto enviada pro R2. Não é segredo.
-R2_PUBLIC_URL = "https://pub-ee5c472613004972ac0cf85f25dae701.r2.dev"
+# Destino do relatório financeiro mensal (já é público em js/app.js).
+REPORT_EMAIL = "anandalage18@hotmail.com"
+R2_PUBLIC_URL ="https://pub-ee5c472613004972ac0cf85f25dae701.r2.dev"
