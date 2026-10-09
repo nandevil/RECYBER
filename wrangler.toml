@@ -6,6 +6,9 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 directory = "./"
 binding = "ASSETS"
+# Sem isso o Cloudflare serve o index.html direto, antes do Worker, e a
+# prévia de link por peça (/?produto=ID, handleProductPreview) nunca roda.
+run_worker_first = ["/"]
 
 # Bucket R2 pras fotos de peças/categorias — substitui o Supabase
 # Storage (que cobra/bloqueia por tráfego). Egress do R2 é sempre
