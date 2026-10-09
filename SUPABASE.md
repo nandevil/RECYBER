@@ -1076,6 +1076,37 @@ normalmente — só o peso pesado (fotos) saiu de lá.
   automaticamente as fotos que já estão no R2, então só processa o que
   ainda falta a cada rodada.
 
+## Passo 35 — Financeiro (gastos do mês)
+
+A aba **Financeiro** do painel soma os **recebimentos** direto dos
+pedidos pagos (tabela `orders`, nada a criar) e guarda os **gastos**
+que você lança numa tabela própria. No **SQL Editor**, rode uma vez:
+
+```sql
+create table public.expenses (
+  id uuid primary key default gen_random_uuid(),
+  spent_at date not null,
+  description text not null,
+  category text not null,
+  amount numeric not null check (amount > 0),
+  created_at timestamptz not null default now()
+);
+
+alter table public.expenses enable row level security;
+alter table public.expenses force row level security;
+
+-- Só o dono (logado) lê/lança/apaga gastos — nada público.
+create policy "dono pode ler gastos"
+  on public.expenses for select to authenticated using (true);
+create policy "dono pode inserir gastos"
+  on public.expenses for insert to authenticated with check (true);
+create policy "dono pode apagar gastos"
+  on public.expenses for delete to authenticated using (true);
+```
+
+Lucro = recebimentos (pedidos pagos do mês) − gastos lançados. O
+relatório mensal é recalculado toda vez que a aba abre.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

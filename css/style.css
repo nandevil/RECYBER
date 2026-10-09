@@ -1198,6 +1198,11 @@ body.admin-open{overflow:hidden;}
 }
 .lead-remove-btn:hover{background:var(--danger);color:#fff;}
 .lead-remove-btn:disabled{opacity:.5;cursor:not-allowed;}
+.fin-month-field{max-width:180px;}
+.fin-section-title{font-family:var(--font-pixel);font-size:.95rem;margin:22px 0 10px;}
+.fin-report-head{margin-top:26px;}
+.fin-positive{color:#1f7a3d;}
+.fin-negative{color:#b3261e;}
 .admin-leads-table-wrap{overflow-x:auto;border:2px solid var(--ink);border-radius:10px;}
 .admin-leads-table{
   width:100%;border-collapse:collapse;

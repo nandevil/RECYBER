@@ -480,6 +480,7 @@
     <button class="pill" data-tab="feedbacks">&#128172; Feedbacks</button>
     <button class="pill" data-tab="textos">&#128221; Textos do Modal</button>
     <button class="pill" data-tab="promo">&#127991; Promoção e Desconto</button>
+    <button class="pill" data-tab="financeiro">&#128176; Financeiro</button>
     <button class="pill" id="admin-updates-open" type="button">&#9881;&#65039; Administrar Atualizações</button>
   </div>
 
@@ -867,6 +868,108 @@
     </div>
   </section>
 
+  <!-- ABA: FINANCEIRO (gastos + recebimentos + relatório mensal) -->
+  <section class="admin-tab-panel" id="admin-tab-financeiro" hidden>
+    <div class="admin-upload">
+      <div class="admin-leads-head">
+        <div>
+          <h2 class="admin-leads-title">Financeiro</h2>
+          <h3 class="admin-leads-subtitle">Recebimentos vêm sozinhos dos pedidos pagos. Você lança os gastos; o lucro é calculado automaticamente.</h3>
+        </div>
+        <label class="field fin-month-field">
+          <span>Mês</span>
+          <input type="month" id="fin-month">
+        </label>
+      </div>
+
+      <p class="admin-login-error" id="fin-unavailable" hidden>
+        Gastos indisponíveis: crie a tabela "expenses" no Supabase (veja SUPABASE.md, Passo 35).
+      </p>
+
+      <div class="admin-leads-metrics" id="fin-metrics">
+        <div class="admin-leads-metric">
+          <span class="admin-leads-metric-value" id="fin-receipts">R$ 0,00</span>
+          <span class="admin-leads-metric-label">Recebimentos (vendas pagas)</span>
+        </div>
+        <div class="admin-leads-metric">
+          <span class="admin-leads-metric-value" id="fin-expenses">R$ 0,00</span>
+          <span class="admin-leads-metric-label">Gastos do mês</span>
+        </div>
+        <div class="admin-leads-metric">
+          <span class="admin-leads-metric-value" id="fin-profit">R$ 0,00</span>
+          <span class="admin-leads-metric-label">Lucro</span>
+        </div>
+        <div class="admin-leads-metric">
+          <span class="admin-leads-metric-value" id="fin-margin">0%</span>
+          <span class="admin-leads-metric-label">Margem</span>
+        </div>
+      </div>
+
+      <h3 class="fin-section-title">Lançar gasto</h3>
+      <form class="checkout-form" id="fin-form">
+        <div class="checkout-grid">
+          <label class="field">
+            <span>Descrição</span>
+            <input type="text" id="fin-desc" maxlength="120" placeholder="Ex.: Anúncios Instagram" required>
+          </label>
+          <label class="field">
+            <span>Categoria</span>
+            <select id="fin-cat">
+              <option>Anúncios / Tráfego pago</option>
+              <option>Página / Domínio / Hospedagem</option>
+              <option>Compra de peças</option>
+              <option>Embalagem</option>
+              <option>Frete / Etiquetas</option>
+              <option>Taxas (pagamento / marketplace)</option>
+              <option>Outros</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Valor (R$)</span>
+            <input type="number" id="fin-amount" min="0.01" step="0.01" inputmode="decimal" required>
+          </label>
+          <label class="field">
+            <span>Data</span>
+            <input type="date" id="fin-date" required>
+          </label>
+        </div>
+        <button class="pill" type="submit">Adicionar gasto</button>
+      </form>
+
+      <h3 class="fin-section-title">Gastos do mês</h3>
+      <div class="admin-leads-table-wrap">
+        <table class="admin-leads-table">
+          <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Ação</th></tr></thead>
+          <tbody id="fin-expenses-body"></tbody>
+        </table>
+      </div>
+      <p class="empty-state" id="fin-expenses-empty" hidden>Nenhum gasto lançado neste mês.</p>
+
+      <h3 class="fin-section-title">Recebimentos do mês (pedidos pagos)</h3>
+      <div class="admin-leads-table-wrap">
+        <table class="admin-leads-table">
+          <thead><tr><th>Data</th><th>Pedido</th><th>Cliente</th><th>Valor</th></tr></thead>
+          <tbody id="fin-receipts-body"></tbody>
+        </table>
+      </div>
+      <p class="empty-state" id="fin-receipts-empty" hidden>Nenhuma venda paga neste mês.</p>
+
+      <div class="admin-leads-head fin-report-head">
+        <div>
+          <h3 class="fin-section-title">Relatório mensal</h3>
+          <p class="admin-leads-subtitle">Atualizado automaticamente — recalculado a cada abertura com os pedidos e gastos mais recentes.</p>
+        </div>
+        <button class="pill pill-sm" id="fin-export-csv" type="button">Exportar CSV</button>
+      </div>
+      <div class="admin-leads-table-wrap">
+        <table class="admin-leads-table">
+          <thead><tr><th>Mês</th><th>Recebimentos</th><th>Gastos</th><th>Lucro</th><th>Margem</th></tr></thead>
+          <tbody id="fin-report-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <!-- ABA: CONFIGURAÇÕES DE ENVIO -->
   <section class="admin-tab-panel" id="admin-tab-envio" hidden>
     <div class="admin-upload">
@@ -972,6 +1075,7 @@
 <script src="js/app.js"></script>
 <script src="js/checkout.js"></script>
 <script src="js/admin.js"></script>
+<script src="js/finance.js"></script>
 <script src="js/catalog-sync.js"></script>
 <script src="js/category-covers-sync.js"></script>
 <script src="js/feedback-sync.js"></script>
