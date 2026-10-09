@@ -1349,12 +1349,13 @@ async function buildFinanceReport(monthKey, env) {
   const nextKey = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
 
   const ordersRes = await fetch(
-    `${env.SUPABASE_URL}/rest/v1/orders?payment_status=eq.pago&created_at=gte.${encodeURIComponent(startUtc)}&created_at=lt.${encodeURIComponent(endUtc)}&select=total&limit=5000`,
+    `${env.SUPABASE_URL}/rest/v1/orders?payment_status=eq.pago&created_at=gte.${encodeURIComponent(startUtc)}&created_at=lt.${encodeURIComponent(endUtc)}&select=total,shipping&limit=5000`,
     { headers: supaHeaders(env) }
   );
   if (!ordersRes.ok) throw new Error(`Falha ao buscar pedidos (status ${ordersRes.status}).`);
   const orders = await ordersRes.json();
-  const receipts = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+  const receipts = orders.reduce((s, o) => s + Math.max((Number(o.total) || 0) - (Number(o.shipping) || 0), 0), 0);
+  const shippingTotal = orders.reduce((s, o) => s + (Number(o.shipping) || 0), 0);
 
   let expenses = [];
   let expensesMissing = false;
@@ -1369,7 +1370,7 @@ async function buildFinanceReport(monthKey, env) {
   expenses.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + (Number(e.amount) || 0); });
   const totalExpenses = expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
-  return { monthKey, salesCount: orders.length, receipts, totalExpenses, profit: receipts - totalExpenses, byCategory, expensesMissing };
+  return { monthKey, salesCount: orders.length, receipts, shippingTotal, totalExpenses, profit: receipts - totalExpenses, byCategory, expensesMissing };
 }
 
 function financeReportHtml(r) {
@@ -1393,7 +1394,8 @@ function financeReportHtml(r) {
         <p style="font-family:monospace;font-weight:bold;font-size:15px;letter-spacing:1px;margin:0 0 20px;">RE<span style="color:#2f8f4e;">.</span>CYBER</p>
         <h1 style="font-size:14px;letter-spacing:.5px;margin:0 0 16px;">Relatório financeiro — ${escapeXml(label)}</h1>
         <table style="width:100%;font-size:14px;color:#161616;border-collapse:collapse;">
-          <tr><td style="padding:4px 0;">Recebimentos (${r.salesCount} venda${r.salesCount === 1 ? "" : "s"} paga${r.salesCount === 1 ? "" : "s"})</td><td style="padding:4px 0;text-align:right;">${brl(r.receipts)}</td></tr>
+          <tr><td style="padding:4px 0;">Recebimentos das peças (${r.salesCount} venda${r.salesCount === 1 ? "" : "s"} paga${r.salesCount === 1 ? "" : "s"})</td><td style="padding:4px 0;text-align:right;">${brl(r.receipts)}</td></tr>
+          <tr><td style="padding:4px 0;color:#8a8a86;">Frete pago pelos clientes (não é ganho)</td><td style="padding:4px 0;text-align:right;color:#8a8a86;">${brl(r.shippingTotal)}</td></tr>
           <tr><td style="padding:4px 0;">Gastos</td><td style="padding:4px 0;text-align:right;">${brl(r.totalExpenses)}</td></tr>
           <tr><td style="padding:8px 0;border-top:1px solid #dededd;"><strong>Lucro</strong></td><td style="padding:8px 0;border-top:1px solid #dededd;text-align:right;color:${profitColor};"><strong>${brl(r.profit)}</strong></td></tr>
           <tr><td style="padding:4px 0;">Margem</td><td style="padding:4px 0;text-align:right;">${margin}</td></tr>

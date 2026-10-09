@@ -875,7 +875,7 @@
       <div class="admin-leads-head">
         <div>
           <h2 class="admin-leads-title">Financeiro</h2>
-          <h3 class="admin-leads-subtitle">Recebimentos vêm sozinhos dos pedidos pagos. Você lança os gastos; o lucro é calculado automaticamente.</h3>
+          <h3 class="admin-leads-subtitle">Recebimentos vêm sozinhos dos pedidos pagos, só com o valor das peças (o frete que o cliente paga é mostrado à parte e não entra no lucro). Você lança os gastos; o lucro é calculado automaticamente.</h3>
         </div>
         <label class="field fin-month-field">
           <span>Mês</span>
@@ -890,7 +890,11 @@
       <div class="admin-leads-metrics" id="fin-metrics">
         <div class="admin-leads-metric">
           <span class="admin-leads-metric-value" id="fin-receipts">R$ 0,00</span>
-          <span class="admin-leads-metric-label">Recebimentos (vendas pagas)</span>
+          <span class="admin-leads-metric-label">Recebimentos (só as peças)</span>
+        </div>
+        <div class="admin-leads-metric">
+          <span class="admin-leads-metric-value" id="fin-shipping">R$ 0,00</span>
+          <span class="admin-leads-metric-label">Frete pago pelos clientes (não é ganho)</span>
         </div>
         <div class="admin-leads-metric">
           <span class="admin-leads-metric-value" id="fin-expenses">R$ 0,00</span>
@@ -949,7 +953,7 @@
       <h3 class="fin-section-title">Recebimentos do mês (pedidos pagos)</h3>
       <div class="admin-leads-table-wrap">
         <table class="admin-leads-table">
-          <thead><tr><th>Data</th><th>Pedido</th><th>Cliente</th><th>Valor</th></tr></thead>
+          <thead><tr><th>Data</th><th>Pedido</th><th>Cliente</th><th>Peças (ganho)</th><th>Frete (não é ganho)</th></tr></thead>
           <tbody id="fin-receipts-body"></tbody>
         </table>
       </div>
@@ -964,7 +968,7 @@
       </div>
       <div class="admin-leads-table-wrap">
         <table class="admin-leads-table">
-          <thead><tr><th>Mês</th><th>Recebimentos</th><th>Gastos</th><th>Lucro</th><th>Margem</th></tr></thead>
+          <thead><tr><th>Mês</th><th>Recebimentos (peças)</th><th>Frete (não é ganho)</th><th>Gastos</th><th>Lucro</th><th>Margem</th></tr></thead>
           <tbody id="fin-report-body"></tbody>
         </table>
       </div>
@@ -1007,7 +1011,7 @@
       <h3 class="fin-section-title">Por origem</h3>
       <div class="admin-leads-table-wrap">
         <table class="admin-leads-table">
-          <thead><tr><th>Origem</th><th>Visitas</th><th>%</th><th>Vendas</th><th>Valor vendido</th></tr></thead>
+          <thead><tr><th>Origem</th><th>Visitas</th><th>%</th><th>Vendas</th><th>Valor das peças vendidas</th></tr></thead>
           <tbody id="met-sources-body"></tbody>
         </table>
       </div>

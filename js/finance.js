@@ -40,7 +40,7 @@ function finSelectedMonth() {
 async function finLoad() {
   if (!supabaseEnabled()) return;
 
-  const ordersRes = await sb.from("orders").select("id, created_at, total, payment_status, customer");
+  const ordersRes = await sb.from("orders").select("id, created_at, total, shipping, payment_status, customer");
   if (ordersRes.error) {
     console.error("Financeiro — pedidos:", ordersRes.error);
     showToast("Erro ao carregar os pedidos do financeiro");
@@ -52,6 +52,8 @@ async function finLoad() {
         id: o.id,
         date: o.created_at,
         total: Number(o.total) || 0,
+        shipping: Number(o.shipping) || 0,
+        pieces: Math.max((Number(o.total) || 0) - (Number(o.shipping) || 0), 0),
         name: (o.customer && o.customer.nome) || "Cliente"
       }));
   }
@@ -76,10 +78,10 @@ async function finLoad() {
 function finTotalsByMonth() {
   const map = new Map();
   const bucket = key => {
-    if (!map.has(key)) map.set(key, { receipts: 0, expenses: 0 });
+    if (!map.has(key)) map.set(key, { receipts: 0, shipping: 0, expenses: 0 });
     return map.get(key);
   };
-  finOrders.forEach(o => { bucket(finMonthKey(o.date)).receipts += o.total; });
+  finOrders.forEach(o => { const b = bucket(finMonthKey(o.date)); b.receipts += o.pieces; b.shipping += o.shipping; });
   finExpenses.forEach(e => { bucket(e.date.slice(0, 7)).expenses += e.amount; });
   return map;
 }
@@ -101,11 +103,13 @@ function renderFinance() {
     .sort((a, b) => new Date(b.date) - new Date(a.date));
   const monthExpenses = finExpenses.filter(e => e.date.slice(0, 7) === month);
 
-  const receipts = monthOrders.reduce((s, o) => s + o.total, 0);
+  const receipts = monthOrders.reduce((s, o) => s + o.pieces, 0);
+  const shippingTotal = monthOrders.reduce((s, o) => s + o.shipping, 0);
   const expenses = monthExpenses.reduce((s, e) => s + e.amount, 0);
   const profit = receipts - expenses;
 
   document.getElementById("fin-receipts").textContent = money(receipts);
+  document.getElementById("fin-shipping").textContent = money(shippingTotal);
   document.getElementById("fin-expenses").textContent = money(expenses);
   const profitEl = document.getElementById("fin-profit");
   profitEl.textContent = money(profit);
@@ -127,12 +131,13 @@ function renderFinance() {
       <td>${escapeHtml(finFormatDate(o.date))}</td>
       <td>${escapeHtml(o.id)}</td>
       <td>${escapeHtml(o.name)}</td>
-      <td>${money(o.total)}</td>
+      <td>${money(o.pieces)}</td>
+      <td>${money(o.shipping)}</td>
     </tr>`).join("");
   document.getElementById("fin-receipts-empty").hidden = monthOrders.length !== 0;
 
   const totals = finTotalsByMonth();
-  totals.set(month, totals.get(month) || { receipts: 0, expenses: 0 });
+  totals.set(month, totals.get(month) || { receipts: 0, shipping: 0, expenses: 0 });
   const rows = [...totals.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   document.getElementById("fin-report-body").innerHTML = rows.map(([key, t]) => {
     const p = t.receipts - t.expenses;
@@ -140,6 +145,7 @@ function renderFinance() {
     <tr>
       <td>${escapeHtml(finMonthLabel(key))}</td>
       <td>${money(t.receipts)}</td>
+      <td>${money(t.shipping)}</td>
       <td>${money(t.expenses)}</td>
       <td class="${finProfitClass(p)}">${money(p)}</td>
       <td>${finMargin(t.receipts, p)}</td>
@@ -210,10 +216,10 @@ document.getElementById("fin-expenses-body").addEventListener("click", async e =
 
 document.getElementById("fin-export-csv").addEventListener("click", () => {
   const totals = [...finTotalsByMonth().entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  const lines = ["mes;recebimentos;gastos;lucro"];
+  const lines = ["mes;recebimentos_pecas;frete_cobrado_nao_e_ganho;gastos;lucro"];
   totals.forEach(([key, t]) => {
     const fmt = n => n.toFixed(2).replace(".", ",");
-    lines.push([key, fmt(t.receipts), fmt(t.expenses), fmt(t.receipts - t.expenses)].join(";"));
+    lines.push([key, fmt(t.receipts), fmt(t.shipping), fmt(t.expenses), fmt(t.receipts - t.expenses)].join(";"));
   });
   const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");

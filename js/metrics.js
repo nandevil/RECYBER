@@ -45,7 +45,7 @@ async function renderMetrics() {
   if (visitsRes.error) console.error("Métricas — visitas:", visitsRes.error);
   const rows = (visitsRes.data || []).map(r => ({ ...r, visits: Number(r.visits) || 0 }));
 
-  const ordersRes = await sb.from("orders").select("created_at, total, payment_status, customer");
+  const ordersRes = await sb.from("orders").select("created_at, total, shipping, payment_status, customer");
   const sales = new Map();
   (ordersRes.data || []).forEach(o => {
     if (o.payment_status !== "pago") return;
@@ -55,7 +55,7 @@ async function renderMetrics() {
     if (!origem) return;
     const cur = sales.get(origem) || { count: 0, total: 0 };
     cur.count += 1;
-    cur.total += Number(o.total) || 0;
+    cur.total += Math.max((Number(o.total) || 0) - (Number(o.shipping) || 0), 0);
     sales.set(origem, cur);
   });
 

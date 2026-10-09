@@ -1104,7 +1104,7 @@ create policy "dono pode apagar gastos"
   on public.expenses for delete to authenticated using (true);
 ```
 
-Lucro = recebimentos (pedidos pagos do mês) − gastos lançados. O
+Recebimentos = só o valor das peças (total do pedido − frete; o frete pago pelo cliente aparece à parte e não é ganho). Lucro = recebimentos − gastos lançados. O
 relatório mensal é recalculado toda vez que a aba abre.
 
 **E-mail mensal automático**: todo dia 1º às 08:00 (Brasília) o
