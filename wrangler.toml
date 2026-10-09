@@ -11,8 +11,9 @@ binding = "ASSETS"
 # Storage (que cobra/bloqueia por tráfego). Egress do R2 é sempre
 # grátis, então isso tira as fotos do que consumia a cota do Supabase.
 # Relatório financeiro mensal por e-mail: todo dia 1º às 08:00 (Brasília).
+# Alerta de uso do banco (Supabase): toda segunda às 09:00 (Brasília).
 [triggers]
-crons = ["0 11 1 * *"]
+crons = ["0 11 1 * *", "0 12 * * 1"]
 
 [[r2_buckets]]
 binding = "IMAGES"

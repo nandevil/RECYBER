@@ -1161,6 +1161,33 @@ Use os links prontos da aba (com `?utm_source=...&utm_campaign=...`)
 na bio e nos posts pra separar melhor Instagram e TikTok. As suas
 próprias visitas (logado no painel) não são contadas.
 
+## Passo 37 — Economia de cota e alerta de uso (plano Free)
+
+- O catálogo dos visitantes passa por `/api/catalog` (Worker, cache de
+  borda de 60s), então o Supabase só é consultado ~1x/min, não 1x por
+  visita. O dono logado lê direto do Supabase (sempre atualizado).
+- Quando uma peça muda (venda, edição), o site aplica só aquela linha
+  vinda do Realtime, sem rebaixar o catálogo inteiro (~26 KB) em cada
+  visitante online.
+- Toda segunda às 09:00 (Brasília) o Worker confere o tamanho do banco
+  e manda e-mail ao `REPORT_EMAIL` se passar de 80% dos 500 MB. Pra
+  isso rode uma vez no **SQL Editor**:
+
+```sql
+create or replace function public.db_size_bytes()
+returns bigint
+language sql security definer set search_path = public as $$
+  select pg_database_size(current_database());
+$$;
+
+revoke all on function public.db_size_bytes() from public, anon, authenticated;
+grant execute on function public.db_size_bytes() to service_role;
+```
+
+O tráfego (egress) não dá pra medir por fora do painel do Supabase:
+confirme em **Organization → Billing/Usage** que os e-mails de cota
+estão ligados pro seu endereço.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

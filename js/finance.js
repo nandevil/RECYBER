@@ -228,3 +228,26 @@ document.getElementById("fin-export-csv").addEventListener("click", () => {
   a.click();
   URL.revokeObjectURL(a.href);
 });
+
+document.getElementById("fin-email-report").addEventListener("click", async e => {
+  if (!supabaseEnabled()) return;
+  const btn = e.currentTarget;
+  const month = finSelectedMonth();
+  btn.disabled = true;
+  try {
+    const { data } = await sb.auth.getSession();
+    const token = data && data.session && data.session.access_token;
+    if (!token) { showToast("Sessão expirada — saia e entre de novo"); return; }
+    const res = await fetch("/api/admin/send-finance-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ month })
+    });
+    showToast(res.ok ? `Relatório de ${finMonthLabel(month)} enviado por e-mail` : "Não foi possível enviar o relatório");
+  } catch (err) {
+    console.error("Financeiro — enviar relatório:", err);
+    showToast("Não foi possível enviar o relatório");
+  } finally {
+    btn.disabled = false;
+  }
+});

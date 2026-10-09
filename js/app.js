@@ -3,7 +3,7 @@
 ===================================================== */
 const CONFIG = {
   whatsappNumber: "5522999390065", // DDI+DDD+numero, só dígitos
-  instagram: "https://instagram.com/re.cyber",
+  instagram: "https://www.instagram.com/re.cyber/",
   tiktok: "https://tiktok.com/@re.cyber", // troque pelo usuário real
   storeName: "Re.cyber",
   adminEmail: "anandalage18@hotmail.com" // recebe o alerta de "novo pedido" (js/checkout.js)
@@ -609,15 +609,6 @@ const stickyCart = document.getElementById("sticky-cart");
 if (stickyCart) stickyCart.addEventListener("click", openCart);
 const mobCartBtn = document.getElementById("mob-cart-btn");
 if (mobCartBtn) mobCartBtn.addEventListener("click", openCart);
-document.getElementById("footer-whatsapp").addEventListener("click", e => {
-  e.preventDefault();
-  const msg = encodeURIComponent(`Olá! Vim do site ${CONFIG.storeName}.`);
-  window.open(whatsappLink(msg).replace(/text=.*/, `text=${msg}`), "_blank");
-});
-document.getElementById("footer-instagram").addEventListener("click", e => {
-  e.preventDefault();
-  window.open(CONFIG.instagram, "_blank");
-});
 
 /* =====================================================
    MODAL — VISUALIZAÇÃO RÁPIDA
@@ -677,7 +668,7 @@ function openModal(id) {
         ${p.isSold
           ? `<button class="btn btn-primary" disabled>Peça esgotada</button>`
           : `<button class="btn btn-primary" id="modal-add">Adicionar ao carrinho</button>`}
-        <a class="btn btn-outline" id="modal-whatsapp" href="#">Perguntar no WhatsApp</a>
+        <a class="btn btn-outline" id="modal-whatsapp" href="https://wa.me/5522999390065" target="_blank" rel="noopener noreferrer">Perguntar no WhatsApp</a>
       </div>
     </div>
   `;
@@ -709,10 +700,12 @@ function openModal(id) {
       openCart();
     });
   }
-  modal.querySelector("#modal-whatsapp").addEventListener("click", e => {
-    e.preventDefault();
+  // O clique monta o href com a mensagem da peça e o tamanho escolhido; o
+  // link abre em nova aba pelo próprio <a target="_blank" rel="noopener noreferrer">.
+  const modalWhats = modal.querySelector("#modal-whatsapp");
+  modalWhats.addEventListener("click", () => {
     const msg = encodeURIComponent(`Olá! Tenho interesse na peça "${p.name}" (Tam. ${selectedSize}) do site ${CONFIG.storeName}. Ainda está disponível?`);
-    window.open(whatsappLink(msg).replace(/text=.*/, `text=${msg}`), "_blank");
+    modalWhats.href = whatsappLink(msg);
   });
 
   document.getElementById("modal-overlay").classList.add("open");

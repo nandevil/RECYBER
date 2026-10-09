@@ -6,8 +6,24 @@
    simplesmente fica vazio (cada categoria mostra o estado "nenhuma
    peça disponível").
 ===================================================== */
+/* Visitante comum lê o catálogo de /api/catalog (Worker, cache de borda
+   de ~60s) em vez de bater no Supabase a cada visita — poupa a cota de
+   tráfego do plano Free em dia de promoção. O dono logado (painel) e
+   qualquer falha do Worker caem na leitura direta, sempre atualizada. */
 async function fetchRealProducts() {
   if (!supabaseEnabled()) return [];
+
+  const ownerLoggedIn = Object.keys(localStorage).some(k => /^sb-.*-auth-token$/.test(k));
+  if (!ownerLoggedIn) {
+    try {
+      const res = await fetch("/api/catalog");
+      if (res.ok) {
+        const rows = await res.json();
+        if (Array.isArray(rows)) return rows.map(rowToProduct);
+      }
+    } catch (_) { /* cai pra leitura direta abaixo */ }
+  }
+
   const { data, error } = await sb.from("products").select("*").order("created_at", { ascending: false });
   if (error) {
     // Tabela ainda não existe (SUPABASE.md, Passo 5) ou outro erro de rede — modo silencioso.
@@ -47,8 +63,34 @@ syncCatalog();
    sozinho — sem isso, "Esgotado" só aparecia depois de um F5 manual.
    Exige Realtime ligado na tabela "products" (SUPABASE.md, Passo 28).
    Mesmo padrão do Realtime de pedidos no painel (js/admin.js). */
+/* Aplica só a linha que mudou (vem pronta no evento do Realtime) em vez
+   de baixar o catálogo inteiro de novo: antes, cada venda fazia TODO
+   visitante online rebaixar ~26 KB. Se o evento vier incompleto, cai no
+   recarregamento completo. */
+function applyCatalogChange(payload) {
+  try {
+    const type = payload.eventType;
+    if (type === "DELETE") {
+      const id = payload.old && payload.old.id;
+      if (!id) return syncCatalog();
+      const i = PRODUCTS.findIndex(p => p.id === id);
+      if (i >= 0) PRODUCTS.splice(i, 1);
+    } else {
+      if (!payload.new || !payload.new.id) return syncCatalog();
+      const product = rowToProduct(payload.new);
+      const i = PRODUCTS.findIndex(p => p.id === product.id);
+      if (i >= 0) PRODUCTS[i] = product;
+      else PRODUCTS.unshift(product);
+    }
+    renderCategoryCards();
+    renderGrid();
+  } catch (_) {
+    syncCatalog();
+  }
+}
+
 if (supabaseEnabled()) {
   sb.channel("public-catalog-changes")
-    .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => syncCatalog())
+    .on("postgres_changes", { event: "*", schema: "public", table: "products" }, applyCatalogChange)
     .subscribe();
 }

@@ -90,6 +90,9 @@ export default {
       return handleAdminUploadImage(request, env);
     }
 
+    if (url.pathname === "/api/catalog" && request.method === "GET") {
+      return handleCatalog(request, env, ctx);
+    }
     if (url.pathname === "/api/track" && request.method === "POST") {
       return handleTrackVisit(request, env);
     }
@@ -102,6 +105,10 @@ export default {
 
   // Cron Trigger (wrangler.toml [triggers]) — dia 1º de cada mês.
   async scheduled(event, env, ctx) {
+    if (event.cron === USAGE_CHECK_CRON) {
+      ctx.waitUntil(checkSupabaseUsage(env).catch(err => console.error("Alerta de uso:", err)));
+      return;
+    }
     ctx.waitUntil(sendMonthlyFinanceReport(env).catch(err => console.error("Relatório mensal:", err)));
   }
 };
@@ -1453,6 +1460,69 @@ async function handleAdminSendFinanceReport(request, env) {
     console.error("admin send-finance-report:", err);
     return jsonResponse({ error: "Não foi possível enviar o relatório." }, 500);
   }
+}
+
+/* =====================================================
+   CATÁLOGO EM CACHE + ALERTA DE USO DO SUPABASE (Passo 37)
+   /api/catalog devolve as peças (mesmas linhas do select * da
+   tabela products) com cache de borda de 60s, pra o tráfego de
+   visitantes não bater no Supabase a cada visita (plano Free tem
+   cota de egress). O Cron semanal avisa por e-mail quando o banco
+   passa de 80% dos 500 MB do plano Free.
+===================================================== */
+const USAGE_CHECK_CRON = "0 12 * * 1";
+const FREE_DB_LIMIT_BYTES = 500 * 1024 * 1024;
+
+async function handleCatalog(request, env, ctx) {
+  const cache = caches.default;
+  const cacheKey = new Request(new URL("/api/catalog", request.url).toString());
+  const hit = await cache.match(cacheKey);
+  if (hit) return hit;
+
+  const res = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/products?select=*&order=created_at.desc`,
+    { headers: supaHeaders(env) }
+  );
+  if (!res.ok) {
+    console.error("catalog:", res.status);
+    return jsonResponse({ error: "Catálogo indisponível." }, 502);
+  }
+  const response = new Response(await res.text(), {
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=20, s-maxage=60"
+    }
+  });
+  ctx.waitUntil(cache.put(cacheKey, response.clone()));
+  return response;
+}
+
+async function checkSupabaseUsage(env) {
+  if (!env.REPORT_EMAIL) throw new Error("REPORT_EMAIL não configurado.");
+  const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/db_size_bytes`, {
+    method: "POST",
+    headers: { ...supaHeaders(env), "Content-Type": "application/json" },
+    body: "{}"
+  });
+  if (!res.ok) throw new Error(`db_size_bytes falhou (status ${res.status}).`);
+  const bytes = Number(await res.json());
+  const pct = (bytes / FREE_DB_LIMIT_BYTES) * 100;
+  if (pct < 80) return { pct };
+
+  const mb = (bytes / 1024 / 1024).toFixed(0);
+  const mail = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${env.RESEND_API_KEY}` },
+    body: JSON.stringify({
+      from: "Re.cyber <atendimento@recyber.com.br>",
+      to: [env.REPORT_EMAIL],
+      subject: "Alerta: banco do Supabase passou de 80% do plano Free",
+      html: `<p style="font-family:Arial,sans-serif;font-size:14px;">O banco de dados do Re.cyber está em <b>${mb} MB</b> (${pct.toFixed(0)}% dos 500 MB do plano Free).</p>
+             <p style="font-family:Arial,sans-serif;font-size:14px;">Se chegar a 100%, o projeto pode ficar somente-leitura. Veja a página Usage no Supabase e considere subir de plano.</p>`
+    })
+  });
+  if (!mail.ok) throw new Error(`Resend falhou (status ${mail.status}).`);
+  return { pct, alerted: true };
 }
 
 /* =====================================================

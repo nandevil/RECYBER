@@ -157,7 +157,7 @@
           <span class="social-card-handle" id="social-instagram-handle">Instagram</span>
         </div>
         <p class="social-card-text">Fotos, novidades e bastidores do brechó direto no feed.</p>
-        <a class="pill social-card-link" id="social-instagram-link" href="#" target="_blank" rel="noopener">Ver no Instagram</a>
+        <a class="pill social-card-link" id="social-instagram-link" href="https://www.instagram.com/re.cyber/" target="_blank" rel="noopener noreferrer">Ver no Instagram</a>
       </div>
       <div class="social-card">
         <div class="social-card-head">
@@ -165,7 +165,7 @@
           <span class="social-card-handle" id="social-tiktok-handle">TikTok</span>
         </div>
         <p class="social-card-text">Vídeos rápidos com os looks e a proposta sustentável da marca.</p>
-        <a class="pill social-card-link" id="social-tiktok-link" href="#" target="_blank" rel="noopener">Ver no TikTok</a>
+        <a class="pill social-card-link" id="social-tiktok-link" href="https://www.tiktok.com/@re.cyber" target="_blank" rel="noopener noreferrer">Ver no TikTok</a>
         <!-- Preenchido via TikTok oEmbed (público, sem login) quando um vídeo é configurado no painel -->
         <div class="social-tiktok-embed" id="social-tiktok-embed" hidden></div>
       </div>
@@ -199,8 +199,8 @@
     <div class="footer-col">
       <h3>Contato</h3>
       <ul>
-        <li><a href="#" id="footer-whatsapp">WhatsApp</a></li>
-        <li><a href="#" id="footer-instagram">Instagram</a></li>
+        <li><a href="https://wa.me/5522999390065" id="footer-whatsapp" target="_blank" rel="noopener noreferrer">WhatsApp</a></li>
+        <li><a href="https://www.instagram.com/re.cyber/" id="footer-instagram" target="_blank" rel="noopener noreferrer">Instagram</a></li>
         <li>Rio de Janeiro, RJ</li>
       </ul>
     </div>
@@ -305,7 +305,7 @@
       <button class="pill" data-info="pagamentos">Pagamentos</button>
       <button class="pill" data-info="devolucao">Devolução</button>
       <button class="pill" data-info="redes">Redes Sociais</button>
-      <a class="pill" id="info-contato-link" href="#" target="_blank" rel="noopener">Contato</a>
+      <a class="pill" id="info-contato-link" href="https://wa.me/5522999390065" target="_blank" rel="noopener noreferrer">Contato</a>
     </div>
 
     <!-- ENVIOS — texto gerenciado pelo painel (#admin-dashboard -> Textos do Modal) -->
@@ -325,11 +325,11 @@
 
     <!-- REDES SOCIAIS — links configurados em CONFIG.instagram / CONFIG.tiktok (js/app.js) -->
     <div class="info-card info-card-social" id="info-card-redes" hidden>
-      <a class="social-link" id="info-instagram" href="#" target="_blank" rel="noopener">
+      <a class="social-link" id="info-instagram" href="https://www.instagram.com/re.cyber/" target="_blank" rel="noopener noreferrer">
         <svg viewBox="0 0 24 24" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.1" fill="currentColor"/></svg>
         Instagram
       </a>
-      <a class="social-link" id="info-tiktok" href="#" target="_blank" rel="noopener">
+      <a class="social-link" id="info-tiktok" href="https://www.tiktok.com/@re.cyber" target="_blank" rel="noopener noreferrer">
         <svg viewBox="0 0 24 24" width="20" height="20"><path d="M14 3v10.6a3.4 3.4 0 11-3.4-3.4c.3 0 .6.03.9.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 3a5.4 5.4 0 005.4 5.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         TikTok
       </a>
@@ -964,7 +964,10 @@
           <h3 class="fin-section-title">Relatório mensal</h3>
           <p class="admin-leads-subtitle">Atualizado automaticamente — recalculado a cada abertura com os pedidos e gastos mais recentes.</p>
         </div>
-        <button class="pill pill-sm" id="fin-export-csv" type="button">Exportar CSV</button>
+        <div class="fin-actions">
+          <button class="pill pill-sm" id="fin-email-report" type="button">Enviar relatório do mês por e-mail</button>
+          <button class="pill pill-sm" id="fin-export-csv" type="button">Exportar CSV</button>
+        </div>
       </div>
       <div class="admin-leads-table-wrap">
         <table class="admin-leads-table">
