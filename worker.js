@@ -1508,7 +1508,7 @@ async function handleCatalog(request, env, ctx) {
    tags do index.html com HTMLRewriter. A peça fica 5 min em cache de
    borda (só a linha, nunca o HTML) pra não gastar cota do Supabase.
 ===================================================== */
-const OG_DEFAULT_IMAGE = "https://recyber.com.br/img/og-default.png";
+const OG_DEFAULT_IMAGE = "https://pub-ee5c472613004972ac0cf85f25dae701.r2.dev/brand/1791512954946-cvaogb-og-default.png";
 
 async function getPreviewProduct(id, env, ctx) {
   const cache = caches.default;
