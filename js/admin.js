@@ -435,7 +435,7 @@ document.getElementById("admin-tabs").addEventListener("click", e => {
   const pill = e.target.closest("[data-tab]");
   if (!pill) return;
   document.querySelectorAll("#admin-tabs .pill").forEach(p => p.classList.toggle("active", p === pill));
-  ["leads", "pedidos", "cadastro", "feedbacks", "textos", "promo", "envio", "financeiro"].forEach(tab => {
+  ["leads", "pedidos", "cadastro", "feedbacks", "textos", "promo", "envio", "financeiro", "metricas"].forEach(tab => {
     document.getElementById(`admin-tab-${tab}`).hidden = tab !== pill.dataset.tab;
   });
 });

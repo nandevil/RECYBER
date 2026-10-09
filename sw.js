@@ -16,6 +16,8 @@ const APP_SHELL = [
   "/js/checkout.js",
   "/js/admin.js",
   "/js/finance.js",
+  "/js/metrics.js",
+  "/js/tracking.js",
   "/js/catalog-sync.js",
   "/js/feedback-sync.js",
   "/js/settings-sync.js",

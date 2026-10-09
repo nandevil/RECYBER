@@ -1114,6 +1114,53 @@ Cloudflare dispara uma tarefa agendada (`[triggers] crons` no
 de nenhum Secret novo. Pra testar sem esperar o dia 1º: com o painel
 logado, `POST /api/admin/send-finance-report` com `{ "month": "YYYY-MM" }`.
 
+## Passo 36 — Métricas de chegada (origem das visitas)
+
+A aba **Métricas de Chegada** mostra de onde vêm os visitantes
+(Instagram, TikTok, Google, direto...). O site avisa o Worker
+(`/api/track`) 1x por sessão, sem cookie e sem dado pessoal; o Worker
+classifica a origem (utm > navegador interno do app > referrer) e soma
+num contador por dia. No **SQL Editor**, rode uma vez:
+
+```sql
+create table public.visit_counts (
+  day date not null,
+  source text not null,
+  campaign text not null default '',
+  device text not null default '',
+  region text not null default '',
+  visits integer not null default 0,
+  primary key (day, source, campaign, device, region)
+);
+
+alter table public.visit_counts enable row level security;
+alter table public.visit_counts force row level security;
+
+create policy "dono pode ler visitas"
+  on public.visit_counts for select to authenticated using (true);
+
+create or replace function public.track_visit(
+  p_day date, p_source text, p_campaign text, p_device text, p_region text
+) returns void
+language sql security definer set search_path = public as $$
+  insert into public.visit_counts (day, source, campaign, device, region, visits)
+  values (p_day, p_source, coalesce(p_campaign, ''), coalesce(p_device, ''), coalesce(p_region, ''), 1)
+  on conflict (day, source, campaign, device, region)
+  do update set visits = public.visit_counts.visits + 1;
+$$;
+
+-- Só o Worker (service_role) pode chamar a função — nunca o público.
+revoke all on function public.track_visit(date, text, text, text, text) from public, anon, authenticated;
+grant execute on function public.track_visit(date, text, text, text, text) to service_role;
+```
+
+As visitas só passam a ser contadas depois que esse SQL rodar. A
+origem também é gravada em cada pedido (`customer.origem`), então o
+painel mostra **vendas por origem** (sem coluna nova no banco).
+Use os links prontos da aba (com `?utm_source=...&utm_campaign=...`)
+na bio e nos posts pra separar melhor Instagram e TikTok. As suas
+próprias visitas (logado no painel) não são contadas.
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

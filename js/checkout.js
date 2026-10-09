@@ -281,7 +281,13 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
       bairro: document.getElementById("ck-bairro").value.trim(),
       cidade: document.getElementById("ck-cidade").value.trim(),
       uf: document.getElementById("ck-uf").value.trim().toUpperCase(),
-      complemento: document.getElementById("ck-complemento").value.trim()
+      complemento: document.getElementById("ck-complemento").value.trim(),
+      origem: (() => {
+        try {
+          const s = sessionStorage.getItem("recyber_visit_source");
+          return s && s !== "pendente" ? s : "";
+        } catch (_) { return ""; }
+      })()
     },
     marketingOptIn: document.getElementById("ck-marketing").checked,
     payment: checkoutPayment,

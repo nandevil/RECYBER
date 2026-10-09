@@ -90,6 +90,9 @@ export default {
       return handleAdminUploadImage(request, env);
     }
 
+    if (url.pathname === "/api/track" && request.method === "POST") {
+      return handleTrackVisit(request, env);
+    }
     if (url.pathname === "/api/admin/send-finance-report" && request.method === "POST") {
       return handleAdminSendFinanceReport(request, env);
     }
@@ -1447,6 +1450,92 @@ async function handleAdminSendFinanceReport(request, env) {
   } catch (err) {
     console.error("admin send-finance-report:", err);
     return jsonResponse({ error: "Não foi possível enviar o relatório." }, 500);
+  }
+}
+
+/* =====================================================
+   MÉTRICAS DE CHEGADA (Passo 36 do SUPABASE.md)
+   js/tracking.js avisa 1x por sessão. Aqui classificamos a origem
+   (utm > navegador interno do app > referrer) e somamos num contador
+   por dia/origem via função SQL track_visit. Não guarda IP, cookie
+   nem dado pessoal.
+===================================================== */
+const TRACK_SOURCE_ALIASES = {
+  ig: "instagram", instagram: "instagram", tiktok: "tiktok", tt: "tiktok",
+  fb: "facebook", facebook: "facebook", google: "google", youtube: "youtube",
+  yt: "youtube", whatsapp: "whatsapp", wpp: "whatsapp", pinterest: "pinterest",
+  twitter: "twitter", x: "twitter", email: "email", newsletter: "email"
+};
+
+const TRACK_REFERRER_HOSTS = [
+  ["instagram", /(^|\.)instagram\.com$/],
+  ["tiktok", /(^|\.)tiktok\.com$/],
+  ["facebook", /(^|\.)(facebook\.com|fb\.com|fb\.me)$/],
+  ["google", /(^|\.)google\.[a-z.]+$/],
+  ["bing", /(^|\.)bing\.com$/],
+  ["duckduckgo", /(^|\.)duckduckgo\.com$/],
+  ["whatsapp", /(^|\.)(whatsapp\.com|wa\.me)$/],
+  ["youtube", /(^|\.)(youtube\.com|youtu\.be)$/],
+  ["pinterest", /(^|\.)pinterest\.[a-z.]+$/],
+  ["twitter", /(^|\.)(twitter\.com|t\.co|x\.com)$/]
+];
+
+function cleanTrackLabel(value, max = 40) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, max);
+}
+
+function classifyTrafficSource({ utmSource, referrer, userAgent }) {
+  const utm = cleanTrackLabel(utmSource);
+  if (utm) return TRACK_SOURCE_ALIASES[utm] || utm;
+
+  if (/Instagram/i.test(userAgent)) return "instagram";
+  if (/musical_ly|TikTok|Bytedance/i.test(userAgent)) return "tiktok";
+  if (/FBAN|FBAV|FB_IAB/i.test(userAgent)) return "facebook";
+  if (/Pinterest/i.test(userAgent)) return "pinterest";
+
+  if (referrer) {
+    let host = "";
+    try { host = new URL(referrer).hostname.toLowerCase(); } catch (_) { /* referrer inválido */ }
+    if (host && !/(^|\.)recyber\.com\.br$/.test(host)) {
+      const hit = TRACK_REFERRER_HOSTS.find(([, re]) => re.test(host));
+      return hit ? hit[0] : "outros";
+    }
+  }
+  return "direto";
+}
+
+async function handleTrackVisit(request, env) {
+  try {
+    const userAgent = request.headers.get("User-Agent") || "";
+    if (!userAgent || /bot|crawl|spider|slurp|facebookexternalhit|preview|headless|monitor|lighthouse/i.test(userAgent)) {
+      return new Response(null, { status: 204 });
+    }
+
+    let body = {};
+    try { body = await request.json(); } catch (_) { /* corpo vazio */ }
+
+    const source = classifyTrafficSource({
+      utmSource: body.utm_source,
+      referrer: typeof body.ref === "string" ? body.ref.slice(0, 300) : "",
+      userAgent
+    });
+    const campaign = cleanTrackLabel(body.utm_campaign);
+    const device = /Mobi|Android|iPhone|iPad/i.test(userAgent) ? "celular" : "computador";
+    const cf = request.cf || {};
+    const region = cf.country === "BR" && cf.regionCode ? `BR-${cf.regionCode}` : (cf.country || "");
+    const day = new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10); // dia em Brasília
+
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/track_visit`, {
+      method: "POST",
+      headers: { ...supaHeaders(env), "Content-Type": "application/json" },
+      body: JSON.stringify({ p_day: day, p_source: source, p_campaign: campaign, p_device: device, p_region: region })
+    });
+    if (!res.ok) console.error("track_visit falhou:", res.status, await res.text());
+
+    return jsonResponse({ source });
+  } catch (err) {
+    console.error("track:", err);
+    return new Response(null, { status: 204 });
   }
 }
 

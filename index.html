@@ -481,6 +481,7 @@
     <button class="pill" data-tab="textos">&#128221; Textos do Modal</button>
     <button class="pill" data-tab="promo">&#127991; Promoção e Desconto</button>
     <button class="pill" data-tab="financeiro">&#128176; Financeiro</button>
+    <button class="pill" data-tab="metricas">&#128200; Métricas de Chegada</button>
     <button class="pill" id="admin-updates-open" type="button">&#9881;&#65039; Administrar Atualizações</button>
   </div>
 
@@ -970,6 +971,83 @@
     </div>
   </section>
 
+  <!-- ABA: MÉTRICAS DE CHEGADA (origem das visitas) -->
+  <section class="admin-tab-panel" id="admin-tab-metricas" hidden>
+    <div class="admin-upload">
+      <div class="admin-leads-head">
+        <div>
+          <h2 class="admin-leads-title">Métricas de Chegada</h2>
+          <h3 class="admin-leads-subtitle">De onde vêm os visitantes (1 visita = 1 sessão de navegação, sem cookie nem dado pessoal). Quem chega por link copiado ou WhatsApp aparece como "direto".</h3>
+        </div>
+        <label class="field fin-month-field">
+          <span>Mês</span>
+          <input type="month" id="met-month">
+        </label>
+      </div>
+
+      <p class="admin-login-error" id="met-unavailable" hidden>
+        Métricas indisponíveis: crie a tabela/função de visitas no Supabase (veja SUPABASE.md, Passo 36).
+      </p>
+
+      <div class="admin-leads-metrics">
+        <div class="admin-leads-metric">
+          <span class="admin-leads-metric-value" id="met-total">0</span>
+          <span class="admin-leads-metric-label">Visitas no mês</span>
+        </div>
+        <div class="admin-leads-metric">
+          <span class="admin-leads-metric-value" id="met-top">—</span>
+          <span class="admin-leads-metric-label">Principal origem</span>
+        </div>
+        <div class="admin-leads-metric">
+          <span class="admin-leads-metric-value" id="met-sales">0</span>
+          <span class="admin-leads-metric-label">Vendas com origem conhecida</span>
+        </div>
+      </div>
+
+      <h3 class="fin-section-title">Por origem</h3>
+      <div class="admin-leads-table-wrap">
+        <table class="admin-leads-table">
+          <thead><tr><th>Origem</th><th>Visitas</th><th>%</th><th>Vendas</th><th>Valor vendido</th></tr></thead>
+          <tbody id="met-sources-body"></tbody>
+        </table>
+      </div>
+      <p class="empty-state" id="met-empty" hidden>Nenhuma visita registrada neste mês ainda.</p>
+
+      <h3 class="fin-section-title">Por campanha / link</h3>
+      <div class="admin-leads-table-wrap">
+        <table class="admin-leads-table">
+          <thead><tr><th>Campanha</th><th>Origem</th><th>Visitas</th></tr></thead>
+          <tbody id="met-campaigns-body"></tbody>
+        </table>
+      </div>
+
+      <h3 class="fin-section-title">Por dia</h3>
+      <div class="admin-leads-table-wrap">
+        <table class="admin-leads-table">
+          <thead><tr><th>Dia</th><th>Visitas</th></tr></thead>
+          <tbody id="met-days-body"></tbody>
+        </table>
+      </div>
+
+      <h3 class="fin-section-title">Aparelho e região</h3>
+      <div class="admin-leads-table-wrap">
+        <table class="admin-leads-table">
+          <thead><tr><th>Tipo</th><th>Item</th><th>Visitas</th></tr></thead>
+          <tbody id="met-extra-body"></tbody>
+        </table>
+      </div>
+
+      <h3 class="fin-section-title">Links prontos pra bio e posts</h3>
+      <p class="admin-leads-subtitle">Use um link diferente em cada lugar pra saber exatamente o que traz visita. Copie e cole.</p>
+      <div class="checkout-grid">
+        <label class="field field-wide"><span>Instagram — bio</span><input type="text" readonly value="https://recyber.com.br/?utm_source=instagram&amp;utm_campaign=bio"></label>
+        <label class="field field-wide"><span>Instagram — stories</span><input type="text" readonly value="https://recyber.com.br/?utm_source=instagram&amp;utm_campaign=stories"></label>
+        <label class="field field-wide"><span>TikTok — bio</span><input type="text" readonly value="https://recyber.com.br/?utm_source=tiktok&amp;utm_campaign=bio"></label>
+        <label class="field field-wide"><span>TikTok — vídeo</span><input type="text" readonly value="https://recyber.com.br/?utm_source=tiktok&amp;utm_campaign=video"></label>
+      </div>
+    </div>
+  </section>
+
   <!-- ABA: CONFIGURAÇÕES DE ENVIO -->
   <section class="admin-tab-panel" id="admin-tab-envio" hidden>
     <div class="admin-upload">
@@ -1076,11 +1154,13 @@
 <script src="js/checkout.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/finance.js"></script>
+<script src="js/metrics.js"></script>
 <script src="js/catalog-sync.js"></script>
 <script src="js/category-covers-sync.js"></script>
 <script src="js/feedback-sync.js"></script>
 <script src="js/settings-sync.js"></script>
 <script src="js/newsletter.js"></script>
+<script src="js/tracking.js"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
