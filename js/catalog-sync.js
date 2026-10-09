@@ -16,7 +16,9 @@ async function fetchRealProducts() {
   const ownerLoggedIn = Object.keys(localStorage).some(k => /^sb-.*-auth-token$/.test(k));
   if (!ownerLoggedIn) {
     try {
-      const res = await fetch("/api/catalog");
+      // "no-cache": o Cloudflare reescreve o max-age pra 4h no navegador;
+      // isto força revalidar com a borda (que mantém o cache de 60s).
+      const res = await fetch("/api/catalog", { cache: "no-cache" });
       if (res.ok) {
         const rows = await res.json();
         if (Array.isArray(rows)) return rows.map(rowToProduct);
