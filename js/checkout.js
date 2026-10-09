@@ -282,6 +282,9 @@ document.getElementById("checkout-form").addEventListener("submit", async e => {
       cidade: document.getElementById("ck-cidade").value.trim(),
       uf: document.getElementById("ck-uf").value.trim().toUpperCase(),
       complemento: document.getElementById("ck-complemento").value.trim(),
+      origemCampanha: (() => {
+        try { return sessionStorage.getItem("recyber_visit_campaign") || ""; } catch (_) { return ""; }
+      })(),
       origem: (() => {
         try {
           const s = sessionStorage.getItem("recyber_visit_source");

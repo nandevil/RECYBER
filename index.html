@@ -5,6 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Re.cyber — Slow Fashion Brechó | Moda do RJ para o Brasil</title>
 <meta name="description" content="Brechó on-line Re.cyber. Moda underground consciente do Rio de Janeiro para o Brasil. Roupas, acessórios e calçados seminovos desde 2021.">
+<link rel="canonical" href="https://recyber.com.br/">
+
+<!-- Prévia de link (WhatsApp, Instagram, TikTok, Facebook, X). Em ?produto=ID o
+     Worker (worker.js, handleProductPreview) troca estas tags pelas da peça. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Re.cyber">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="https://recyber.com.br/">
+<meta property="og:title" content="Re.cyber — Slow Fashion Brechó | Moda do RJ para o Brasil">
+<meta property="og:description" content="Brechó on-line Re.cyber. Moda underground consciente do Rio de Janeiro para o Brasil. Peças únicas, seminovas, desde 2021.">
+<meta property="og:image" content="https://recyber.com.br/img/og-default.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Re.cyber — Slow Fashion Brechó">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Re.cyber — Slow Fashion Brechó | Moda do RJ para o Brasil">
+<meta name="twitter:description" content="Brechó on-line Re.cyber. Moda underground consciente do Rio de Janeiro para o Brasil. Peças únicas, seminovas, desde 2021.">
+<meta name="twitter:image" content="https://recyber.com.br/img/og-default.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -1023,7 +1042,7 @@
       <h3 class="fin-section-title">Por campanha / link</h3>
       <div class="admin-leads-table-wrap">
         <table class="admin-leads-table">
-          <thead><tr><th>Campanha</th><th>Origem</th><th>Visitas</th></tr></thead>
+          <thead><tr><th>Posição / campanha</th><th>Origem</th><th>Visitas</th><th>Vendas</th></tr></thead>
           <tbody id="met-campaigns-body"></tbody>
         </table>
       </div>
@@ -1044,14 +1063,9 @@
         </table>
       </div>
 
-      <h3 class="fin-section-title">Links prontos pra bio e posts</h3>
-      <p class="admin-leads-subtitle">Use um link diferente em cada lugar pra saber exatamente o que traz visita. Copie e cole.</p>
-      <div class="checkout-grid">
-        <label class="field field-wide"><span>Instagram — bio</span><input type="text" readonly value="https://recyber.com.br/?utm_source=instagram&amp;utm_campaign=bio"></label>
-        <label class="field field-wide"><span>Instagram — stories</span><input type="text" readonly value="https://recyber.com.br/?utm_source=instagram&amp;utm_campaign=stories"></label>
-        <label class="field field-wide"><span>TikTok — bio</span><input type="text" readonly value="https://recyber.com.br/?utm_source=tiktok&amp;utm_campaign=bio"></label>
-        <label class="field field-wide"><span>TikTok — vídeo</span><input type="text" readonly value="https://recyber.com.br/?utm_source=tiktok&amp;utm_campaign=video"></label>
-      </div>
+      <h3 class="fin-section-title">Links com UTM (um por lugar)</h3>
+      <p class="admin-leads-subtitle">Edite a campanha (ex.: drop-semana, promo-novembro) e copie. Cada link já aponta pra recyber.com.br com origem e posição (bio, stories, post, reel, vídeo, anúncio, e-mail).</p>
+      <div id="met-utm-list" class="utm-list"></div>
     </div>
   </section>
 

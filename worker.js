@@ -90,6 +90,9 @@ export default {
       return handleAdminUploadImage(request, env);
     }
 
+    if (url.pathname === "/" && request.method === "GET" && url.searchParams.get("produto")) {
+      return handleProductPreview(request, env, ctx, url);
+    }
     if (url.pathname === "/api/catalog" && request.method === "GET") {
       return handleCatalog(request, env, ctx);
     }
@@ -1497,6 +1500,87 @@ async function handleCatalog(request, env, ctx) {
   return response;
 }
 
+/* =====================================================
+   PRÉVIA DE LINK POR PEÇA (Open Graph)
+   WhatsApp/Instagram/TikTok/Facebook não executam JavaScript, então as
+   tags og:* da peça precisam estar no HTML. Em /?produto=ID (o mesmo
+   link que o feed e os posts usam) buscamos a peça e reescrevemos as
+   tags do index.html com HTMLRewriter. A peça fica 5 min em cache de
+   borda (só a linha, nunca o HTML) pra não gastar cota do Supabase.
+===================================================== */
+const OG_DEFAULT_IMAGE = "https://recyber.com.br/img/og-default.png";
+
+async function getPreviewProduct(id, env, ctx) {
+  const cache = caches.default;
+  const key = new Request(`https://recyber.com.br/__og-product/${encodeURIComponent(id)}`);
+  const hit = await cache.match(key);
+  if (hit) return hit.json();
+
+  const res = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/products?id=eq.${encodeURIComponent(id)}&select=id,name,price,size,image_urls,is_sold&limit=1`,
+    { headers: supaHeaders(env) }
+  );
+  if (!res.ok) return null;
+  const row = (await res.json())[0] || null;
+  if (row) {
+    ctx.waitUntil(cache.put(key, new Response(JSON.stringify(row), {
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, s-maxage=300" }
+    })));
+  }
+  return row;
+}
+
+async function handleProductPreview(request, env, ctx, url) {
+  const id = url.searchParams.get("produto");
+  const page = await env.ASSETS.fetch(request);
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) return page;
+
+  let product = null;
+  try { product = await getPreviewProduct(id, env, ctx); } catch (err) { console.error("og preview:", err); }
+  if (!product || !product.name) return page;
+
+  const price = brl(Number(product.price) || 0);
+  const size = product.size || "Único";
+  const photo = Array.isArray(product.image_urls) && /^https:\/\//.test(product.image_urls[0] || "")
+    ? product.image_urls[0] : OG_DEFAULT_IMAGE;
+  const title = `${product.name} — ${price} | Re.cyber`;
+  const description = product.is_sold
+    ? `Esgotada: ${product.name}. Peça única do brechó Re.cyber — veja as outras peças disponíveis.`
+    : `${price} · Tam. ${size} · Peça única do brechó Re.cyber (Slow Fashion, Rio de Janeiro). Corre, só existe uma!`;
+  const pageUrl = `https://recyber.com.br/?produto=${encodeURIComponent(id)}`;
+
+  const setContent = value => ({ element(el) { el.setAttribute("content", value); } });
+  const drop = { element(el) { el.remove(); } };
+
+  const rewritten = new HTMLRewriter()
+    .on("title", { element(el) { el.setInnerContent(title); } })
+    .on('link[rel="canonical"]', { element(el) { el.setAttribute("href", pageUrl); } })
+    .on('meta[name="description"]', setContent(description))
+    .on('meta[property="og:type"]', setContent("product"))
+    .on('meta[property="og:url"]', setContent(pageUrl))
+    .on('meta[property="og:title"]', setContent(title))
+    .on('meta[property="og:description"]', setContent(description))
+    .on('meta[property="og:image"]', setContent(photo))
+    .on('meta[property="og:image:alt"]', setContent(product.name))
+    .on('meta[property="og:image:width"]', drop)
+    .on('meta[property="og:image:height"]', drop)
+    .on('meta[name="twitter:title"]', setContent(title))
+    .on('meta[name="twitter:description"]', setContent(description))
+    .on('meta[name="twitter:image"]', setContent(photo))
+    .on("head", { element(el) {
+      el.append(
+        `<meta property="product:price:amount" content="${(Number(product.price) || 0).toFixed(2)}">` +
+        `<meta property="product:price:currency" content="BRL">`,
+        { html: true }
+      );
+    } })
+    .transform(page);
+
+  const headers = new Headers(rewritten.headers);
+  headers.set("Cache-Control", "no-cache");
+  return new Response(rewritten.body, { status: page.status, headers });
+}
+
 async function checkSupabaseUsage(env) {
   if (!env.REPORT_EMAIL) throw new Error("REPORT_EMAIL não configurado.");
   const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/db_size_bytes`, {
@@ -1591,7 +1675,8 @@ async function handleTrackVisit(request, env) {
       referrer: typeof body.ref === "string" ? body.ref.slice(0, 300) : "",
       userAgent
     });
-    const campaign = cleanTrackLabel(body.utm_campaign);
+    const medium = cleanTrackLabel(body.utm_medium);
+    const campaign = [medium, cleanTrackLabel(body.utm_campaign)].filter(Boolean).join("/");
     const device = /Mobi|Android|iPhone|iPad/i.test(userAgent) ? "celular" : "computador";
     const cf = request.cf || {};
     const region = cf.country === "BR" && cf.regionCode ? `BR-${cf.regionCode}` : (cf.country || "");
@@ -1604,7 +1689,7 @@ async function handleTrackVisit(request, env) {
     });
     if (!res.ok) console.error("track_visit falhou:", res.status, await res.text());
 
-    return jsonResponse({ source });
+    return jsonResponse({ source, campaign });
   } catch (err) {
     console.error("track:", err);
     return new Response(null, { status: 204 });

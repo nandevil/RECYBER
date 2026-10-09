@@ -21,12 +21,16 @@
       body: JSON.stringify({
         utm_source: params.get("utm_source") || "",
         utm_campaign: params.get("utm_campaign") || "",
+        utm_medium: params.get("utm_medium") || "",
         ref: document.referrer || ""
       })
     })
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
-        if (data && data.source) sessionStorage.setItem("recyber_visit_source", data.source);
+        if (data && data.source) {
+          sessionStorage.setItem("recyber_visit_source", data.source);
+          sessionStorage.setItem("recyber_visit_campaign", data.campaign || "");
+        }
       })
       .catch(() => {});
 

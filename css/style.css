@@ -1463,3 +1463,9 @@ body.admin-open{overflow:hidden;}
   .product-modal{grid-template-columns:1fr;}
   .modal-image{border-right:none;border-bottom:2px solid var(--ink);border-radius:10px 10px 0 0;}
 }
+.utm-list{display:flex;flex-direction:column;gap:10px;}
+.utm-row{display:grid;grid-template-columns:200px 180px 1fr auto;gap:10px;align-items:end;border:1.5px solid var(--ink);border-radius:10px;padding:10px 12px;background:var(--paper-alt);}
+.utm-label{font-weight:700;font-size:.8rem;align-self:center;}
+.utm-campaign{display:flex;flex-direction:column;gap:3px;font-size:.66rem;text-transform:uppercase;color:var(--grey);}
+.utm-campaign input,.utm-link{width:100%;box-sizing:border-box;padding:8px;border:1.5px solid var(--ink);border-radius:8px;font-size:.75rem;background:#fff;}
+@media (max-width:760px){.utm-row{grid-template-columns:1fr;align-items:stretch;}}
