@@ -310,6 +310,9 @@ function renderCategoryCards() {
     const thumbHtml = coverImage
       ? `<img class="cat-card-photo" src="${coverImage}" alt="" loading="lazy">`
       : `<svg class="cat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="${iconPath}"/></svg>`;
+    if (cat.id === "promocoes") {
+      return `<button class="cat-card cat-card--promo${cat.id === state.filter ? " active" : ""}" data-filter="promocoes"><span class="cat-card-label">Promoção</span></button>`;
+    }
     return `
       <button class="cat-card${cat.id === "promocoes" ? " cat-card--promo" : ""}${cat.id === state.filter ? " active" : ""}" data-filter="${cat.id}">
         <span class="cat-card-thumb">

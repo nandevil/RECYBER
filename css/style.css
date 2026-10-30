@@ -404,7 +404,23 @@ body.promo-mode-active .cat-card--promo.active .cat-card-label{color:#0b0b0b;}
   display:flex;justify-content:center;
 }
 .category-cards--promo-only .cat-card--promo{
-  flex:0 1 340px;
+  flex:1 1 100%;
+}
+/* Modo Promo: o card vira só a palavra "Promoção", grande e em branco,
+   sem caixa branca, sem estrela e sem contagem. */
+body.promo-mode-active .category-cards--promo-only .cat-card--promo,
+body.promo-mode-active .category-cards--promo-only .cat-card--promo.active,
+.category-cards--promo-only .cat-card--promo{
+  background:transparent;border:none;box-shadow:none;animation:none;
+  padding:6px 0;display:flex;justify-content:center;align-items:center;
+}
+.category-cards--promo-only .cat-card--promo .cat-card-label,
+body.promo-mode-active .category-cards--promo-only .cat-card--promo .cat-card-label,
+body.promo-mode-active .category-cards--promo-only .cat-card--promo.active .cat-card-label{
+  color:#ffffff;font-family:var(--font-pixel);
+  font-size:clamp(1.6rem,8vw,3.2rem);line-height:1.1;letter-spacing:0;white-space:nowrap;
+  text-transform:uppercase;text-align:center;
+  text-shadow:0 0 18px rgba(255,255,255,.55);
 }
 
 /* ---- PRODUCT GRID ---- */
