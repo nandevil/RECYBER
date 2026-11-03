@@ -595,6 +595,14 @@
           <span>Descrição</span>
           <textarea id="pf-description" rows="3" placeholder="Estado de conservação, detalhes da peça..."></textarea>
         </label>
+        <div class="field field-wide">
+          <span>Agendar publicação <em>(opcional — vazio = aparece no site agora)</em></span>
+          <div class="pf-publish-row">
+            <input type="datetime-local" id="pf-publish-at">
+            <button type="button" class="pill pill-sm" id="pf-publish-clear">Limpar data</button>
+          </div>
+          <p class="pf-publish-hint" id="pf-publish-hint">A peça fica escondida do site (e do feed do Instagram) e aparece sozinha a partir da data e hora escolhidas.</p>
+        </div>
         <div class="admin-product-form-actions">
           <button type="submit" class="pill admin-upload-submit" id="product-form-submit">Cadastrar Peça</button>
           <button type="button" class="pill" id="product-form-cancel-edit" hidden>Cancelar edição</button>

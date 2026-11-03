@@ -1188,6 +1188,27 @@ O tráfego (egress) não dá pra medir por fora do painel do Supabase:
 confirme em **Organization → Billing/Usage** que os e-mails de cota
 estão ligados pro seu endereço.
 
+## Passo 38 — Agendar publicação de peças
+
+Cada peça ganha uma data opcional de publicação (`publish_at`). Enquanto
+ela estiver no futuro, a peça não aparece pro público (catálogo, feed do
+Instagram, prévia de link): só o dono logado enxerga. Sem data = publica
+na hora, como sempre foi. **Rode este SQL antes de subir o código**, senão
+o catálogo e o cadastro dão erro:
+
+```sql
+alter table public.products add column if not exists publish_at timestamptz;
+
+drop policy if exists "qualquer um pode ler produtos" on public.products;
+
+create policy "publico le produtos publicados"
+  on public.products for select to anon
+  using (publish_at is null or publish_at <= now());
+
+create policy "dono le todos os produtos"
+  on public.products for select to authenticated using (true);
+```
+
 ## Segurança — como fica
 
 - A `anon key` é pública por design; a proteção vem das políticas RLS.

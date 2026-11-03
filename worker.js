@@ -457,6 +457,13 @@ async function handleSendEmail(request, env) {
    fica guardado em public.melhorenvio_tokens (linha única, id=1),
    lido/escrito só com a service_role key — nunca exposto ao front-end.
 ===================================================== */
+/* Peças com publicação agendada (products.publish_at, Passo 38) só
+   entram nas listas públicas depois da data. A chave service_role ignora
+   o RLS, então o filtro precisa ser explícito aqui. */
+function publishedFilter() {
+  return `&or=(publish_at.is.null,publish_at.lte.${new Date().toISOString()})`;
+}
+
 function supaHeaders(env) {
   return {
     "Content-Type": "application/json",
@@ -1035,7 +1042,7 @@ function escapeXml(value) {
 
 async function handleProductFeed(env) {
   try {
-    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/products?select=*`, {
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/products?select=*${publishedFilter()}`, {
       headers: supaHeaders(env)
     });
     if (!res.ok) {
@@ -1107,7 +1114,7 @@ function csvField(value) {
    do Google — formato pedido explicitamente pra essa integração. */
 async function handleProductFeedCsv(env) {
   try {
-    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/products?select=*`, {
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/products?select=*${publishedFilter()}`, {
       headers: supaHeaders(env)
     });
     if (!res.ok) {
@@ -1483,7 +1490,7 @@ async function handleCatalog(request, env, ctx) {
   if (hit) return hit;
 
   const res = await fetch(
-    `${env.SUPABASE_URL}/rest/v1/products?select=*&order=created_at.desc`,
+    `${env.SUPABASE_URL}/rest/v1/products?select=*&order=created_at.desc${publishedFilter()}`,
     { headers: supaHeaders(env) }
   );
   if (!res.ok) {
@@ -1517,7 +1524,7 @@ async function getPreviewProduct(id, env, ctx) {
   if (hit) return hit.json();
 
   const res = await fetch(
-    `${env.SUPABASE_URL}/rest/v1/products?id=eq.${encodeURIComponent(id)}&select=id,name,price,size,image_urls,is_sold&limit=1`,
+    `${env.SUPABASE_URL}/rest/v1/products?id=eq.${encodeURIComponent(id)}&select=id,name,price,size,image_urls,is_sold,publish_at&limit=1`,
     { headers: supaHeaders(env) }
   );
   if (!res.ok) return null;
@@ -1538,6 +1545,7 @@ async function handleProductPreview(request, env, ctx, url) {
   let product = null;
   try { product = await getPreviewProduct(id, env, ctx); } catch (err) { console.error("og preview:", err); }
   if (!product || !product.name) return page;
+  if (product.publish_at && new Date(product.publish_at) > new Date()) return page;
 
   const price = brl(Number(product.price) || 0);
   const size = product.size || "Único";

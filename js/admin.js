@@ -769,6 +769,23 @@ function resetProductForm() {
 
 document.getElementById("product-form-cancel-edit").addEventListener("click", resetProductForm);
 
+/* Agendamento de publicação: o <input type="datetime-local"> trabalha na
+   hora local (Brasil); no banco vai em UTC (products.publish_at). */
+function toLocalInputValue(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function formatScheduleDate(iso) {
+  return new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+document.getElementById("pf-publish-clear").addEventListener("click", () => {
+  document.getElementById("pf-publish-at").value = "";
+});
+
 /* Preenche o formulário com os dados da peça pra editar. Fotos
    existentes não são recarregadas no input — só são substituídas se
    o admin escolher novas fotos; senão, o update mantém as atuais. */
@@ -779,6 +796,7 @@ function startEditProduct(p) {
   document.getElementById("pf-category").value = p.category;
   document.getElementById("pf-gender").value = p.gender || "unissex";
   document.getElementById("pf-description").value = p.description;
+  document.getElementById("pf-publish-at").value = toLocalInputValue(p.publishAt);
   selectedProductImages = [];
   renderProductImagePreviews();
   /* Peça já tem tamanhos estruturados (Passo 31)? usa eles. Senão,
@@ -924,7 +942,10 @@ document.getElementById("product-form").addEventListener("submit", async e => {
       size: sizeRows.map(r => r.size).join(", ") || "Único",
       category: document.getElementById("pf-category").value,
       gender: document.getElementById("pf-gender").value,
-      description: document.getElementById("pf-description").value.trim()
+      description: document.getElementById("pf-description").value.trim(),
+      publish_at: document.getElementById("pf-publish-at").value
+        ? new Date(document.getElementById("pf-publish-at").value).toISOString()
+        : null
     };
     /* Só mexe nas fotos se o admin escolheu novas — senão mantém as
        que a peça já tinha (editar não é obrigado a reenviar fotos). */
@@ -977,7 +998,7 @@ async function renderProductsList() {
       <img class="admin-promo-photo" src="${p.image || ""}" alt="${p.name}" onerror="this.style.visibility='hidden'">
       <div class="admin-promo-body">
         <span class="admin-promo-name">${p.name}</span>
-        <span class="admin-promo-meta">${labelCategory(p.category)} · ${money(p.price)}${p.isSold ? " · Esgotado" : ""}</span>
+        <span class="admin-promo-meta">${labelCategory(p.category)} · ${money(p.price)}${p.isSold ? " · Esgotado" : ""}${isProductPublished(p) ? "" : ` · <span class="admin-product-scheduled">Agendada para ${formatScheduleDate(p.publishAt)}</span>`}</span>
       </div>
       <label class="admin-product-gender-field">
         <span>Gênero</span>

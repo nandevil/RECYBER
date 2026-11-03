@@ -1264,6 +1264,9 @@ body.admin-open{overflow:hidden;}
 .promo-switch:checked{background:var(--accent);border-color:var(--accent-dark);}
 .promo-switch:checked::before{transform:translateX(20px);background:var(--paper);}
 
+.pf-publish-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.pf-publish-hint{font-size:.68rem;color:var(--grey);margin-top:6px;}
+.admin-product-scheduled{color:var(--accent-dark);font-weight:700;}
 .admin-promo-products-hint{margin-top:-10px;}
 .admin-promo-all-field{
   display:flex;align-items:center;justify-content:space-between;gap:12px;

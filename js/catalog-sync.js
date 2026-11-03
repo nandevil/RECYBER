@@ -32,7 +32,8 @@ async function fetchRealProducts() {
     console.warn("Catálogo dinâmico indisponível:", error.message);
     return [];
   }
-  return data.map(rowToProduct);
+  /* O dono logado enxerga as agendadas (RLS); no site público elas ficam de fora. */
+  return data.map(rowToProduct).filter(isProductPublished);
 }
 
 /* Abre automaticamente a peça indicada em "?produto=ID" na URL — usado
@@ -81,7 +82,9 @@ function applyCatalogChange(payload) {
       if (!payload.new || !payload.new.id) return syncCatalog();
       const product = rowToProduct(payload.new);
       const i = PRODUCTS.findIndex(p => p.id === product.id);
-      if (i >= 0) PRODUCTS[i] = product;
+      if (!isProductPublished(product)) {
+        if (i >= 0) PRODUCTS.splice(i, 1);
+      } else if (i >= 0) PRODUCTS[i] = product;
       else PRODUCTS.unshift(product);
     }
     renderCategoryCards();

@@ -72,8 +72,14 @@ function rowToProduct(r) {
     isPromo: !!r.is_promo,
     isSold: !!r.is_sold,
     createdAt: r.created_at,
+    publishAt: r.publish_at || null,
     empty: false
   };
+}
+
+/* Peça agendada (publish_at no futuro) ainda não aparece no catálogo público. */
+function isProductPublished(p) {
+  return !p.publishAt || new Date(p.publishAt) <= new Date();
 }
 
 /* Campanha de desconto global (tabela public.promo_settings, linha única id=1) */
