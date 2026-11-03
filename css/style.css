@@ -1265,7 +1265,12 @@ body.admin-open{overflow:hidden;}
 .promo-switch:checked::before{transform:translateX(20px);background:var(--paper);}
 
 .admin-promo-products-hint{margin-top:-10px;}
-.admin-promo-all-btn{margin:4px 0 14px;}
+.admin-promo-all-field{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  border:1.5px solid var(--accent);border-radius:10px;
+  padding:10px 14px;margin:4px 0 14px;background:var(--paper-alt);
+}
+.admin-promo-all-field span{font-family:var(--font-pixel);font-size:.72rem;}
 .admin-promo-dates-hint{
   font-size:.72rem;line-height:1.5;color:var(--accent-dark);
   background:#e2f3e6;border:1.5px solid var(--accent);border-radius:8px;

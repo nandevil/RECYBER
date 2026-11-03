@@ -1653,25 +1653,37 @@ async function renderPromoProductsList() {
       </label>
     </div>
   `).join("");
+  syncPromoAllSwitch();
 }
 
-/* Liga o Modo Promo em todas as peças de uma vez; os botões individuais
-   continuam valendo pra tirar alguma da campanha depois. */
-document.getElementById("admin-promo-all").addEventListener("click", async e => {
-  if (!supabaseEnabled()) return;
-  if (!confirm("Ativar o Modo Promo em TODAS as peças? Depois você pode desligar peça por peça.")) return;
-  const btn = e.currentTarget;
-  btn.disabled = true;
-  const { error } = await sb.from("products").update({ is_promo: true }).eq("is_promo", false);
+/* Chave geral: ON liga o Modo Promo em todas as peças, OFF desliga em todas.
+   Ela acompanha os botões individuais (fica ON só quando todas estão ligadas). */
+function syncPromoAllSwitch() {
+  const items = document.querySelectorAll("#admin-promo-products .admin-promo-item-toggle");
+  document.getElementById("admin-promo-all").checked =
+    items.length > 0 && [...items].every(t => t.checked);
+}
+
+document.getElementById("admin-promo-all").addEventListener("change", async e => {
+  const sw = e.currentTarget;
+  const turnOn = sw.checked;
+  if (!supabaseEnabled()) { sw.checked = !turnOn; return; }
+  const msg = turnOn
+    ? "Ativar o Modo Promo em TODAS as peças? Depois você pode desligar peça por peça."
+    : "Desligar o Modo Promo em TODAS as peças?";
+  if (!confirm(msg)) { sw.checked = !turnOn; return; }
+  sw.disabled = true;
+  const { error } = await sb.from("products").update({ is_promo: turnOn }).eq("is_promo", !turnOn);
   if (error) {
-    console.error("Ativar Modo Promo em todas:", error);
-    showToast("Erro ao ativar o Modo Promo em todas as peças");
+    console.error("Modo Promo em todas:", error);
+    showToast("Erro ao alterar o Modo Promo em todas as peças");
+    sw.checked = !turnOn;
   } else {
-    showToast("Modo Promo ativado em todas as peças");
+    showToast(turnOn ? "Modo Promo ativado em todas as peças" : "Modo Promo desligado em todas as peças");
     await renderPromoProductsList();
     if (typeof syncCatalog === "function") syncCatalog();
   }
-  btn.disabled = false;
+  sw.disabled = false;
 });
 
 document.getElementById("admin-promo-products").addEventListener("change", async e => {
@@ -1690,6 +1702,7 @@ document.getElementById("admin-promo-products").addEventListener("change", async
     if (typeof syncCatalog === "function") syncCatalog();
   }
   toggle.disabled = false;
+  syncPromoAllSwitch();
 });
 
 /* =====================================================
