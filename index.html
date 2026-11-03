@@ -834,6 +834,21 @@
         <button type="submit" class="pill admin-upload-submit" id="promo-form-submit">Salvar Configurações</button>
       </form>
 
+      <h2 class="admin-leads-title admin-feedbacks-list-title" id="admin-free-shipping-title">Frete Grátis</h2>
+      <h3 class="admin-leads-subtitle">Liga/desliga aqui e troque o valor mínimo quando quiser. No carrinho o cliente vê quanto falta para ganhar o frete grátis.</h3>
+
+      <form class="checkout-form" id="free-shipping-form">
+        <label class="field field-wide promo-toggle-field">
+          <span>Frete grátis ativo</span>
+          <input type="checkbox" id="fs-active" class="promo-switch">
+        </label>
+        <label class="field field-wide">
+          <span>Frete grátis para compras a partir de (R$)</span>
+          <input type="number" id="fs-min-cart" min="0" step="0.01" value="0" placeholder="Ex: 170">
+        </label>
+        <button type="submit" class="pill admin-upload-submit" id="free-shipping-form-submit">Salvar Frete Grátis</button>
+      </form>
+
       <h3 class="admin-leads-subtitle admin-feedbacks-list-title">Modo Promo por peça</h3>
       <p class="admin-leads-subtitle admin-promo-products-hint">Ative nas peças que devem entrar na campanha acima</p>
       <label class="admin-promo-all-field">
@@ -881,21 +896,6 @@
           <input type="text" id="cd-coupon-code" placeholder="Ex: GARIMPO10">
         </label>
         <button type="submit" class="pill admin-upload-submit" id="cart-discount-form-submit">Salvar Desconto</button>
-      </form>
-
-      <h2 class="admin-leads-title admin-feedbacks-list-title">Frete Grátis</h2>
-      <h3 class="admin-leads-subtitle">Zera o frete automaticamente a partir de um valor mínimo de carrinho</h3>
-
-      <form class="checkout-form" id="free-shipping-form">
-        <label class="field field-wide promo-toggle-field">
-          <span>Frete grátis ativo</span>
-          <input type="checkbox" id="fs-active" class="promo-switch">
-        </label>
-        <label class="field field-wide">
-          <span>Valor mínimo do carrinho para frete grátis</span>
-          <input type="number" id="fs-min-cart" min="0" step="0.01" value="0">
-        </label>
-        <button type="submit" class="pill admin-upload-submit" id="free-shipping-form-submit">Salvar Frete Grátis</button>
       </form>
     </div>
   </section>

@@ -535,10 +535,13 @@ function updateCartUI() {
     const freeShipping = typeof isFreeShippingEligible === "function" && isFreeShippingEligible();
     if (freeShipping) {
       shippingNote.hidden = false;
-      shippingNote.innerHTML = "🚚 Frete grátis aplicado neste pedido!";
+      shippingNote.innerHTML = "🎉 Parabéns! Você ganhou FRETE GRÁTIS neste pedido!";
     } else if (cartDiscountState.freeShippingActive && cartDiscountState.freeShippingMinCart > subtotal) {
+      const min = cartDiscountState.freeShippingMinCart;
+      const progress = Math.min(100, Math.round((subtotal / min) * 100));
       shippingNote.hidden = false;
-      shippingNote.innerHTML = `🚚 Faltam ${money(cartDiscountState.freeShippingMinCart - subtotal)} para o frete grátis!`;
+      shippingNote.innerHTML = `🚚 Falta pouco! Adicione mais ${money(min - subtotal)} em peças e ganhe <strong>FRETE GRÁTIS</strong> (compras a partir de ${money(min)}).
+        <span class="cart-shipping-progress"><span class="cart-shipping-progress-bar" style="width:${progress}%"></span></span>`;
     } else if (subtotal < SHIPPING_THRESHOLD) {
       const remaining = SHIPPING_THRESHOLD - subtotal;
       const progress = Math.min(100, Math.round((subtotal / SHIPPING_THRESHOLD) * 100));
